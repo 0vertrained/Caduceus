@@ -18,6 +18,8 @@ from __future__ import annotations
 
 import hashlib
 import os
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 
 from opentelemetry import trace
@@ -67,6 +69,19 @@ class Router:
                 raise InVpcUnavailable(str(e)) from e
             self._usage(span, completion)
             return RoutedCompletion(completion, "phi")
+
+    @contextmanager
+    def recorded_only(self) -> Iterator[None]:
+        """Within this block the de-identified route answers only from recorded replies, never with a new call."""
+        external = self._external
+        live = getattr(external, "live", None)
+        if live is not None:
+            external.live = False  # type: ignore[union-attr]
+        try:
+            yield
+        finally:
+            if live is not None:
+                external.live = live  # type: ignore[union-attr]
 
     def recordings(self) -> dict[str, dict]:
         """Replies the de-identified route has seen, for scripts/record_completions.py."""

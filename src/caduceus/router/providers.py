@@ -32,6 +32,12 @@ class ProviderUnavailable(Exception):
     pass
 
 
+def _why(e: httpx.HTTPError) -> str:
+    """The failure in words that carry no content: the error type and, for a refusal, the HTTP status."""
+    status = e.response.status_code if isinstance(e, httpx.HTTPStatusError) else None
+    return f"{type(e).__name__}{f' {status}' if status else ''}"
+
+
 class Provider:
     name: str
     model: str
@@ -95,25 +101,28 @@ class OllamaChatProvider(Provider):
     up a bill."""
 
     def __init__(self, api_key: str | None, model: str, client: httpx.Client | None = None,
-                 base_url: str = "https://ollama.com", name: str = "external", vendor: str = "Ollama Cloud"):
+                 base_url: str = "https://ollama.com", name: str = "external", vendor: str = "Ollama Cloud",
+                 timeout: float = 60):
         self.name, self.model, self.vendor = name, model, vendor
         self._url = base_url.rstrip("/") + "/api/chat"
         self._headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
-        self._client = client or httpx.Client(timeout=90)
+        self._client = client or httpx.Client(timeout=timeout)
 
     def complete(self, system: str, user: str, max_tokens: int = 800) -> Completion:
         # Reasoning models spend part of the token budget thinking before they answer, so allow room for both.
-        body = {"model": self.model, "stream": False, "options": {"temperature": 0, "num_predict": max_tokens + 3200},
+        body = {"model": self.model, "stream": False, "options": {"temperature": 0, "num_predict": max_tokens + 7200},
                 "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]}
         try:
             r = self._client.post(self._url, json=body, headers=self._headers)
             r.raise_for_status()
         except httpx.HTTPError as e:
-            raise ProviderUnavailable(f"{self.name} provider unavailable: {type(e).__name__}") from e
+            raise ProviderUnavailable(f"{self.name} provider unavailable: {_why(e)}") from e
         data = r.json()
-        text = (data.get("message") or {}).get("content", "").strip()
+        message = data.get("message") or {}
+        text = message.get("content", "").strip()
         if not text:
-            raise ProviderUnavailable(f"{self.name} provider returned no answer")
+            spent = "after thinking, out of tokens" if message.get("thinking") else "empty"
+            raise ProviderUnavailable(f"{self.name} provider returned no answer ({spent})")
         return Completion(text, self.model, self.name, data.get("prompt_eval_count", 0), data.get("eval_count", 0),
                           vendor=self.vendor)
 
@@ -130,6 +139,7 @@ class CachingProvider(Provider):
 
     def __init__(self, inner: Provider | None, recordings: Path | None = None, model: str | None = None):
         self._inner = inner
+        self.live = True  # False while the demo seeds: a cold start must never wait on a model
         recorded = json.loads(recordings.read_text()) if recordings is not None and recordings.exists() else {}
         for key, c in recorded.items():
             self._remember(key, Completion(**{k: c[k] for k in Completion.__dataclass_fields__ if k in c}))
@@ -154,7 +164,7 @@ class CachingProvider(Provider):
             hit = self._replies.get(key)
         if hit is not None:
             return replace(hit, cached=True)
-        if self._inner is None:
+        if self._inner is None or not self.live:
             raise ProviderUnavailable("no recorded reply for this request, and no live model")
         completion = self._inner.complete(system, user, max_tokens)
         self._remember(key, completion)

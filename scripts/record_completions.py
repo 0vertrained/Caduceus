@@ -54,7 +54,10 @@ def main(argv: list[str] | None = None) -> int:
     missed = sorted(c.id for c in svc.cases.all()
                     if (c.draft or {}).get("route") == "template" or (c.appeal or {}).get("route") == "template")
     if missed:
-        print(f"The model did not answer for {', '.join(missed)}; nothing was written.", file=sys.stderr)
+        reasons = sorted({(c.draft or {}).get("fallback_reason") or (c.appeal or {}).get("fallback_reason") or "?"
+                          for c in svc.cases.all() if c.id in missed})
+        print(f"The model did not answer for {', '.join(missed)} ({'; '.join(reasons)}); nothing was written.",
+              file=sys.stderr)
         return 1
     recorded = svc.router.recordings()
     out.parent.mkdir(parents=True, exist_ok=True)
