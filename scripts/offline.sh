@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Run a command with the network switched off: a new network namespace holding only an unconfigured loopback.
-# Synthea runs this way, so the library flaws reported in its build cannot be reached over a network.
+# Synthea runs this way: it needs no network, so a flaw found later in one of its libraries cannot be reached.
 #   scripts/offline.sh java -jar synthea.jar ...
 #
 # Linux: unshare, as root, through passwordless sudo (dropping back to the calling user), or in an
