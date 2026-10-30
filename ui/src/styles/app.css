@@ -230,6 +230,8 @@ ul, ol { padding: 0; list-style: none; }
 .paper { background: #fcfcfa; border: 1px solid var(--rule); border-radius: 4px; padding: 22px 24px;
   font-family: var(--font-serif); line-height: 1.6; white-space: pre-wrap; }
 .paper--sent { font-size: 0.95rem; }
+.denial__facts { max-width: 75ch; }
+.facts__item--wide { grid-column: 1 / -1; }
 .placeholder { background: var(--mist); color: var(--seal-strong); border: 1px solid var(--rule); border-radius: 3px;
   padding: 0 3px; font-family: var(--font-sans); font-weight: 600; font-size: 0.9em; white-space: nowrap; }
 .sent-facts { display: flex; flex-direction: column; gap: var(--space-3); }

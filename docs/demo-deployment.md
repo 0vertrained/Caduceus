@@ -59,8 +59,9 @@ Copy the key straight from Cloud Shell into Netlify; it never needs to be anywhe
 
 **4. The draft model (optional).** Create an API key at ollama.com/settings/keys, then in Cloud Shell run
 `infra/demo/add-model-key.sh YOUR_PROJECT_ID`. It asks for the key without echoing it and stores it in Secret
-Manager. The model is set by `EXTERNAL_MODEL` in `.github/workflows/deploy-demo.yml` (`gpt-oss:120b`); the deploy
-warns, listing what Ollama Cloud offers, if that name is not available. Run the deploy-demo workflow afterwards.
+Manager. `MODEL_PREFERENCE` in `.github/workflows/deploy-demo.yml` ranks the models to use (Kimi K2.6 first, then
+DeepSeek V3.2, GLM-5 and others); the deploy uses the first one Ollama Cloud offers the key, says which, and warns
+with the list of offered models if none matches. Run the deploy-demo workflow afterwards.
 
 ## Checking it
 

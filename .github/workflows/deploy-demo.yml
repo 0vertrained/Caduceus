@@ -37,9 +37,11 @@ jobs:
       RUNTIME_SA: caduceus-demo-runtime@project-fc4eda29-999d-4812-a00.iam.gserviceaccount.com
       SERVICE: caduceus-demo
       # The draft model, on Ollama Cloud: a subscription with fixed limits, so its key cannot run up a bill. It sees
-      # only de-identified, stamped text. Its key lives in Secret Manager (infra/demo/add-model-key.sh).
+      # only de-identified, stamped text. Its key lives in Secret Manager (infra/demo/add-model-key.sh). The deploy
+      # uses the first of these that Ollama Cloud offers the key (a name matches exactly or by its family, so
+      # "kimi-k2.6" matches "kimi-k2.6:1t"), strongest writer first.
       MODEL_SECRET: caduceus-model-api-key
-      EXTERNAL_MODEL: gpt-oss:120b
+      MODEL_PREFERENCE: kimi-k2.6 deepseek-v3.2 glm-5 mistral-large-3 qwen3.5 deepseek-v3.1 gpt-oss:120b
       COMMIT: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -63,9 +65,18 @@ jobs:
           fi
           echo "::add-mask::$key"
           models="$(curl -fsS -H "Authorization: Bearer $key" https://ollama.com/api/tags | jq -r '.models[].name')" || models=""
-          if ! grep -qxF "$EXTERNAL_MODEL" <<< "$models"; then
-            echo "::warning title=Draft model::$EXTERNAL_MODEL is not offered on Ollama Cloud. Offered: $(tr "\n" " " <<< "$models")"
+          EXTERNAL_MODEL=""
+          for want in $MODEL_PREFERENCE; do
+            EXTERNAL_MODEL="$(grep -xF "$want" <<< "$models" || grep -F "$want:" <<< "$models" | grep "^$want:" || true)"
+            EXTERNAL_MODEL="$(head -1 <<< "$EXTERNAL_MODEL")"
+            [ -n "$EXTERNAL_MODEL" ] && break
+          done
+          if [ -z "$EXTERNAL_MODEL" ]; then
+            echo "::warning title=Draft model::None of $MODEL_PREFERENCE is offered. Offered: $(tr "\n" " " <<< "$models")"
+            exit 0
           fi
+          echo "EXTERNAL_MODEL=$EXTERNAL_MODEL" >> "$GITHUB_ENV"
+          echo "::notice title=Draft model::Using $EXTERNAL_MODEL"
           python -m venv /tmp/rec && /tmp/rec/bin/pip install -q .
           if CADUCEUS_EXTERNAL_PROVIDER=ollama CADUCEUS_EXTERNAL_MODEL="$EXTERNAL_MODEL" CADUCEUS_EXTERNAL_API_KEY="$key" \
               /tmp/rec/bin/python scripts/record_completions.py data/recorded/completions.json; then
