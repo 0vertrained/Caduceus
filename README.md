@@ -84,6 +84,27 @@ Policy. Patient names never enter URLs. The container runs as a non-root user on
 audit log is append-only at the database level and archived under S3 Object Lock in the target deployment. See
 [docs/data-handling.md](docs/data-handling.md) for what is PHI, where it flows, and the residual risk.
 
+### Known vulnerabilities in dependencies
+
+CI checks on every push. As of October 30, 2026:
+
+| What | Scanner | Known vulnerabilities |
+|---|---|---|
+| Python packages (47, with dev tools) | pip-audit | 0 |
+| UI packages (126, with build and test tools), Playwright | npm audit | 0 |
+| Container image (Wolfi base, Python 3.13.18) | Grype | 2 medium, no fix released for Python 3.13 |
+| Synthea, the offline data generator (never shipped) | Grype | 106, all in its bundled libraries |
+
+The two image findings are in CPython itself. CVE-2026-12345 (a `tempfile` cleanup race) is fixed upstream in
+3.13.18, the version shipped; the scanner's data has not caught up. CVE-2025-15367 is in `poplib`, which
+Caduceus never imports. The image job fails on any finding that has a released fix; Python and npm findings fail
+CI outright.
+
+Synthea's findings are in old copies of HAPI FHIR, Jackson, commons-text and similar inside its jar, and only a
+new Synthea release can change them. As used here they are not reachable: Synthea makes no network calls, loads
+no packages and reads only its own modules and fixed arguments, and its output is checked byte for byte. They are
+reported on every run rather than gated.
+
 ## Not built yet
 
 Fax intake with a vision-language model, and confidence routing (ADR 6). Hybrid retrieval over long packets
