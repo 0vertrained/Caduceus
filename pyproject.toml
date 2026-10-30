@@ -15,6 +15,7 @@ dependencies = [
   "opentelemetry-sdk>=1.45",
   "mcp>=2.3",
   "pyjwt[crypto]>=2.15",
+  "tzdata>=2026.6",  # the IANA zone database, so clinic time works on minimal images that ship none
 ]
 
 [project.optional-dependencies]

@@ -326,3 +326,17 @@ def test_health_says_nothing_and_audit_verification_needs_a_role(env):
     assert client.get("/api/audit/verify", headers=DOLORES).status_code == 403
     r = client.get("/api/audit/verify", headers=as_user("sam")).json()
     assert r["intact"] is True and r["events"] > 0
+
+
+def test_starts_on_a_system_without_a_time_zone_database(tmp_path):
+    """Minimal images (Wolfi, distroless) ship no /usr/share/zoneinfo; clinic time must still work."""
+    import os
+    import subprocess
+    import sys
+    code = ("from caduceus.app_factory import Settings, build_services; "
+            "s = build_services(Settings(db_path=':memory:', auth_mode='dev')); print(s.tz)")
+    env = os.environ | {"PYTHONTZPATH": str(tmp_path / "no-zoneinfo")}
+    out = subprocess.run([sys.executable, "-c", code], env=env,  # noqa: S603 - this interpreter, fixed code
+                         capture_output=True, text=True, cwd=DATA.parent)
+    assert out.returncode == 0, out.stderr
+    assert out.stdout.strip() == "America/Denver"
