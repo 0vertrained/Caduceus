@@ -219,13 +219,22 @@ class Workflow:
         case.state = State(state)
         self.cases.save(case)
 
-    def _submit(self, case_id: str, approval_seq: int) -> dict[str, Any]:
-        """The payer.submit tool. Refuses unless a person's approval of this case is in the audit log."""
+    def _outbox(self, case_id: str, approval_seq: int, action: str) -> Case:
+        """What a payer tool may send: only what a person approved (recorded in the audit log), and only while that
+        approval is the one waiting in the outbox. An approval that was undone cannot be replayed."""
         approvals = [e for e in self.audit.events(case_id)
-                     if e.seq == approval_seq and e.action == "case.approved" and e.role == Role.PA_SPECIALIST]
+                     if e.seq == approval_seq and e.action == action and e.role == Role.PA_SPECIALIST]
         if not approvals:
             raise ActionRefused("No human approval is recorded for this submission.")
         case = self._get(case_id)
+        sub = case.submission or {}
+        if case.state != State.SUBMITTED or sub.get("sent") or sub.get("approval_seq") != approval_seq:
+            raise ActionRefused("Nothing approved is waiting to be sent for this case.")
+        return case
+
+    def _submit(self, case_id: str, approval_seq: int) -> dict[str, Any]:
+        """The payer.submit tool. Sends the request a person approved, and nothing else."""
+        case = self._outbox(case_id, approval_seq, "case.approved")
         bundle = build_request_bundle(case)
         result = self.payer.submit(bundle, case.payer["name"])
         case.submission = (case.submission or {}) | {"sent": True, "sent_at": self.now().isoformat(),

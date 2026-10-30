@@ -250,6 +250,18 @@ def test_payer_submit_requires_a_recorded_human_approval(env):
                                   approval_seq=999999)
 
 
+def test_an_undone_approval_cannot_be_replayed(env):
+    """The approval stays in the audit log after an undo, but payer.submit sends only what is in the outbox."""
+    svc, client, _ = env
+    client.post("/api/cases/2026-1041/approve", headers=DOLORES)
+    seq = svc.cases.get("2026-1041").submission["approval_seq"]
+    client.post("/api/cases/2026-1041/undo", headers=DOLORES)
+    with pytest.raises(ActionRefused, match="Nothing approved is waiting"):
+        svc.workflow.gateway.call(AGENT, "2026-1041", "submission", "payer.submit", case_id="2026-1041",
+                                  approval_seq=seq)
+    assert svc.cases.get("2026-1041").state == "review"
+
+
 def test_mcp_servers_enforce_the_same_rules(env):
     svc, _, _ = env
     ehr = build_server("ehr", svc.workflow.gateway, AGENT)
