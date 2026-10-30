@@ -11,7 +11,9 @@ real data.
 |---|---|---|
 | The patient record (FHIR resources), the referral packet, visit notes | Yes | The EHR (read through the `ehr` and `documents` tools); copies of relevant sentences in the case store |
 | Determinations, evidence sentences, draft request letters | Yes | Case store (SQLite today, Postgres on RDS in the target deployment), encrypted at rest with KMS |
-| Faxed referral pages | Yes | Read by OCR inside the container, with no network; the images stay in the intake folder, are shown only to signed-in staff, and are never sent to any model or service |
+| Faxed referral pages | Yes | Read by OCR inside the container, with no network; the images stay in the intake folder, are shown only to signed-in staff, and are never sent to any model or service. Once a person confirms a fax, the text OCR read from its cover sheet is filed in the case store as page 1 of the case's packet |
+| A patient looked up from a fax (name and date of birth) | Yes | Sent in a request body, never a URL; the search runs inside the boundary. Records are named to the browser by a reference made for that fax, not a record number. The audit log keeps the result (found, closest offered, none), never the name |
+| A request to the sending clinic for what a fax lacks | No patient identifiers, by construction: the referral number, the clinic and the field names | Shown for a person to send by fax or phone; Caduceus sends nothing. The fax record keeps the words; the audit log keeps the fields and a hash |
 | Notes a clinician writes when a payer asks for documentation | Yes | Case store, exactly as signed; sent only to that payer, after a person approves; the audit log keeps a hash |
 | The audit log | Treated as PHI: free-text reasons a person types (for example, why a case was returned) can contain it | Same database, append-only; archived to an object-locked S3 bucket |
 | Case numbers in URLs and server logs | An internal identifier, kept inside the boundary | API access logs (KMS-encrypted CloudWatch) |
@@ -28,7 +30,8 @@ real data.
    result with an HMAC, and the router checks the stamp and re-scans for known identifiers before the text leaves.
    The returned draft is re-identified inside the VPC.
 4. A person approves. After a 30-second undo window the request goes to the payer as a FHIR Claim
-   (Da Vinci PAS shape), which by necessity contains PHI and travels over the payer's authenticated channel.
+   (Da Vinci PAS shape), which by necessity contains PHI and travels over the payer's authenticated channel. Until it
+   is sent, a PA specialist can still recall it; once sent, nothing is recalled.
 5. If the payer pends the request and asks for documentation, the ordering clinician writes the note themselves;
    no model drafts it. After a person approves, it goes by the same channel as an attachment to a Claim related to
    the first. The audit log records a hash of the note, never its words.
@@ -75,5 +78,7 @@ the leakage suite (planted identifiers never reach the captured external wire; p
 `test_phi_spans_carry_no_content`, `test_import_lint_only_router_imports_providers`,
 `test_update_and_delete_are_refused_by_the_database`, `test_settings_are_secure_by_default`,
 `test_the_payers_question_is_answered_with_the_clinicians_note` (the audit log never holds the note's words),
-`test_a_note_changed_after_approval_is_not_sent`, and the end-to-end check that a searched name never appears in
-the URL.
+`test_a_note_changed_after_approval_is_not_sent`,
+`test_the_patient_is_found_in_the_chart_or_the_closest_are_offered` (no record number reaches the browser, no name
+reaches the audit log), `test_a_fax_missing_something_waits_on_the_clinic_until_they_send_it` (the request to the
+clinic never names the patient), and the end-to-end check that a searched name never appears in the URL.
