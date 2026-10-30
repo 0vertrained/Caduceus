@@ -24,10 +24,10 @@ audited, and whether the people who use it every day can.
 |---|---|---|
 | **PHI-aware model router** | Identifiable work runs only on the in-VPC model, with no fallback. The external model accepts only HMAC-stamped, de-identified text, re-scanned before it leaves. | Tests for no-fallback, unstamped, forged and still-identifiable input; a leakage suite of 181 planted identifiers with 0 reaching the external wire |
 | **Policy as code** | Coverage criteria are reviewed data, locked by content hash. A deterministic engine returns met, not met or unknown, with the sentence that supports each. Missing evidence is never "met". | Agreement with labels on 47 criteria across 11 cases: 1.00. Unknown reported as met: 0. Property tests |
-| **Human in the loop** | Clinician attestation for unknowns; specialist approval required for submission; 30-second undo through an outbox; signing rewrites the draft but never overwrites a person's edit. | API tests for every path; submission without a recorded approval is refused |
+| **Human in the loop** | Clinician attestation for unknowns; specialist approval required for submission; 30-second undo through an outbox; signing rewrites the draft but never overwrites a person's edit. When the payer pends a request and asks for documentation, the clinician writes and signs the note in their own words (or says they cannot), and the reply goes through the same approval and outbox. | API tests for every path; a payer tool sends only what is waiting in the outbox under the approval that put it there, and refuses a note changed after approval |
 | **MCP tool servers** | `ehr`, `documents`, `policies`, `tickets`, `payer`, with role checks and per-step allow-lists on the server side. | Red team: a note-borne injection, a tool called outside its step, a submit without approval, a forged stamp. 0 of 4 succeed |
 | **Append-only audit log** | Hash-chained; the database refuses UPDATE and DELETE. | Tamper tests |
-| **Review UI** | The "Attestation" design system: plain words, 18 px base text with a larger option, status always as icon plus word, red only when under two hours remain. | axe-core (WCAG 2.2 AA rules) on 11 screens with 0 violations; no sideways scroll at 320 px |
+| **Review UI** | The "Attestation" design system: plain words, 18 px base text with a larger option, status always as icon plus word, red only when under two hours remain. | axe-core (WCAG 2.2 AA rules) on 16 screens with 0 violations; no sideways scroll at 320 px |
 | **Eval gate** | `make evals` fails the build if agreement falls below 0.97, or if any unknown is reported as met, any identifier leaks, or any attack succeeds. | CI |
 | **Reproducible data** | 11 scenarios built from Synthea with labels known by construction. | `make data` regenerates the dataset byte for byte; CI checks with `git diff --exit-code` |
 | **Deployment** | Dockerfile, docker-compose (the model on an internal-only network), a Terraform skeleton for AWS. | Compose validated; Checkov 292 passed, 0 failed; Terraform not yet applied |
@@ -114,9 +114,8 @@ simulation. Synthea also runs with the network switched off (`scripts/offline.sh
 
 Fax intake with a vision-language model, and confidence routing (ADR 6). Hybrid retrieval over long packets
 (ADR 5). The Postgres repository, then Temporal (ADR 4). OIDC sign-in in the UI: the API side is done and tested.
-HAPI FHIR and Keycloak in compose. An AWS apply. Judge-scored draft quality. The full red-team corpus. A pended
-case comes back to the queue with the payer's question; the mock payer does not deny yet, so there are no appeal
-drafts.
+HAPI FHIR and Keycloak in compose. An AWS apply. Judge-scored draft quality. The full red-team corpus. The mock
+payer does not deny yet, so there are no appeal drafts.
 
 ## Decisions
 
