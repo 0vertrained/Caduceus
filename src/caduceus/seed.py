@@ -13,6 +13,7 @@ connection whose file has been replaced underneath it.
 from __future__ import annotations
 
 import json
+import sqlite3
 import sys
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
@@ -43,6 +44,20 @@ def fresh_demo_services(settings: Settings) -> Services:
     """A new, seeded data set in memory, for the public demo's start and its scheduled resets."""
     services = build_services(replace(settings, db_path=":memory:"))
     seed(services)
+    return services
+
+
+def clone_demo_services(template: Services, now: datetime, seeded_at: datetime) -> Services:
+    """A visitor's own copy of a seeded template, made in milliseconds instead of seconds: the database is copied,
+    then each case's received and due times move forward by the template's age, so the queue reads as new."""
+    conn = sqlite3.connect(":memory:", check_same_thread=False)
+    template.conn.backup(conn)  # type: ignore[union-attr]
+    services = build_services(replace(template.settings, db_path=":memory:"), conn=conn)
+    services.workflow.now = template.workflow.now
+    age = now - seeded_at
+    for case in services.cases.all():
+        services.cases.save(case.model_copy(update={"received_at": case.received_at + age,
+                                                    "due_at": case.due_at + age}))
     return services
 
 

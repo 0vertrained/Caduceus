@@ -8,9 +8,12 @@ get around the site.
 visitor --> Netlify (UI, security headers) --signed /api/*--> Cloud Run (API, demo mode, 1 instance)
 ```
 
-In demo mode the API serves the 11 synthetic cases from memory with the development sign-in. It goes back to a
-clean queue every 6 hours, on request (at most once a minute), and whenever Cloud Run starts a fresh instance. A
-banner on every page says the patients are synthetic. No model is configured, so drafts come from the
+In demo mode the API serves the 11 synthetic cases from memory with the development sign-in. Each visitor's
+browser gets its own copy of the cases (a random id it keeps and sends with every request), so one visitor's clicks
+never change what another sees. Copies are cloned in milliseconds from a seeded template, at most 60 are kept (the
+least recently used goes first), and each starts over after 6 hours or when its visitor asks. A banner on every page
+says the patients are synthetic, and a guided tour follows one case to the payer's approval, saying who to act as
+at each step. The tour's phone link opens the same copy on another device. No model is configured, so drafts come from the
 deterministic template; to show the PHI router with a real model, run it locally with
 `docker compose --profile llm`.
 

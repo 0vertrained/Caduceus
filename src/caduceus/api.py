@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 import os
+import re
 import threading
+from collections import OrderedDict
 from collections.abc import Callable
 from contextlib import asynccontextmanager
+from contextvars import ContextVar, Token
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -21,8 +25,9 @@ from caduceus.auth import AuthError, Principal, Role
 from caduceus.cases import Case, StaleCase, State
 from caduceus.presenter import Presenter
 from caduceus.ratelimit import DemoLimits
-from caduceus.seed import fresh_demo_services
+from caduceus.seed import clone_demo_services, fresh_demo_services
 from caduceus.tools import ToolForbidden, ToolNotAllowed
+from caduceus.tour import tour
 from caduceus.workflow import ActionRefused
 
 SECURITY_HEADERS = {
@@ -39,28 +44,132 @@ SECURITY_HEADERS = {
 DEMO_RESET_COOLDOWN = timedelta(minutes=1)
 
 
+SANDBOX_ID = re.compile(r"[0-9a-f]{32}")
+MAX_SANDBOXES = 60           # each is a few hundred kilobytes; the least recently used goes first
+TEMPLATE_MAX_AGE = timedelta(hours=6)
+
+
+class TooManySandboxes(Exception):
+    pass
+
+
+@dataclass
+class Sandbox:
+    svc: Services
+    presenter: Presenter
+    last_reset: datetime
+
+
 class Live:
-    """The services the API is serving right now. In demo mode a reset swaps in a freshly seeded set, so the
-    public demo always comes back to a clean queue; handlers read through this holder rather than keep a copy."""
+    """The services the API is serving right now.
+
+    Outside the demo there is one set. In the public demo each visitor's browser sends a random sandbox id and gets
+    its own copy of the seeded cases, so one visitor's clicks never change what another sees. Copies are cloned in
+    milliseconds from a seeded template that is never served, are capped in number, and start over after the reset
+    period. Requests without a sandbox id share one set. A request's sandbox is chosen once, in middleware, and
+    handlers read through this holder."""
 
     def __init__(self, svc: Services, fresh: Callable[[], Services] | None):
-        self._lock = threading.Lock()
+        self._lock, self._template_lock = threading.Lock(), threading.Lock()
         self.fresh = fresh
         self.demo = svc.settings.auth_mode == "demo"
         self.reset_every = timedelta(hours=float(svc.settings.demo_reset_hours)) if self.demo else None
-        self._install(svc)
+        self.shared = self._wrap(svc)
+        self._template: tuple[Services, datetime] | None = None
+        if self.demo:  # a pristine copy, taken before anyone can change the shared set
+            now = svc.workflow.now()
+            self._template = (clone_demo_services(svc, now, now), now)
+        self._sandboxes: OrderedDict[str, Sandbox] = OrderedDict()
+        self._current: ContextVar[Sandbox | None] = ContextVar("sandbox", default=None)
 
-    def _install(self, svc: Services) -> None:
-        self.svc = svc
-        self.presenter = Presenter(svc.store, svc.workflow.library, svc.tz)
-        self.last_reset = svc.workflow.now()
+    @staticmethod
+    def _wrap(svc: Services) -> Sandbox:
+        return Sandbox(svc, Presenter(svc.store, svc.workflow.library, svc.tz), svc.workflow.now())
+
+    @property
+    def current(self) -> Sandbox:
+        return self._current.get() or self.shared
+
+    @property
+    def svc(self) -> Services:
+        return self.current.svc
+
+    @property
+    def presenter(self) -> Presenter:
+        return self.current.presenter
+
+    @property
+    def last_reset(self) -> datetime:
+        return self.current.last_reset
+
+    def enter(self, sandbox_id: str | None, may_create: Callable[[], bool]) -> Token:
+        sandbox = self._sandbox(sandbox_id, may_create) if self.demo and sandbox_id else self.shared
+        return self._current.set(sandbox)
+
+    def leave(self, token: Token) -> None:
+        self._current.reset(token)
+
+    def all(self) -> list[Sandbox]:
+        with self._lock:
+            return [self.shared, *self._sandboxes.values()]
 
     def reset(self) -> None:
+        """Start the current visitor's queue over (or the shared one)."""
         if self.fresh is None:
             raise RuntimeError("only the demo can be reset")
-        fresh = self.fresh()  # built and seeded before the swap, so requests never see a half-made set
+        current = self.current
+        fresh = self._wrap(self._clone(current.svc.workflow.now()))
         with self._lock:
-            self._install(fresh)
+            sid = next((k for k, v in self._sandboxes.items() if v is current), None)
+            if sid is None:
+                self.shared = fresh
+            else:
+                self._sandboxes[sid] = fresh
+        self._current.set(fresh)
+
+    def expire(self) -> None:
+        """Drop visitors' copies older than the reset period, and start the shared set over when it is."""
+        now = self.shared.svc.workflow.now()
+        with self._lock:
+            for sid in [k for k, v in self._sandboxes.items() if now - v.last_reset >= self.reset_every]:
+                del self._sandboxes[sid]
+            stale = now - self.shared.last_reset >= self.reset_every  # type: ignore[operator]
+        if stale:
+            fresh = self._wrap(self._clone(now))
+            with self._lock:
+                self.shared = fresh
+
+    def _sandbox(self, sandbox_id: str, may_create: Callable[[], bool]) -> Sandbox:
+        now = self.shared.svc.workflow.now()
+        with self._lock:
+            sandbox = self._sandboxes.get(sandbox_id)
+            if sandbox is not None and now - sandbox.last_reset < self.reset_every:  # type: ignore[operator]
+                self._sandboxes.move_to_end(sandbox_id)
+                return sandbox
+        if not may_create():
+            raise TooManySandboxes
+        sandbox = self._wrap(self._clone(now))
+        with self._lock:
+            sandbox = self._sandboxes.setdefault(sandbox_id, sandbox)  # two first requests at once share one copy
+            self._sandboxes.move_to_end(sandbox_id)
+            while len(self._sandboxes) > MAX_SANDBOXES:
+                self._sandboxes.popitem(last=False)
+        return sandbox
+
+    def _clone(self, now: datetime) -> Services:
+        with self._template_lock:
+            template, seeded_at = self._template  # type: ignore[misc]
+            if self.fresh is not None and now - seeded_at > TEMPLATE_MAX_AGE:
+                template, seeded_at = self.fresh(), now
+                self._template = (template, seeded_at)
+            return clone_demo_services(template, now, seeded_at)
+
+
+def visitor_of(request: Request) -> str:
+    """Behind Netlify the visitor's address is in the forwarded headers, not the connection."""
+    return (request.headers.get("x-nf-client-connection-ip")
+            or request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+            or (request.client.host if request.client else "unknown"))
 
 
 # Free text is bounded here so a request cannot park megabytes in a case; the workflow gives the friendly limits.
@@ -92,24 +201,26 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
     live = Live(services, fresh_demo)
     stop = threading.Event()
 
-    def safe_dispatch() -> None:
+    def safe_dispatch(svc: Services | None = None) -> None:
         """Reading a case must never fail because sending another one did; failures are audited instead."""
+        svc = svc or live.svc
         try:
-            live.svc.workflow.dispatch_due()
+            svc.workflow.dispatch_due()
         except Exception as e:  # noqa: BLE001
             try:
-                live.svc.audit.append("caduceus-agent", "agent_runtime", "dispatch.error", None,
-                                      {"error": type(e).__name__})
+                svc.audit.append("caduceus-agent", "agent_runtime", "dispatch.error", None,
+                                 {"error": type(e).__name__})
             except Exception:  # noqa: BLE001, S110 - the audit store itself is unavailable; nothing safer to do
                 pass
 
     def dispatcher() -> None:
         while not stop.wait(dispatch_interval or 5.0):
-            safe_dispatch()
+            for sandbox in live.all():
+                safe_dispatch(sandbox.svc)
 
     def demo_resetter() -> None:
-        while not stop.wait(live.reset_every.total_seconds()):  # type: ignore[union-attr]
-            live.reset()
+        while not stop.wait(300):
+            live.expire()
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
@@ -127,14 +238,30 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
     app.state.demo_limits = DemoLimits() if live.demo else None
 
     @app.middleware("http")
+    async def choose_sandbox(request: Request, call_next):
+        """Registered first, so it runs last: only signed requests within the limits reach a visitor's copy."""
+        sandbox_id = request.headers.get("x-caduceus-sandbox")
+        if not live.demo or not request.url.path.startswith("/api/") or request.url.path == "/api/health":
+            sandbox_id = None
+        if sandbox_id is not None and not SANDBOX_ID.fullmatch(sandbox_id):
+            return JSONResponse({"message": "That demo session id is not valid. Reload the page."}, status_code=400)
+        limits = request.app.state.demo_limits
+        try:
+            token = live.enter(sandbox_id, lambda: limits is None or limits.new_sandbox(visitor_of(request)) == 0)
+        except TooManySandboxes:
+            return JSONResponse({"message": "Too many new demo sessions from your address. Wait a few minutes "
+                                            "and try again."}, status_code=429, headers={"Retry-After": "300"})
+        try:
+            return await call_next(request)
+        finally:
+            live.leave(token)
+
+    @app.middleware("http")
     async def limit_demo_requests(request: Request, call_next):
-        """Registered first, so it runs after the signature check: only requests that came through the site
-        count. Behind Netlify the visitor's address is in the forwarded headers, not the connection."""
+        """Runs after the signature check: only requests that came through the site count."""
         limits = request.app.state.demo_limits
         if limits is not None and request.url.path != "/api/health":
-            visitor = (request.headers.get("x-nf-client-connection-ip")
-                       or request.headers.get("x-forwarded-for", "").split(",")[0].strip()
-                       or (request.client.host if request.client else "unknown"))
+            visitor = visitor_of(request)
             wait = limits.check(visitor, write=request.method in ("POST", "PUT", "PATCH", "DELETE"))
             if wait:
                 return JSONResponse({"message": "Too many requests from your address. Wait a few minutes and "
@@ -214,7 +341,8 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
             return {"demo": False}
         return {"demo": True, "reset_every_hours": live.reset_every.total_seconds() / 3600,  # type: ignore[union-attr]
                 "last_reset_at": live.last_reset.isoformat(),
-                "next_reset_at": (live.last_reset + live.reset_every).isoformat()}  # type: ignore[operator]
+                "next_reset_at": (live.last_reset + live.reset_every).isoformat(),  # type: ignore[operator]
+                "tour": tour(live.svc, live.presenter)}
 
     @app.post("/api/demo/reset")
     def demo_reset(who: Principal = Depends(principal)) -> dict:

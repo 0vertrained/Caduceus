@@ -79,6 +79,7 @@ class Services:
     workflow: Workflow
     authenticator: Authenticator
     router: Router | None
+    conn: sqlite3.Connection | None = None
 
 
 def build_services(settings: Settings | None = None, conn: sqlite3.Connection | None = None) -> Services:
@@ -101,4 +102,4 @@ def build_services(settings: Settings | None = None, conn: sqlite3.Connection | 
 
     workflow = Workflow(cases, audit, store, library, engine, Drafter(router, deid), MockPayer())
     auth = Authenticator(s.auth_mode, s.oidc_jwks_url, s.oidc_issuer, s.oidc_audience)
-    return Services(s, ZoneInfo(s.clinic_tz), audit, cases, store, workflow, auth, router)
+    return Services(s, ZoneInfo(s.clinic_tz), audit, cases, store, workflow, auth, router, conn)

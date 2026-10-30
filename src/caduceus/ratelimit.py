@@ -42,6 +42,11 @@ class DemoLimits:
     per_visitor: Window = field(default_factory=lambda: Window(300, 300))
     writes_per_visitor: Window = field(default_factory=lambda: Window(60, 300))
     everyone: Window = field(default_factory=lambda: Window(5_000, 300))
+    new_sandboxes: Window = field(default_factory=lambda: Window(20, 300))
+
+    def new_sandbox(self, visitor: str) -> int:
+        """0 if this visitor may start another demo session now; each one is a copy of the seeded cases."""
+        return self.new_sandboxes.hit(visitor)
 
     def check(self, visitor: str, write: bool) -> int:
         """0 if the request may proceed, otherwise seconds to wait. Checked narrowest first."""

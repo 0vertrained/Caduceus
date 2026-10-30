@@ -167,3 +167,94 @@ def test_health_is_never_limited(demo):
     client, _ = demo
     client.app.state.demo_limits = tight_limits(lambda: 0.0)
     assert all(client.get("/api/health").status_code == 200 for _ in range(20))
+
+
+# Each visitor's own copy --------------------------------------------------------------------------------------
+
+A, B = {"X-Caduceus-Sandbox": "a" * 32}, {"X-Caduceus-Sandbox": "b" * 32}
+
+
+def state(client, case_id: str, sandbox: dict) -> str:
+    return client.get(f"/api/cases/{case_id}", headers=DOLORES | sandbox).json()["state"]
+
+
+def test_visitors_get_their_own_copy_of_the_cases(demo):
+    client, _ = demo
+    client.post("/api/cases/2026-1041/approve", headers=DOLORES | A)
+    assert state(client, "2026-1041", A) == "submitted"
+    assert state(client, "2026-1041", B) == "review" and state(client, "2026-1041", {}) == "review"
+    bad = client.get("/api/me", headers=DOLORES | {"X-Caduceus-Sandbox": "../../etc"})
+    assert bad.status_code == 400
+
+
+def test_starting_over_resets_only_your_own_copy(demo):
+    client, clock = demo
+    for sandbox in (A, B):
+        client.post("/api/cases/2026-1041/approve", headers=DOLORES | sandbox)
+    clock.advance(minutes=2)
+    assert client.post("/api/demo/reset", headers=DOLORES | A).status_code == 200
+    assert state(client, "2026-1041", A) == "review" and state(client, "2026-1041", B) == "approved"
+
+
+def test_a_later_visitor_sees_a_queue_that_just_arrived(demo):
+    client, clock = demo
+    first = client.get("/api/queue", headers=DOLORES | A).json()["groups"][0]["cases"][0]["due"]
+    clock.advance(hours=3)
+    later = client.get("/api/queue", headers=DOLORES | B).json()["groups"][0]["cases"][0]["due"]
+    assert later["words"] == first["words"] == "In 1 hour 30 minutes"
+
+
+def test_copies_expire_and_their_number_is_capped(demo, monkeypatch):
+    import caduceus.api as api
+    client, clock = demo
+    live = client.app.state.live
+    monkeypatch.setattr(api, "MAX_SANDBOXES", 2)
+    for sid in ("1" * 32, "2" * 32, "3" * 32):
+        client.get("/api/me", headers=DOLORES | {"X-Caduceus-Sandbox": sid})
+    assert len(live.all()) == 3  # the shared set and the two most recent copies
+    clock.advance(hours=7)
+    live.expire()
+    assert len(live.all()) == 1
+
+
+def test_new_copies_per_address_are_limited(demo):
+    client, _ = demo
+    client.app.state.demo_limits.new_sandboxes = Window(2, 300, lambda: 0.0)
+    codes = [client.get("/api/me", headers=DOLORES | {"X-Caduceus-Sandbox": f"{i:032x}"}).status_code
+             for i in range(3)]
+    assert codes == [200, 200, 429]
+    assert client.get("/api/me", headers=DOLORES | {"X-Caduceus-Sandbox": f"{0:032x}"}).status_code == 200
+
+
+# The guided tour ----------------------------------------------------------------------------------------------
+
+def test_the_tour_follows_the_headline_case_to_the_payers_approval(demo):
+    client, clock = demo
+    reyes = {"X-Caduceus-User": "dr.reyes"} | A
+
+    def now() -> dict:
+        return client.get("/api/demo", headers=A).json()["tour"]
+
+    def dispatch():
+        clock.advance(seconds=31)
+        client.get("/api/cases/2026-1043", headers=DOLORES | A)  # reading a case sends what is due
+
+    t = now()
+    assert (t["step"], t["actor"], t["path"]) == (1, "dolores", "/cases/2026-1043") and "Kristina Mante" in t["text"]
+    client.post("/api/cases/2026-1043/request-attestation", headers=DOLORES | A)
+    assert (now()["step"], now()["actor_name"]) == (2, "Dr. Ana Reyes")
+    client.post("/api/attestations/2026-1043", headers=reyes, json={"answers": {"red_flags_excluded": "yes"}})
+    assert now()["step"] == 3
+    client.post("/api/cases/2026-1043/approve", headers=DOLORES | A)
+    assert now()["step"] == 4 and now()["waiting"]
+    dispatch()
+    assert now()["step"] == 5
+    client.post("/api/cases/2026-1043/request-note", headers=DOLORES | A)
+    assert (now()["step"], now()["actor"]) == (6, "dr.reyes")
+    client.post("/api/attestations/2026-1043/note", headers=reyes, json={"text": "Red flags ruled out on exam."})
+    assert now()["step"] == 7
+    client.post("/api/cases/2026-1043/send-note", headers=DOLORES | A)
+    assert now()["step"] == 8 and now()["waiting"]
+    dispatch()
+    assert now()["done"] and now()["step"] == now()["steps"]
+    assert client.get("/api/demo", headers=B).json()["tour"]["step"] == 1  # another visitor starts at the start
