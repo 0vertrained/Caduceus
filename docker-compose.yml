@@ -1,0 +1,67 @@
+# Local parity for the deployment in infra/terraform, on one machine.
+#
+#   cp .env.example .env                    # then set CADUCEUS_DEID_KEY
+#   docker compose up --build               # review UI and API on http://127.0.0.1:8000
+#
+# With a local model standing in for the in-VPC model (see README, "Run a local model"):
+#   docker compose --profile llm run --rm model-pull
+#   docker compose --profile llm up --build
+#
+# The model server sits on an internal network with no route to the internet, as the GPU instance sits in an
+# isolated subnet in AWS. Only the API can reach it, and nothing publishes its port.
+
+name: caduceus
+
+services:
+  api:
+    build: .
+    image: caduceus-api:local
+    command: ["sh", "-c", "python -m caduceus.seed --if-missing && exec uvicorn caduceus.api:create_app --factory --host 0.0.0.0 --port 8000"]
+    environment:
+      CADUCEUS_AUTH_MODE: ${CADUCEUS_AUTH_MODE:-dev}
+      CADUCEUS_DEID_KEY: ${CADUCEUS_DEID_KEY:?Set CADUCEUS_DEID_KEY in .env (at least 32 bytes)}
+      CADUCEUS_CLINIC_TZ: ${CADUCEUS_CLINIC_TZ:-America/Denver}
+      CADUCEUS_IN_VPC_URL: ${CADUCEUS_IN_VPC_URL:-}
+      CADUCEUS_IN_VPC_MODEL: ${CADUCEUS_IN_VPC_MODEL:-llama3.1:8b}
+      CADUCEUS_EXTERNAL_API_KEY: ${CADUCEUS_EXTERNAL_API_KEY:-}
+      CADUCEUS_OIDC_JWKS_URL: ${CADUCEUS_OIDC_JWKS_URL:-}
+      CADUCEUS_OIDC_ISSUER: ${CADUCEUS_OIDC_ISSUER:-}
+      CADUCEUS_OIDC_AUDIENCE: ${CADUCEUS_OIDC_AUDIENCE:-}
+    ports:
+      - "127.0.0.1:8000:8000"   # development sign-in is for this machine only
+    volumes:
+      - state:/var/lib/caduceus
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    networks: [edge, model]
+
+  model:
+    profiles: [llm]
+    image: ollama/ollama:0.9.0
+    volumes:
+      - models:/root/.ollama
+    networks: [model]           # internal only: no egress, no published port
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  model-pull:
+    profiles: [llm]
+    image: ollama/ollama:0.9.0
+    entrypoint: ["sh", "-c", "ollama serve & sleep 3 && ollama pull ${CADUCEUS_IN_VPC_MODEL:-llama3.1:8b}"]
+    volumes:
+      - models:/root/.ollama
+    networks: [edge]            # the one container allowed out, and only to download weights
+
+networks:
+  edge: {}
+  model:
+    internal: true
+
+volumes:
+  state: {}
+  models: {}
