@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError, type FaxField, type FaxView } from "../api";
 import { ChevronLeft, CheckCircle, Triangle } from "../components/Icons";
-import { useResource } from "../hooks";
+import { useResource, useTitle } from "../hooks";
 
 /** The part of the page a field was read from, cropped out of the fax image, at a readable size. */
 function Crop({ image, size, box, label }: { image: string; size: [number, number]; box: FaxField["box"]; label: string }) {
@@ -31,6 +31,7 @@ export function IntakePage() {
   const [values, setValues] = useState<Record<string, string>>({});
   const [failure, setFailure] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  useTitle("Check the fax");
 
   useEffect(() => {
     if (data?.fields) setValues(Object.fromEntries(data.fields.map((f) => [f.key, f.value])));

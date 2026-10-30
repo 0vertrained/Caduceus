@@ -5,7 +5,7 @@ import { CheckCircle, Triangle } from "../components/Icons";
 import { Seal } from "../components/Seal";
 import { searchTerm } from "../components/Header";
 import { StatusWord } from "../components/Status";
-import { countWords, useResource } from "../hooks";
+import { countWords, glue, useResource, useTitle } from "../hooks";
 
 function helperKey(me: Me) {
   return `caduceus.helperHidden.${me.id}`;
@@ -57,11 +57,11 @@ function Row({ row }: { row: QueueRow }) {
         <span className="muted">{row.service}. {row.payer}.</span>
       </div>
       <div className="row__due">
-        <span className={`row__due-words${row.due.urgent ? " row__due-words--urgent" : ""}`}>{row.due.words}</span>
-        <span className="support">{row.due.sub}</span>
+        <span className={`row__due-words${row.due.urgent ? " row__due-words--urgent" : ""}`}>{glue(row.due.words)}</span>
+        <span className="support">{glue(row.due.sub)}</span>
       </div>
       <div className="row__status"><StatusWord statusKey={row.status.key} word={row.status.word} /></div>
-      <Link to={`/cases/${row.id}`} className="btn btn--primary"
+      <Link to={`/cases/${row.id}`} className="btn btn--secondary"
             aria-label={`Open case for ${row.patient.name}`}>Open case</Link>
     </li>
   );
@@ -73,7 +73,7 @@ function ClearDesk({ data }: { data: QueueData }) {
       <section className="clear__main" aria-labelledby="clear-title">
         <Seal count={data.counts.approved_today} full />
         <h1 id="clear-title" className="clear__title">Your desk is clear.</h1>
-        <p className="lead" style={{ maxWidth: "30em" }}>
+        <p className="lead clear__lead">
           Nothing needs you right now. When a clinician signs or a payer replies, the case comes back to the top of
           your queue.
         </p>
@@ -95,8 +95,8 @@ function Waiting({ data }: { data: QueueData }) {
       <ul>
         {data.waiting.map((w) => (
           <li key={w.id} className="waiting__item">
-            <Link to={`/cases/${w.id}`} style={{ fontWeight: 700 }}>{w.patient}</Link>
-            <span className="muted">{w.status.word} since {w.since}</span>
+            <Link to={`/cases/${w.id}`} className="waiting__name">{w.patient}</Link>
+            <span className="muted">{w.status.word} since {glue(w.since)}</span>
           </li>
         ))}
       </ul>
@@ -140,6 +140,8 @@ export function QueuePage({ me }: { me: Me }) {
   const [laterOpen, setLaterOpen] = useState(false);
   const term = searchTerm(useLocation().state);
   const q = term.trim().toLowerCase();
+  // The title never carries the search term: it is usually a patient's name.
+  useTitle(q ? "Search results" : data ? `Your queue (${data.counts.open})` : "Your queue");
 
   if (error) return <div className="page"><p role="alert" className="alert">{error.message}</p></div>;
   if (!data) return <div className="page"><p className="muted" role="status">Loading your queue.</p></div>;

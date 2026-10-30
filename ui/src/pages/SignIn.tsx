@@ -1,3 +1,5 @@
+import { useTitle } from "../hooks";
+
 const ROSTER = [
   { id: "dolores", name: "Dolores Montoya", role: "Prior authorization specialist" },
   { id: "dr.reyes", name: "Dr. Ana Reyes", role: "Orthopedics, ordering clinician" },
@@ -7,6 +9,7 @@ const ROSTER = [
 ];
 
 export function SignInPage({ onSignIn }: { onSignIn: (user: string) => void }) {
+  useTitle("Sign in");
   return (
     <div className="signin">
       <h1 className="page-title">Sign in</h1>
@@ -18,7 +21,7 @@ export function SignInPage({ onSignIn }: { onSignIn: (user: string) => void }) {
         {ROSTER.map((u) => (
           <li key={u.id}>
             <button type="button" className="btn btn--secondary btn--large signin__user" onClick={() => onSignIn(u.id)}>
-              <span>{u.name}</span><span className="muted" style={{ fontWeight: 400 }}>{u.role}</span>
+              <span>{u.name}</span><span className="muted signin__role">{u.role}</span>
             </button>
           </li>
         ))}

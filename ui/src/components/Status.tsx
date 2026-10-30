@@ -1,5 +1,6 @@
 import type { StatusKey } from "../api";
 import { CheckCircle, Clock, CrossCircle, Pencil, Triangle } from "./Icons";
+import { SealMark } from "./Seal";
 
 // The status vocabulary from the design system: one icon, one word, one color per meaning.
 const LOOK: Record<StatusKey, { tone: string; Icon: typeof CheckCircle }> = {
@@ -32,11 +33,12 @@ const CRITERION = {
   unmet: { tone: "ink", Icon: CrossCircle, word: "Not met" },
 } as const;
 
-export function CriterionIcon({ status }: { status: keyof typeof CRITERION }) {
+/** A criterion's icon. One a clinician signed for carries the seal instead of a plain check. */
+export function CriterionIcon({ status, signed = false }: { status: keyof typeof CRITERION; signed?: boolean }) {
   const { tone, Icon } = CRITERION[status];
   return (
-    <span className={`status status--${tone}`} style={{ marginTop: 2 }}>
-      <Icon size={26} />
+    <span className={`status status--${tone} criterion__icon`}>
+      {signed && status === "met" ? <SealMark size={26} /> : <Icon size={26} />}
     </span>
   );
 }

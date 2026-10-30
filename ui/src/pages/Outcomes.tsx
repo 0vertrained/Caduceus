@@ -1,4 +1,4 @@
-import { useResource } from "../hooks";
+import { useResource, useTitle } from "../hooks";
 
 interface Outcomes {
   demo: boolean;
@@ -9,6 +9,7 @@ interface Outcomes {
  *  it counts. */
 export function OutcomesPage() {
   const { data, error } = useResource<Outcomes>("/api/outcomes", 15000);
+  useTitle("Outcomes");
   if (error) return <div className="page"><p role="alert" className="alert">{error.message}</p></div>;
   if (!data) return <div className="page"><p role="status" className="muted">Adding it up.</p></div>;
   return (
