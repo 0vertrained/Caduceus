@@ -3,15 +3,18 @@
 # distribution whose packages are patched for known vulnerabilities within days. The Debian-based official
 # Python image carried 236 vulnerabilities with no fix released; CI scans the image on every build.
 
+# Base images are pinned by digest (Dependabot proposes new ones). Wolfi packages installed with apk are
+# the current patched builds at build time, and CI scans the result.
+
 # Build only: nothing from this stage ships except the static UI it produces.
-FROM node:22-bookworm-slim AS ui
+FROM node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da AS ui
 WORKDIR /ui
 COPY ui/package.json ui/package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY ui/ ./
 RUN npm run build
 
-FROM cgr.dev/chainguard/wolfi-base:latest AS python
+FROM cgr.dev/chainguard/wolfi-base:latest@sha256:88a20e2d017bd20cdc0cb3910de603e7bea9512a6c351a8dd3c9df212ab03d73 AS python
 RUN apk add --no-cache python-3.13 py3.13-pip
 WORKDIR /src
 COPY pyproject.toml ./
@@ -20,7 +23,7 @@ COPY src ./src
 RUN python3.13 -m venv --without-pip /opt/venv \
  && python3.13 -m pip --python /opt/venv/bin/python install --no-cache-dir .
 
-FROM cgr.dev/chainguard/wolfi-base:latest
+FROM cgr.dev/chainguard/wolfi-base:latest@sha256:88a20e2d017bd20cdc0cb3910de603e7bea9512a6c351a8dd3c9df212ab03d73
 RUN apk add --no-cache python-3.13 \
  && adduser -D -H -h /app -u 10001 caduceus \
  && mkdir -p /var/lib/caduceus && chown caduceus /var/lib/caduceus
