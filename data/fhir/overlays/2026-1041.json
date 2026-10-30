@@ -1,0 +1,334 @@
+{
+ "resourceType": "Bundle",
+ "id": "fbd3fb3d-363a-596a-b77d-3fee550920e9",
+ "type": "collection",
+ "entry": [
+  {
+   "fullUrl": "urn:uuid:550ffb7f-e830-548a-bec3-4ffb78e8f55c",
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "550ffb7f-e830-548a-bec3-4ffb78e8f55c",
+    "status": "current",
+    "type": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "packet-page",
+       "display": "Referral form"
+      }
+     ],
+     "text": "Referral form"
+    },
+    "subject": {
+     "reference": "Patient/38f8f97e-7033-1a79-2327-1ca7e3e583f2"
+    },
+    "date": "2026-10-26T09:00:00-06:00",
+    "description": "Referral form",
+    "author": [
+     {
+      "display": "Dr. Marcus Lee"
+     }
+    ],
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "title": "Referral form",
+       "data": "UmVxdWVzdGVkIHNlcnZpY2U6IFRvdGFsIGtuZWUgcmVwbGFjZW1lbnQgKENQVCAyNzQ0NykuIERpYWdub3NpczogTTE3LjExLCBwcmltYXJ5IG9zdGVvYXJ0aHJpdGlzIG9mIHRoZSByaWdodCBrbmVlLiBPcmRlcmluZyBjbGluaWNpYW46IERyLiBNYXJjdXMgTGVlLCBPcnRob3BlZGljcy4gUHJpb3JpdHk6IHJvdXRpbmUu"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:ec147f13-7ed0-5814-9e93-5943ae8ed256",
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "ec147f13-7ed0-5814-9e93-5943ae8ed256",
+    "status": "current",
+    "type": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "packet-page",
+       "display": "Visit note"
+      }
+     ],
+     "text": "Visit note"
+    },
+    "subject": {
+     "reference": "Patient/38f8f97e-7033-1a79-2327-1ca7e3e583f2"
+    },
+    "date": "2026-10-08T09:00:00-06:00",
+    "description": "Visit note",
+    "author": [
+     {
+      "display": "Dr. Marcus Lee"
+     }
+    ],
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "title": "Visit note",
+       "data": "T3J0aG9wZWRpYyBjb25zdWx0YXRpb24uIFJpZ2h0IGtuZWUgcGFpbiBmb3Igc2V2ZXJhbCB5ZWFycywgbm93IGxpbWl0aW5nIHdhbGtpbmcgdG8gb25lIGJsb2NrIGFuZCBtYWtpbmcgc3RhaXJzIGRpZmZpY3VsdC4gRXhhbSBzaG93cyBjcmVwaXR1cyBhbmQgcmVkdWNlZCByYW5nZSBvZiBtb3Rpb24u"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:63715bff-666a-5829-bee1-ac3fe970944e",
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "63715bff-666a-5829-bee1-ac3fe970944e",
+    "status": "current",
+    "type": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "packet-page",
+       "display": "Radiology report"
+      }
+     ],
+     "text": "Radiology report"
+    },
+    "subject": {
+     "reference": "Patient/38f8f97e-7033-1a79-2327-1ca7e3e583f2"
+    },
+    "date": "2026-06-12T09:00:00-06:00",
+    "description": "Radiology report",
+    "author": [
+     {
+      "display": "Mesa Verde Imaging"
+     }
+    ],
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "title": "Radiology report",
+       "data": "UmlnaHQga25lZSByYWRpb2dyYXBocywgdGhyZWUgdmlld3MsIHdlaWdodC1iZWFyaW5nLiBNZWRpYWwgam9pbnQtc3BhY2UgbmFycm93aW5nIHdpdGggb3N0ZW9waHl0ZXMsIGNvbnNpc3RlbnQgd2l0aCBtb2RlcmF0ZSB0byBzZXZlcmUgb3N0ZW9hcnRocml0aXMu"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:44a93901-bad3-5d30-87f5-576c12916e49",
+   "resource": {
+    "resourceType": "Procedure",
+    "id": "44a93901-bad3-5d30-87f5-576c12916e49",
+    "status": "completed",
+    "subject": {
+     "reference": "Patient/38f8f97e-7033-1a79-2327-1ca7e3e583f2"
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "73562",
+       "display": "X-ray knee, 3 views"
+      }
+     ],
+     "text": "X-ray knee, 3 views"
+    },
+    "performedDateTime": "2026-06-12T10:00:00-06:00",
+    "extension": [
+     {
+      "url": "http://mesaverde.example/fhir/StructureDefinition/source-sentence",
+      "extension": [
+       {
+        "url": "document",
+        "valueReference": {
+         "reference": "DocumentReference/63715bff-666a-5829-bee1-ac3fe970944e"
+        }
+       },
+       {
+        "url": "sentence",
+        "valueString": "Medial joint-space narrowing with osteophytes, consistent with moderate to severe osteoarthritis."
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:6e53b471-4633-58c2-bb72-845523ee2e0a",
+   "resource": {
+    "resourceType": "Observation",
+    "id": "6e53b471-4633-58c2-bb72-845523ee2e0a",
+    "status": "final",
+    "subject": {
+     "reference": "Patient/38f8f97e-7033-1a79-2327-1ca7e3e583f2"
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "knee-joint-space",
+       "display": "Knee joint space on radiograph"
+      }
+     ],
+     "text": "Knee joint space on radiograph"
+    },
+    "effectiveDateTime": "2026-06-12T10:00:00-06:00",
+    "valueCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "narrowed",
+       "display": "Narrowed"
+      }
+     ],
+     "text": "Narrowed"
+    },
+    "extension": [
+     {
+      "url": "http://mesaverde.example/fhir/StructureDefinition/source-sentence",
+      "extension": [
+       {
+        "url": "document",
+        "valueReference": {
+         "reference": "DocumentReference/63715bff-666a-5829-bee1-ac3fe970944e"
+        }
+       },
+       {
+        "url": "sentence",
+        "valueString": "Medial joint-space narrowing with osteophytes, consistent with moderate to severe osteoarthritis."
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:3f31ee34-e746-5e5f-88d1-474bfa63b687",
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "3f31ee34-e746-5e5f-88d1-474bfa63b687",
+    "status": "current",
+    "type": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "packet-page",
+       "display": "Therapy summary"
+      }
+     ],
+     "text": "Therapy summary"
+    },
+    "subject": {
+     "reference": "Patient/38f8f97e-7033-1a79-2327-1ca7e3e583f2"
+    },
+    "date": "2026-06-01T09:00:00-06:00",
+    "description": "Therapy summary",
+    "author": [
+     {
+      "display": "Mesa Verde Physical Therapy"
+     }
+    ],
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "title": "Therapy summary",
+       "data": "Q29tcGxldGVkIHRoaXJ0ZWVuIHdlZWtzIG9mIHN1cGVydmlzZWQgcGh5c2ljYWwgdGhlcmFweSB3aXRob3V0IGxhc3RpbmcgcmVsaWVmLg=="
+      }
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:3d1cafb0-6cc4-5f09-a7f7-b4a88ab55e15",
+   "resource": {
+    "resourceType": "Procedure",
+    "id": "3d1cafb0-6cc4-5f09-a7f7-b4a88ab55e15",
+    "status": "completed",
+    "subject": {
+     "reference": "Patient/38f8f97e-7033-1a79-2327-1ca7e3e583f2"
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "97110",
+       "display": "Therapeutic exercise"
+      }
+     ],
+     "text": "Therapeutic exercise"
+    },
+    "performedPeriod": {
+     "start": "2026-03-02",
+     "end": "2026-06-01"
+    },
+    "extension": [
+     {
+      "url": "http://mesaverde.example/fhir/StructureDefinition/source-sentence",
+      "extension": [
+       {
+        "url": "document",
+        "valueReference": {
+         "reference": "DocumentReference/3f31ee34-e746-5e5f-88d1-474bfa63b687"
+        }
+       },
+       {
+        "url": "sentence",
+        "valueString": "Completed thirteen weeks of supervised physical therapy without lasting relief."
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:0572d01e-1a75-5d8d-b154-a0171e8e1723",
+   "resource": {
+    "resourceType": "Observation",
+    "id": "0572d01e-1a75-5d8d-b154-a0171e8e1723",
+    "status": "final",
+    "subject": {
+     "reference": "Patient/38f8f97e-7033-1a79-2327-1ca7e3e583f2"
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "functional-limitation",
+       "display": "Functional limitation assessment"
+      }
+     ],
+     "text": "Functional limitation assessment"
+    },
+    "effectiveDateTime": "2026-10-08T10:00:00-06:00",
+    "valueCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "present",
+       "display": "Present"
+      }
+     ],
+     "text": "Present"
+    },
+    "extension": [
+     {
+      "url": "http://mesaverde.example/fhir/StructureDefinition/source-sentence",
+      "extension": [
+       {
+        "url": "document",
+        "valueReference": {
+         "reference": "DocumentReference/ec147f13-7ed0-5814-9e93-5943ae8ed256"
+        }
+       },
+       {
+        "url": "sentence",
+        "valueString": "Right knee pain for several years, now limiting walking to one block and making stairs difficult."
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ]
+}

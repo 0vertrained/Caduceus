@@ -1,0 +1,409 @@
+[
+  {
+    "id": "2026-1043",
+    "patient_id": "71423f9d-174c-489d-b6f7-1b19708b7447",
+    "service_line": "lumbar",
+    "variant": "undocumented_red_flags",
+    "service": {
+      "system": "cpt",
+      "code": "72148",
+      "display": "MRI of the lumbar spine without contrast",
+      "short": "MRI of the lumbar spine"
+    },
+    "criteria_set": "dev-lumbar-mri@2026-09",
+    "as_of": "2026-10-28",
+    "payer": {
+      "name": "Humana Medicare Advantage",
+      "member_id_last4": "8237"
+    },
+    "ordering_clinician": {
+      "id": "pract-reyes",
+      "name": "Dr. Ana Reyes",
+      "specialty": "Orthopedics"
+    },
+    "packet": [
+      "5e2198a7-65f2-5614-942a-8d4b26be1c0d",
+      "ef71281f-97d2-5df3-980c-f8d14eeba1d1",
+      "83d4acde-3b5a-52a7-a11e-e26f0dec2ae9",
+      "05966be1-40b8-572c-bc1f-fa33a199e28c"
+    ],
+    "received": "2026-10-27",
+    "due_in_hours": 1.5,
+    "expected": {
+      "lbp_duration": "met",
+      "conservative_care": "met",
+      "recent_xray": "met",
+      "red_flags_excluded": "unknown"
+    }
+  },
+  {
+    "id": "2026-1041",
+    "patient_id": "38f8f97e-7033-1a79-2327-1ca7e3e583f2",
+    "service_line": "knee",
+    "variant": "all_met",
+    "service": {
+      "system": "cpt",
+      "code": "27447",
+      "display": "Total knee replacement",
+      "short": "Total knee replacement"
+    },
+    "criteria_set": "dev-knee-arthroplasty@2026-09",
+    "as_of": "2026-10-28",
+    "payer": {
+      "name": "Medicare",
+      "member_id_last4": "1638"
+    },
+    "ordering_clinician": {
+      "id": "pract-lee",
+      "name": "Dr. Marcus Lee",
+      "specialty": "Orthopedics"
+    },
+    "packet": [
+      "550ffb7f-e830-548a-bec3-4ffb78e8f55c",
+      "ec147f13-7ed0-5814-9e93-5943ae8ed256",
+      "63715bff-666a-5829-bee1-ac3fe970944e",
+      "3f31ee34-e746-5e5f-88d1-474bfa63b687"
+    ],
+    "received": "2026-10-27",
+    "due_in_hours": 4,
+    "expected": {
+      "oa_diagnosis": "met",
+      "imaging_narrowing": "met",
+      "conservative_12_weeks": "met",
+      "functional_limitation": "met",
+      "no_active_infection": "met"
+    }
+  },
+  {
+    "id": "2026-1038",
+    "patient_id": "0d7ccf4c-93a3-e541-35ca-58427d71da36",
+    "service_line": "cpap",
+    "variant": "mild_with_htn",
+    "service": {
+      "system": "hcpcs",
+      "code": "E0601",
+      "display": "CPAP device for sleep apnea",
+      "short": "CPAP device"
+    },
+    "criteria_set": "dev-cpap-osa@2026-09",
+    "as_of": "2026-10-28",
+    "payer": {
+      "name": "UnitedHealthcare Medicare Advantage",
+      "member_id_last4": "6490"
+    },
+    "ordering_clinician": {
+      "id": "pract-patel",
+      "name": "Dr. Priya Patel",
+      "specialty": "Sleep medicine"
+    },
+    "packet": [
+      "128b87e5-9f2a-5441-876c-43be6b088a95",
+      "5e276819-04fe-53dc-8e74-0121d2407161",
+      "a0681a42-1f55-5dde-b3b2-bb9a6b095079"
+    ],
+    "received": "2026-10-27",
+    "due_in_hours": 4,
+    "expected": {
+      "face_to_face": "met",
+      "osa_diagnosis": "met",
+      "sleep_test": "met",
+      "severity_qualifies": "met"
+    }
+  },
+  {
+    "id": "2026-1036",
+    "patient_id": "642effb8-711b-35ef-6f39-034230ca489b",
+    "service_line": "lumbar",
+    "variant": "all_met",
+    "service": {
+      "system": "cpt",
+      "code": "72148",
+      "display": "MRI of the lumbar spine without contrast",
+      "short": "MRI of the lumbar spine"
+    },
+    "criteria_set": "dev-lumbar-mri@2026-09",
+    "as_of": "2026-10-28",
+    "payer": {
+      "name": "Medicare",
+      "member_id_last4": "3770"
+    },
+    "ordering_clinician": {
+      "id": "pract-reyes",
+      "name": "Dr. Ana Reyes",
+      "specialty": "Orthopedics"
+    },
+    "packet": [
+      "b4553f9a-075a-5386-9677-7963be7dfa71",
+      "b1d38ed8-148e-5a63-b882-5e727811050a",
+      "deaa07d0-c368-5a36-a5d8-a6635e36b6b8",
+      "64d2c0bf-e561-59c3-8f89-45ec26809d89",
+      "880b46ef-4da0-553d-917e-1756cad24fad"
+    ],
+    "received": "2026-10-27",
+    "due_in_hours": 27,
+    "expected": {
+      "lbp_duration": "met",
+      "conservative_care": "met",
+      "recent_xray": "met",
+      "red_flags_excluded": "met"
+    }
+  },
+  {
+    "id": "2026-1035",
+    "patient_id": "e6909de6-be72-cc6f-2df8-fd6352d72aba",
+    "service_line": "cpap",
+    "variant": "no_sleep_eval",
+    "service": {
+      "system": "hcpcs",
+      "code": "E0601",
+      "display": "CPAP device for sleep apnea",
+      "short": "CPAP device"
+    },
+    "criteria_set": "dev-cpap-osa@2026-09",
+    "as_of": "2026-10-28",
+    "payer": {
+      "name": "Medicaid managed care",
+      "member_id_last4": "9470"
+    },
+    "ordering_clinician": {
+      "id": "pract-patel",
+      "name": "Dr. Priya Patel",
+      "specialty": "Sleep medicine"
+    },
+    "packet": [
+      "d0304a02-2b65-5fa0-b7d8-285d4b446fd4",
+      "93197acc-2e8d-54fa-b348-b835809da4f7"
+    ],
+    "received": "2026-10-27",
+    "due_in_hours": 23,
+    "expected": {
+      "face_to_face": "unknown",
+      "osa_diagnosis": "met",
+      "sleep_test": "met",
+      "severity_qualifies": "unknown"
+    }
+  },
+  {
+    "id": "2026-1033",
+    "patient_id": "815e9ac3-c128-1ff7-a9f1-d7159c13f313",
+    "service_line": "knee",
+    "variant": "short_therapy",
+    "service": {
+      "system": "cpt",
+      "code": "27447",
+      "display": "Total knee replacement",
+      "short": "Total knee replacement"
+    },
+    "criteria_set": "dev-knee-arthroplasty@2026-09",
+    "as_of": "2026-10-28",
+    "payer": {
+      "name": "Humana Medicare Advantage",
+      "member_id_last4": "0287"
+    },
+    "ordering_clinician": {
+      "id": "pract-lee",
+      "name": "Dr. Marcus Lee",
+      "specialty": "Orthopedics"
+    },
+    "packet": [
+      "e70c15e5-81d2-5c38-8a3c-9949361a6798",
+      "78e3b390-2ad7-5b4d-95e2-b9b3de11c1ea",
+      "4c9505ec-3525-5199-9aa1-199a364f8da3",
+      "78be5259-e7d1-5bb9-ab6b-ba23e28592db"
+    ],
+    "received": "2026-10-27",
+    "due_in_hours": 98,
+    "expected": {
+      "oa_diagnosis": "met",
+      "imaging_narrowing": "met",
+      "conservative_12_weeks": "unknown",
+      "functional_limitation": "unknown",
+      "no_active_infection": "met"
+    }
+  },
+  {
+    "id": "2026-1031",
+    "patient_id": "ecee7670-05e1-a0b6-2e8e-1f8fa634a8e7",
+    "service_line": "cpap",
+    "variant": "severe",
+    "service": {
+      "system": "hcpcs",
+      "code": "E0601",
+      "display": "CPAP device for sleep apnea",
+      "short": "CPAP device"
+    },
+    "criteria_set": "dev-cpap-osa@2026-09",
+    "as_of": "2026-10-28",
+    "payer": {
+      "name": "Medicare",
+      "member_id_last4": "3619"
+    },
+    "ordering_clinician": {
+      "id": "pract-patel",
+      "name": "Dr. Priya Patel",
+      "specialty": "Sleep medicine"
+    },
+    "packet": [
+      "2eb4152b-e4f5-5f37-b47a-f6777aa435f3",
+      "da40d808-af99-5491-b16c-00b1e91cf2be",
+      "0301027a-042b-58cf-acd7-91fe4b5779a5"
+    ],
+    "received": "2026-10-27",
+    "due_in_hours": 99,
+    "expected": {
+      "face_to_face": "met",
+      "osa_diagnosis": "met",
+      "sleep_test": "met",
+      "severity_qualifies": "met"
+    }
+  },
+  {
+    "id": "2026-1029",
+    "patient_id": "c7f3a83d-c5a5-1e03-f28b-abb5e54744f4",
+    "service_line": "lumbar",
+    "variant": "too_early",
+    "service": {
+      "system": "cpt",
+      "code": "72148",
+      "display": "MRI of the lumbar spine without contrast",
+      "short": "MRI of the lumbar spine"
+    },
+    "criteria_set": "dev-lumbar-mri@2026-09",
+    "as_of": "2026-10-28",
+    "payer": {
+      "name": "UnitedHealthcare Medicare Advantage",
+      "member_id_last4": "2654"
+    },
+    "ordering_clinician": {
+      "id": "pract-reyes",
+      "name": "Dr. Ana Reyes",
+      "specialty": "Orthopedics"
+    },
+    "packet": [
+      "9a67c4fe-0703-5976-a961-e045c0a1ef56",
+      "56e37e6a-6dc7-5bfb-9bd7-b4d01c2ecd8f",
+      "dae0da6c-c654-5bc4-93b3-9a6c75d99bd7",
+      "8c23e004-0a4c-5614-aa52-d9c6a8c5290c"
+    ],
+    "received": "2026-10-27",
+    "due_in_hours": 120,
+    "expected": {
+      "lbp_duration": "unmet",
+      "conservative_care": "unknown",
+      "recent_xray": "met",
+      "red_flags_excluded": "met"
+    }
+  },
+  {
+    "id": "2026-1027",
+    "patient_id": "add383c6-e8b8-dfc3-c9e5-3a961c640cef",
+    "service_line": "knee",
+    "variant": "infection",
+    "service": {
+      "system": "cpt",
+      "code": "27447",
+      "display": "Total knee replacement",
+      "short": "Total knee replacement"
+    },
+    "criteria_set": "dev-knee-arthroplasty@2026-09",
+    "as_of": "2026-10-28",
+    "payer": {
+      "name": "Medicare",
+      "member_id_last4": "5082"
+    },
+    "ordering_clinician": {
+      "id": "pract-lee",
+      "name": "Dr. Marcus Lee",
+      "specialty": "Orthopedics"
+    },
+    "packet": [
+      "85aa3642-c1e3-5678-a113-e26e6756eeab",
+      "2620aba1-cf7d-5cf1-9fc8-9654e964274e",
+      "f8e0363d-b375-58bb-96ec-37770c750b25",
+      "d0b8f1d5-74c9-5832-b613-c6556aa04a75",
+      "b44789b1-0610-5789-8f3e-26490cdc2fe7"
+    ],
+    "received": "2026-10-27",
+    "due_in_hours": 122,
+    "expected": {
+      "oa_diagnosis": "met",
+      "imaging_narrowing": "met",
+      "conservative_12_weeks": "met",
+      "functional_limitation": "met",
+      "no_active_infection": "unmet"
+    }
+  },
+  {
+    "id": "2026-1025",
+    "patient_id": "bab18130-2350-e0ee-2f17-2490d3aff4d2",
+    "service_line": "lumbar",
+    "variant": "stale_xray",
+    "service": {
+      "system": "cpt",
+      "code": "72148",
+      "display": "MRI of the lumbar spine without contrast",
+      "short": "MRI of the lumbar spine"
+    },
+    "criteria_set": "dev-lumbar-mri@2026-09",
+    "as_of": "2026-10-28",
+    "payer": {
+      "name": "Humana Medicare Advantage",
+      "member_id_last4": "6419"
+    },
+    "ordering_clinician": {
+      "id": "pract-reyes",
+      "name": "Dr. Ana Reyes",
+      "specialty": "Orthopedics"
+    },
+    "packet": [
+      "f89742c0-ef67-5237-9301-db607c43c484",
+      "26beb620-81bd-5af7-8ec3-613db2924cc2",
+      "8a482ad0-bb9e-5d29-97b5-7e622d63027b",
+      "2898f65b-cce0-5236-8804-9b921fc94943",
+      "62ad5082-9059-5d02-baed-3f631017d15a"
+    ],
+    "received": "2026-10-27",
+    "due_in_hours": 140,
+    "expected": {
+      "lbp_duration": "met",
+      "conservative_care": "met",
+      "recent_xray": "unmet",
+      "red_flags_excluded": "met"
+    }
+  },
+  {
+    "id": "2026-1023",
+    "patient_id": "3e1fca89-93b6-9113-d57b-d0f76d398cda",
+    "service_line": "cpap",
+    "variant": "no_test",
+    "service": {
+      "system": "hcpcs",
+      "code": "E0601",
+      "display": "CPAP device for sleep apnea",
+      "short": "CPAP device"
+    },
+    "criteria_set": "dev-cpap-osa@2026-09",
+    "as_of": "2026-10-28",
+    "payer": {
+      "name": "Medicare",
+      "member_id_last4": "6782"
+    },
+    "ordering_clinician": {
+      "id": "pract-patel",
+      "name": "Dr. Priya Patel",
+      "specialty": "Sleep medicine"
+    },
+    "packet": [
+      "e8bc9eea-bff9-5389-969e-2a214e9246cf",
+      "33962741-001c-507e-8269-b6a74201ed22"
+    ],
+    "received": "2026-10-27",
+    "due_in_hours": 145,
+    "expected": {
+      "face_to_face": "met",
+      "osa_diagnosis": "met",
+      "sleep_test": "unknown",
+      "severity_qualifies": "unknown"
+    }
+  }
+]
