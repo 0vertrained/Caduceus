@@ -16,6 +16,10 @@ env:
   PYTHON_VERSION: "3.13"
   NODE_VERSION: "22"
   PLAYWRIGHT_VERSION: "1.63.0"
+  PIP_AUDIT_VERSION: "2.10.1"
+  GRYPE_VERSION: "0.120.1"
+  GRYPE_SHA256: "0a9ee97ef5ae2ee953b0a80098105052e846cdbe319a57d808b519c33cd1343d"
+  GRYPE_CHECK_FOR_APP_UPDATE: "false"
 
 jobs:
   python:
@@ -41,6 +45,38 @@ jobs:
         with:
           name: eval-report
           path: evals/reports/latest.json
+
+  dependencies:
+    name: Known vulnerabilities in Python and npm packages
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Python packages, as CI resolves them today (the auditor lives in its own environment)
+        run: |
+          pip install -e '.[dev]'
+          pip freeze --exclude-editable > "$RUNNER_TEMP/requirements.txt"
+          python -m venv "$RUNNER_TEMP/audit"
+          "$RUNNER_TEMP/audit/bin/pip" install "pip-audit==${PIP_AUDIT_VERSION}"
+          "$RUNNER_TEMP/audit/bin/pip-audit" -r "$RUNNER_TEMP/requirements.txt" --no-deps --disable-pip --progress-spinner off
+      - name: UI packages, including build and test tools
+        working-directory: ui
+        run: |
+          npm ci --no-audit --no-fund
+          npm audit --audit-level=low
+      - name: Playwright, at the version the end-to-end job installs
+        run: |
+          mkdir -p "$RUNNER_TEMP/playwright" && cd "$RUNNER_TEMP/playwright"
+          npm init -y > /dev/null
+          npm install --package-lock-only --no-audit --no-fund "playwright@${PLAYWRIGHT_VERSION}"
+          npm audit --audit-level=low
 
   ui:
     name: UI type check and build
@@ -126,6 +162,18 @@ jobs:
           fi
       - if: always()
         run: docker logs api || true
+      - name: Install Grype (pinned release, checksum verified)
+        run: scripts/install_grype.sh
+      - name: Known vulnerabilities in the image (fails on any with a released fix)
+        run: |
+          grype docker:caduceus-api:ci -o json --file grype-image.json
+          python3 scripts/vuln_report.py grype-image.json --label "Container image" --fail-on fixed
+      - name: Keep the image scan
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: grype-image
+          path: grype-image.json
 
   infra:
     name: Terraform format, validate and policy scan
@@ -170,3 +218,17 @@ jobs:
       - run: make data PY=python
       - name: No byte changed
         run: git diff --exit-code --stat -- data/
+      - name: Install Grype (pinned release, checksum verified)
+        run: scripts/install_grype.sh
+      # Synthea runs only here and on developers' machines, offline, to generate synthetic patients. It is never
+      # deployed and reads no real data or network input, so its bundled libraries are reported, not gated.
+      - name: Known vulnerabilities in the Synthea build (reported)
+        run: |
+          grype file:.synthea/synthea.jar -o json --file grype-synthea.json
+          python3 scripts/vuln_report.py grype-synthea.json --label "Synthea (data generator, not shipped)" --fail-on none
+      - name: Keep the Synthea scan
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: grype-synthea
+          path: grype-synthea.json
