@@ -214,7 +214,7 @@ jobs:
         run: CADUCEUS_DEID_KEY=ci-only-placeholder docker compose config --quiet
 
   dataset:
-    name: Dataset regenerates byte-identically
+    name: Synthea builds from source; dataset regenerates byte-identically
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -228,17 +228,22 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: pip install -e .
-      - run: make data PY=python
+      - name: Build Synthea from source with its libraries upgraded
+        run: |
+          make synthea
+          echo "::notice title=Synthea build::$(tail -n 1 .synthea/synthea-build.log 2>/dev/null | cut -c1-200); jar sha256 $(sha256sum .synthea/synthea.jar | cut -d' ' -f1)"
+      - name: Regenerate the dataset (Synthea runs with the network switched off)
+        run: make data PY=python
       - name: No byte changed
         run: git diff --exit-code --stat -- data/
       - name: Install Grype (pinned release, checksum verified)
+        if: ${{ !cancelled() }}
         run: scripts/install_grype.sh
-      # Synthea runs only here and on developers' machines, offline, to generate synthetic patients. It is never
-      # deployed and reads no real data or network input, so its bundled libraries are reported, not gated.
-      - name: Known vulnerabilities in the Synthea build (reported)
+      - name: Known vulnerabilities in the Synthea build (fails on any with a released fix)
+        if: ${{ !cancelled() }}
         run: |
           grype file:.synthea/synthea.jar -o json --file grype-synthea.json
-          python3 scripts/vuln_report.py grype-synthea.json --label "Synthea (data generator, not shipped)" --fail-on none
+          python3 scripts/vuln_report.py grype-synthea.json --label "Synthea (built from source, patched)" --fail-on fixed
       - name: Keep the Synthea scan
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
