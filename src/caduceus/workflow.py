@@ -506,6 +506,25 @@ class Workflow:
         self.audit.append(who.id, who.role, "case.returned", case_id, {"reason_sha256": sha256_of(reason)})
         return self.cases.save(case)
 
+    def resubmit(self, who: Principal, case_id: str) -> Case:
+        """The clinic sent the corrected referral back. Caduceus prepares it again from the start: the record and the
+        policy are checked afresh and the draft rewritten, and anything the record still does not answer goes to the
+        clinician again (signatures given for the referral as it was do not carry over). The earlier exchange with the
+        payer stays in the case history; a resubmission is a new request."""
+        self._require(who, Role.PA_SPECIALIST)
+        case = self._get(case_id)
+        if case.state != State.RETURNED:
+            raise ActionRefused("Only a case returned to the clinic can be marked resubmitted.")
+        self.audit.append(who.id, who.role, "case.resubmitted", case_id,
+                          {"returned_reason_sha256": sha256_of(case.returned_reason or "")})
+        fresh = case.model_copy(update={
+            "state": State.NEW, "returned_reason": None, "draft": None, "attestations": [],
+            "attestation_requested": [], "attestation_requested_at": None, "attestation_requested_by": None,
+            "submission": None, "payer_response": None, "reply": None, "appeal": None, "sent_at": None,
+            "decided_at": None, "last_action": None})
+        self.cases.save(fresh)
+        return self.prepare(case_id)
+
     def undo(self, who: Principal, case_id: str) -> Case:
         case = self._get(case_id)
         last = case.last_action

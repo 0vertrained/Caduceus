@@ -625,7 +625,16 @@ function DecisionBar({ c, setCase, reload }: { c: CaseView; setCase: (c: CaseVie
     actions = <>{undo ?? recall}<Link to="/" className="btn btn--primary btn--large">Next case</Link></>;
   } else if (c.state === "returned") {
     summary = <span><strong>Returned to {c.ordering_clinician.name}.</strong> Reason: {c.returned_reason}</span>;
-    actions = <>{undo}<Link to="/" className="btn btn--primary btn--large">Next case</Link></>;
+    actions = (
+      <>
+        {undo}
+        {c.actions.can_resubmit && (
+          <button type="button" className="btn btn--secondary btn--large" disabled={busy} onClick={() => act("resubmitted")}>
+            The clinic resubmitted</button>
+        )}
+        <Link to="/" className="btn btn--primary btn--large">Next case</Link>
+      </>
+    );
   } else {
     actions = <Link to="/" className="btn btn--primary btn--large">Back to your queue</Link>;
     if (c.state === "approved") summary = <><CheckCircle size={26} /><span><strong>Approved by {c.payer.name}.</strong> Authorization {c.payer_response?.decision.authorization_number}.</span></>;

@@ -470,6 +470,10 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
     def edit_draft(case_id: str, body: DraftBody, who: Principal = Depends(principal)):
         return view(live.svc.workflow.edit_draft(who, load(case_id).id, body.text), who)
 
+    @app.post("/api/cases/{case_id}/resubmitted")
+    def resubmitted(case_id: str, who: Principal = Depends(role(Role.PA_SPECIALIST))):
+        return view(live.svc.workflow.resubmit(who, load(case_id).id), who)
+
     @app.post("/api/cases/{case_id}/recall")
     def recall(case_id: str, who: Principal = Depends(role(Role.PA_SPECIALIST))):
         return view(live.svc.workflow.recall(who, load(case_id).id), who)
