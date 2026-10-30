@@ -32,6 +32,14 @@ await context.addInitScript((id) => {
 }, SANDBOX);
 
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+// With SHOTS_DIR set, clean stills (no caption) are saved at the key moments, for the README.
+const shots = process.env.SHOTS_DIR;
+if (shots) mkdirSync(shots, { recursive: true });
+async function still(page, name) {
+  if (!shots) return;
+  await page.evaluate(() => window.__caption?.(""));
+  await page.screenshot({ path: `${shots}/${name}.png` });
+}
 async function say(page, text, ms = 3200) {
   await page.evaluate((t) => window.__caption?.(t), text);
   await pause(ms);
@@ -50,12 +58,14 @@ let page = await context.newPage();
 await page.goto(base + "/");
 await say(page, "Caduceus prepares prior-authorization requests for a simulated health system. Every patient is synthetic.", 4200);
 await as(page, "Dolores Montoya");
+await still(page, "queue");
 await say(page, "Dolores, a prior-authorization specialist, sees her queue in plain words: who, what, and when it is due.", 4200);
 await page.getByRole("region", { name: "Arrived by fax" }).scrollIntoViewIfNeeded();
 await say(page, "Three referrals arrived by fax. Caduceus read them with OCR inside the clinic's systems; the pages never left.");
 await page.locator('a[href="/intake/FAX-0003"]').click();
 await page.getByRole("heading", { name: "Check the fax" }).waitFor();
 await page.locator(".crop").first().waitFor();
+await still(page, "fax-check");
 await say(page, "This one is a poor copy. Every field Caduceus was unsure of comes to a person, beside the part of the page it came from.", 4800);
 await page.mouse.wheel(0, 500);
 await pause(1500);
@@ -78,13 +88,23 @@ await page.getByRole("heading", { name: "Coverage criteria" }).waitFor();
 await say(page, "Kristina Mante needs a lumbar MRI. Three of four criteria are met, each from a sentence in her chart.", 4000);
 await page.getByRole("button", { name: /^Show the visit note/ }).first().click();
 await page.locator("mark").first().waitFor();
+await still(page, "case-evidence");
 await say(page, "Every “met” opens the page and highlights the sentence that supports it.", 3600);
 await page.getByRole("button", { name: "Back to the draft" }).click();
+const sent = page.getByRole("button", { name: "See what was sent" });
+if (await sent.isVisible().catch(() => false)) {
+  await sent.click();
+  await page.getByRole("heading", { name: "What was sent to the model" }).waitFor();
+  await still(page, "sent-to-model");
+  await say(page, "A model wrote the draft from her facts with every identifier taken out. This is exactly what it saw.", 4400);
+  await page.getByRole("button", { name: "Back to the draft" }).click();
+}
 await say(page, "Nothing in her record says red-flag symptoms were ruled out, so nothing is assumed: the ordering clinician is asked.", 4200);
 await page.getByRole("button", { name: /to attest$/ }).click();
 await status(page, "This case comes back to you").waitFor();
 await page.getByRole("region", { name: "Guided tour" }).getByRole("button", { name: /^Switch to Dr\. Ana Reyes/ }).click();
 await page.getByLabel("Yes, I confirm this").waitFor();
+await still(page, "attest");
 await say(page, "Dr. Reyes answers one question on one screen, usually from her phone, and signs with her own name.", 3800);
 await page.getByLabel("Yes, I confirm this").check();
 await page.getByRole("button", { name: "Sign and return" }).click();
@@ -103,6 +123,7 @@ await pause(36_000);
 page = await context.newPage();
 await page.goto(base + "/cases/2026-1043");
 await page.getByRole("heading", { name: /asked a question$/ }).waitFor({ timeout: 60_000 });
+await still(page, "payer-question");
 await say(page, "Humana pended it: it wants the clinical note behind Dr. Reyes's answer. Caduceus never writes that note for her.", 4400);
 await page.getByRole("button", { name: /^Ask Dr\. Ana Reyes for the note$/ }).click();
 await status(page, "comes back to you when they sign it").waitFor();
@@ -128,6 +149,9 @@ await status(page, /^Approved by /).waitFor({ timeout: 60_000 });
 await say(page, "Humana approved it, within the 7-day limit the CMS prior authorization rule sets.", 3400);
 await page.goto(base + "/cases/2026-1038");
 await page.getByRole("heading", { name: /denied it$/ }).waitFor({ timeout: 60_000 });
+await page.mouse.wheel(0, 250);
+await still(page, "denial");
+await page.mouse.wheel(0, -250);
 await say(page, "UnitedHealthcare denied a CPAP request: AHI 9 is below 15. But its own policy covers 5 to 14 with hypertension.", 4400);
 await page.mouse.wheel(0, 350);
 await say(page, "Caduceus drafted the appeal from the payer's reason, the policy sentence and the record. A person sends it.", 4200);
@@ -137,9 +161,11 @@ await page.goto(base + "/cases/2026-1043");
 await page.getByRole("button", { name: "Show the history" }).click();
 await page.getByText("Asked Dr. Ana Reyes for the note the payer wants.").waitFor();
 await page.getByRole("heading", { name: "Case history" }).scrollIntoViewIfNeeded();
+await still(page, "history");
 await say(page, "Every step, who took it and when, sealed to the one before. An auditor can check that none of it was changed.", 4400);
 await page.goto(base + "/outcomes");
 await page.getByRole("heading", { name: "Where patient information went" }).waitFor();
+await still(page, "outcomes");
 await say(page, "The outcomes page is counted from that log: nothing estimated. Try it yourself at caduceusdemo.netlify.app.", 5000);
 await page.close();
 
