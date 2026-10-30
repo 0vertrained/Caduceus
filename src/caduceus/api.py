@@ -13,7 +13,7 @@ import jwt
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from caduceus.app_factory import Services, Settings, build_services
 from caduceus.audit.log import TamperDetected
@@ -63,8 +63,9 @@ class Live:
             self._install(fresh)
 
 
+# Free text is bounded here so a request cannot park megabytes in a case; the workflow gives the friendly limits.
 class ReturnBody(BaseModel):
-    reason: str
+    reason: str = Field(max_length=2_000)
 
 
 class AttestBody(BaseModel):
@@ -72,7 +73,7 @@ class AttestBody(BaseModel):
 
 
 class DraftBody(BaseModel):
-    text: str
+    text: str = Field(max_length=20_000)
 
 
 def create_app(services: Services | None = None, dispatch_interval: float | None = 5.0,
