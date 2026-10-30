@@ -15,27 +15,12 @@ from caduceus.criteria.dsl import CriteriaSet
 from caduceus.drafting import age_on, patient_name
 from caduceus.fhir.store import FhirStore, document_text
 from caduceus.payer import RULE_PLANS, STANDARD_DECISION_DAYS
+from caduceus.words import clock, long_date, moment, took
 from caduceus.workflow import NOTE_LIMIT, UNDO_SECONDS, approve_blocked_reason
 
+__all__ = ["Presenter", "clock", "due", "long_date", "moment", "status", "summary_sentence", "took"]
+
 URGENT = timedelta(hours=2)
-
-
-def clock(dt: datetime, tz: ZoneInfo) -> str:
-    t = dt.astimezone(tz)
-    if t.hour == 12 and t.minute == 0:
-        return "noon"
-    return f"{t.hour % 12 or 12}:{t.minute:02d} {'am' if t.hour < 12 else 'pm'}"
-
-
-def long_date(d: date) -> str:
-    return f"{d:%B} {d.day}, {d.year}"
-
-
-def moment(dt: datetime | str, now: datetime, tz: ZoneInfo) -> str:
-    """'today at 1:12 pm', or 'October 28, 2026 at 9:05 am' for another day."""
-    dt = datetime.fromisoformat(dt) if isinstance(dt, str) else dt
-    day = dt.astimezone(tz).date()
-    return f"{'today' if day == now.astimezone(tz).date() else long_date(day)} at {clock(dt, tz)}"
 
 
 def due(due_at: datetime, now: datetime, tz: ZoneInfo) -> dict[str, Any]:
@@ -86,16 +71,6 @@ def status(case: Case) -> dict[str, str]:
 
 
 ACTIVE = {State.REVIEW, State.PENDED, State.DENIED}
-
-
-def took(delta: timedelta) -> str:
-    minutes = int(delta.total_seconds() // 60)
-    if minutes < 1:
-        return "under a minute"
-    if minutes < 120:
-        return f"{minutes} minute{'s' if minutes != 1 else ''}"
-    hours = minutes // 60
-    return f"{hours} hours" if hours < 48 else f"{hours // 24} days"
 
 
 def payer_clock(case: Case, now: datetime, tz: ZoneInfo) -> dict[str, Any] | None:

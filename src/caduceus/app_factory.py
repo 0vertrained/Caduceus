@@ -131,11 +131,12 @@ def build_services(settings: Settings | None = None, conn: sqlite3.Connection | 
         external = CachingProvider(external, recordings, model=s.external_model)
     router = Router(in_vpc, external, deid) if (in_vpc or external) else None
 
+    tz = ZoneInfo(s.clinic_tz)
     workflow = Workflow(cases, audit, store, library, engine, Drafter(router, deid),
                         MockPayer(published=load_lock(policies)), faxes=FaxRepository(conn),
-                        catalog=_catalog(s.data_dir), fax_dir=s.data_dir / "faxes")
+                        catalog=_catalog(s.data_dir), fax_dir=s.data_dir / "faxes", tz=tz)
     auth = Authenticator(s.auth_mode, s.oidc_jwks_url, s.oidc_issuer, s.oidc_audience)
-    return Services(s, ZoneInfo(s.clinic_tz), audit, cases, store, workflow, auth, router, conn)
+    return Services(s, tz, audit, cases, store, workflow, auth, router, conn)
 
 
 def _catalog(data_dir: Path) -> dict[str, Any]:
