@@ -115,6 +115,44 @@ class Case(BaseModel):
                 and (self.requirements is None or bool(self.requirements.get("matches"))))
 
 
+class Fax(BaseModel):
+    """A faxed referral cover sheet waiting in the intake inbox, and what was read from it."""
+    id: str
+    file: str
+    pages: list[str]                       # the referral's clinical pages that came with it
+    received_at: datetime
+    due_in_hours: float = 72
+    as_of: str
+    status: str = "received"               # received, read, confirmed
+    reading: dict[str, Any] | None = None  # OCR fields with confidence, region and any reason to check
+    case_id: str | None = None
+
+
+class FaxRepository:
+    def __init__(self, conn: sqlite3.Connection):
+        self._conn = conn
+        self._lock = threading.Lock()
+        with self._lock:
+            conn.execute("CREATE TABLE IF NOT EXISTS faxes (id TEXT PRIMARY KEY, data TEXT)")
+            conn.commit()
+
+    def save(self, fax: Fax) -> Fax:
+        with self._lock:
+            self._conn.execute("INSERT OR REPLACE INTO faxes(id, data) VALUES (?, ?)", (fax.id, fax.model_dump_json()))
+            self._conn.commit()
+        return fax
+
+    def get(self, fax_id: str) -> Fax | None:
+        with self._lock:
+            row = self._conn.execute("SELECT data FROM faxes WHERE id = ?", (fax_id,)).fetchone()
+        return Fax.model_validate(json.loads(row[0])) if row else None
+
+    def all(self) -> list[Fax]:
+        with self._lock:
+            rows = self._conn.execute("SELECT data FROM faxes ORDER BY id").fetchall()
+        return [Fax.model_validate(json.loads(r[0])) for r in rows]
+
+
 class StaleCase(Exception):
     pass
 

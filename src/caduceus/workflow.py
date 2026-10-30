@@ -11,18 +11,21 @@ specialist approves the reply, and the agent sends it after the undo window.
 
 from __future__ import annotations
 
+import re
 import threading
 from collections.abc import Callable
 from datetime import UTC, date, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 from caduceus.audit.log import AuditLog, sha256_of
 from caduceus.auth import AGENT, Principal, Role
-from caduceus.cases import Attestation, Case, CaseRepository, LastAction, State
+from caduceus.cases import Attestation, Case, CaseRepository, FaxRepository, LastAction, State
 from caduceus.criteria.dsl import CriteriaSet
 from caduceus.criteria.engine import Engine
 from caduceus.drafting import Drafter
 from caduceus.fhir.store import FhirStore
+from caduceus.intake import LABELS, check, iso_date, read_fax
 from caduceus.payer import MockPayer, build_appeal_bundle, build_reply_bundle, build_request_bundle
 from caduceus.tools import ToolGateway, build_gateway
 
@@ -39,13 +42,17 @@ class ActionRefused(Exception):
 class Workflow:
     def __init__(self, cases: CaseRepository, audit: AuditLog, store: FhirStore, library: dict[str, CriteriaSet],
                  engine: Engine, drafter: Drafter, payer: MockPayer,
-                 clock: Callable[[], datetime] = lambda: datetime.now(UTC)):
+                 clock: Callable[[], datetime] = lambda: datetime.now(UTC), faxes: FaxRepository | None = None,
+                 catalog: dict[str, Any] | None = None, fax_dir: Path | None = None):
         self.cases, self.audit, self.store, self.library = cases, audit, store, library
         self.engine, self.drafter, self.payer, self.now = engine, drafter, payer, clock
+        self.faxes, self.fax_dir = faxes, fax_dir
+        # What a referral may name: the services this team handles, the payers, the ordering clinicians on file.
+        self.catalog = catalog or {"services": {}, "clinicians": {}, "payers": set()}
         self._dispatch_lock = threading.Lock()  # one dispatcher at a time: a request is never sent twice
         self.gateway: ToolGateway = build_gateway(audit, store, library, self._set_state, self._submit,
                                                   self._payer_status, self._respond, self._appeal,
-                                                  self.payer.coverage_requirements)
+                                                  self.payer.coverage_requirements, self._read_fax)
 
     # Agent ---------------------------------------------------------------------------------------------
 
@@ -236,6 +243,74 @@ class Workflow:
                            "approved_by_id": who.id, "approved_at": self.now().isoformat(), "sent": False,
                            "send_after": (self.now() + timedelta(seconds=UNDO_SECONDS)).isoformat()}
         return self.cases.save(case)
+
+    # Faxed referrals -----------------------------------------------------------------------------------
+
+    def known(self) -> dict[str, set[str]]:
+        return {"payers": set(self.catalog["payers"]), "clinicians": set(self.catalog["clinicians"]),
+                "codes": set(self.catalog["services"])}
+
+    def read_faxes(self) -> list[str]:
+        """The agent reads each fax that has arrived, with OCR inside the boundary, and marks what a person must
+        check. Safe to call often: a fax is read once."""
+        read = []
+        for fax in (self.faxes.all() if self.faxes else []):
+            if fax.status != "received":
+                continue
+            reading = self.gateway.call(AGENT, fax.id, "intake", "documents.read_fax", fax_file=fax.file)
+            fields = check(reading["fields"], self.known())
+            fax.reading, fax.status = reading | {"fields": fields}, "read"
+            self.faxes.save(fax)
+            self.audit.append(AGENT.id, AGENT.role, "fax.read", fax.id,
+                              {"sha256": reading["sha256"], "fields": len(fields),
+                               "to_check": sum(1 for f in fields if f["problem"])})
+            read.append(fax.id)
+        return read
+
+    def confirm_fax(self, who: Principal, fax_id: str, values: dict[str, str]) -> Case:
+        """A person confirms the fields (correcting any) against the page; only then is the case created."""
+        self._require(who, Role.PA_SPECIALIST)
+        fax = self.faxes.get(fax_id) if self.faxes else None
+        if fax is None:
+            raise KeyError(fax_id)
+        if fax.status != "read":
+            raise ActionRefused("This fax has already been turned into a case." if fax.status == "confirmed"
+                                else "Caduceus has not read this fax yet.")
+        values = {key: str(values.get(key) or "").strip() for key, _ in LABELS}
+        entered = [{"key": k, "label": label, "value": values[k], "confidence": 1.0, "box": None}
+                   for k, label in LABELS]
+        problems = [f for f in check(entered, self.known()) if f["problem"]]
+        if problems:
+            raise ActionRefused(f"Check the {problems[0]['label'].lower()}: {problems[0]['problem']}")
+        patient_id = self.store.find_patient(values["patient_name"], iso_date(values["birth_date"]) or "")
+        if patient_id is None:
+            raise ActionRefused(f"No patient named {values['patient_name']} born {values['birth_date']} is in the "
+                                "record. Check the name and date of birth against the fax.")
+        if self.cases.get(values["referral"]) is not None:
+            raise ActionRefused(f"A case for referral {values['referral']} already exists.")
+        service = self.catalog["services"][values["service_code"]]
+        read = {f["key"]: f for f in (fax.reading or {}).get("fields", [])}
+        case = Case(id=values["referral"], patient_id=patient_id,
+                    service={k: service[k] for k in ("system", "code", "display", "short")},
+                    criteria_set=service["criteria_set"], as_of=fax.as_of,
+                    payer={"name": values["payer"], "member_id_last4": values["member_id"][-4:]},
+                    ordering_clinician=self.catalog["clinicians"][values["clinician"]], packet=fax.pages,
+                    received_at=fax.received_at, due_at=fax.received_at + timedelta(hours=fax.due_in_hours))
+        self.cases.save(case)
+        self.audit.append(who.id, who.role, "fax.confirmed", fax.id, {
+            "case": case.id, "checked": [k for k, f in read.items() if f.get("problem")],
+            "corrected": [k for k in values if values[k] != read.get(k, {}).get("value")]})
+        self.audit.append("intake", "agent_runtime", "case.received", case.id,
+                          {"service": case.service["code"], "pages": len(case.packet), "from": fax.id})
+        fax.status, fax.case_id = "confirmed", case.id
+        self.faxes.save(fax)
+        return self.prepare(case.id)
+
+    def _read_fax(self, fax_file: str) -> dict[str, Any]:
+        """The documents.read_fax tool. Reads only the intake folder's own fax images."""
+        if self.fax_dir is None or not re.fullmatch(r"FAX-\d{4}\.png", fax_file):
+            raise ActionRefused("There is no such fax.")
+        return read_fax(self.fax_dir / fax_file)
 
     def _draft_appeal(self, case_id: str) -> None:
         """After a denial the agent drafts the appeal from the payer's reason, the policy and the record."""

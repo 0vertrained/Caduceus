@@ -12,6 +12,7 @@ from contextvars import ContextVar, Token
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Annotated
 
 import jwt
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
@@ -22,8 +23,9 @@ from pydantic import BaseModel, Field
 from caduceus.app_factory import Services, Settings, build_services
 from caduceus.audit.log import TamperDetected
 from caduceus.auth import AuthError, Principal, Role
-from caduceus.cases import Case, StaleCase, State
-from caduceus.presenter import Presenter
+from caduceus.cases import Case, Fax, StaleCase, State
+from caduceus.intake import FaxReadingUnavailable
+from caduceus.presenter import Presenter, moment
 from caduceus.ratelimit import DemoLimits
 from caduceus.seed import clone_demo_services, fresh_demo_services
 from caduceus.timeline import timeline
@@ -192,6 +194,10 @@ class NoteBody(BaseModel):
 
 class AppealBody(BaseModel):
     text: str = Field(max_length=20_000)
+
+
+class ConfirmFaxBody(BaseModel):
+    values: dict[str, Annotated[str, Field(max_length=300)]] = Field(max_length=20)
 
 
 def create_app(services: Services | None = None, dispatch_interval: float | None = 5.0,
@@ -445,6 +451,55 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
         events = live.svc.audit.events(case_id)
         return {"events": len(events), "can_verify": who.role in (Role.AUDITOR, Role.ADMIN),
                 "entries": timeline(events, case.ordering_clinician["name"], live.svc.tz, now())}
+
+    def fax_view(fax: Fax, detail: bool = False) -> dict:
+        fields = (fax.reading or {}).get("fields", [])
+        by_key = {f["key"]: f for f in fields}
+        out = {"id": fax.id, "status": fax.status, "received": moment(fax.received_at, now(), live.svc.tz),
+               "pages": len(fax.pages) + 1, "referral": by_key.get("referral", {}).get("value"),
+               "patient": by_key.get("patient_name", {}).get("value"),
+               "to_check": sum(1 for f in fields if f.get("problem")), "case_id": fax.case_id}
+        if detail:
+            out |= {"fields": fields, "size": (fax.reading or {}).get("size"),
+                    "engine": (fax.reading or {}).get("engine"), "image": f"/api/intake/{fax.id}/image"}
+        return out
+
+    def read_new_faxes() -> bool:
+        try:
+            live.svc.workflow.read_faxes()
+            return True
+        except FaxReadingUnavailable:
+            return False
+
+    def load_fax(fax_id: str) -> Fax:
+        fax = live.svc.workflow.faxes.get(fax_id) if live.svc.workflow.faxes else None
+        if fax is None:
+            raise HTTPException(404, "There is no fax with that number.")
+        return fax
+
+    @app.get("/api/intake")
+    def intake(who: Principal = Depends(role(Role.PA_SPECIALIST, Role.ADMIN, Role.AUDITOR))):
+        available = read_new_faxes()
+        faxes = live.svc.workflow.faxes.all() if live.svc.workflow.faxes else []
+        return {"available": available, "faxes": [fax_view(f) for f in faxes]}
+
+    @app.get("/api/intake/{fax_id}")
+    def intake_item(fax_id: str, who: Principal = Depends(role(Role.PA_SPECIALIST, Role.ADMIN, Role.AUDITOR))):
+        read_new_faxes()
+        fax = load_fax(fax_id)
+        live.svc.audit.append(who.id, who.role, "fax.viewed", fax.id)
+        return fax_view(fax, detail=True)
+
+    @app.get("/api/intake/{fax_id}/image")
+    def intake_image(fax_id: str, who: Principal = Depends(role(Role.PA_SPECIALIST, Role.ADMIN, Role.AUDITOR))):
+        fax = load_fax(fax_id)
+        return FileResponse(live.svc.workflow.fax_dir / fax.file, media_type="image/png")  # type: ignore[operator]
+
+    @app.post("/api/intake/{fax_id}/confirm")
+    def confirm_fax(fax_id: str, body: ConfirmFaxBody, who: Principal = Depends(principal)):
+        load_fax(fax_id)
+        case = live.svc.workflow.confirm_fax(who, fax_id, body.values)
+        return {"case_id": case.id}
 
     @app.get("/api/attestations")
     def my_attestations(who: Principal = Depends(role(Role.CLINICIAN))):

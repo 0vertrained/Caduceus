@@ -1,0 +1,47 @@
+{
+  "FAX-0001": {
+    "file": "FAX-0001.png",
+    "quality": "clean",
+    "expected": {
+      "referral": "2026-1023",
+      "patient_name": "Federico Gurule",
+      "birth_date": "03/16/1966",
+      "member_id": "MV366456782",
+      "payer": "Medicare",
+      "clinician": "Dr. Priya Patel",
+      "service_code": "E0601",
+      "service": "CPAP device for sleep apnea",
+      "diagnosis": "G47.33 Obstructive sleep apnea"
+    }
+  },
+  "FAX-0002": {
+    "file": "FAX-0002.png",
+    "quality": "typical",
+    "expected": {
+      "referral": "2026-1027",
+      "patient_name": "Amalia Fonseca",
+      "birth_date": "03/05/1950",
+      "member_id": "MV840975082",
+      "payer": "Medicare",
+      "clinician": "Dr. Marcus Lee",
+      "service_code": "27447",
+      "service": "Total knee replacement",
+      "diagnosis": "M17.11 Primary osteoarthritis, right knee"
+    }
+  },
+  "FAX-0003": {
+    "file": "FAX-0003.png",
+    "quality": "degraded",
+    "expected": {
+      "referral": "2026-1029",
+      "patient_name": "Shelba Gulgowski",
+      "birth_date": "03/09/1941",
+      "member_id": "MV084522654",
+      "payer": "UnitedHealthcare Medicare Advantage",
+      "clinician": "Dr. Ana Reyes",
+      "service_code": "72148",
+      "service": "MRI of the lumbar spine without contrast",
+      "diagnosis": "M54.50 Low back pain, unspecified"
+    }
+  }
+}
