@@ -98,6 +98,26 @@ index ea05bdd..358e997 100755
      TypeDescription simConfigDescription = new TypeDescription(SimConfig.class);
      simConfigDescription.addPropertyParameters("charts", MultiTableChartConfig.class);
      constructor.addTypeDescription(simConfigDescription);
+diff --git a/src/main/java/org/mitre/synthea/export/flexporter/CustomFHIRPathResourceGeneratorR4.java b/src/main/java/org/mitre/synthea/export/flexporter/CustomFHIRPathResourceGeneratorR4.java
+index 05f62aa..538a0b2 100644
+--- a/src/main/java/org/mitre/synthea/export/flexporter/CustomFHIRPathResourceGeneratorR4.java
++++ b/src/main/java/org/mitre/synthea/export/flexporter/CustomFHIRPathResourceGeneratorR4.java
+@@ -17,12 +17,12 @@ import java.util.Stack;
+ import org.hl7.fhir.instance.model.api.IBase;
+ import org.hl7.fhir.instance.model.api.ICompositeType;
+ import org.hl7.fhir.instance.model.api.IPrimitiveType;
++import org.hl7.fhir.r4.fhirpath.ExpressionNode;
++import org.hl7.fhir.r4.fhirpath.ExpressionNode.Kind;
++import org.hl7.fhir.r4.fhirpath.FHIRPathEngine;
+ import org.hl7.fhir.r4.hapi.ctx.HapiWorkerContext;
+-import org.hl7.fhir.r4.model.ExpressionNode;
+-import org.hl7.fhir.r4.model.ExpressionNode.Kind;
+ import org.hl7.fhir.r4.model.IntegerType;
+ import org.hl7.fhir.r4.model.Resource;
+-import org.hl7.fhir.r4.utils.FHIRPathEngine;
+ import org.mitre.synthea.export.FhirR4;
+ 
+ 
 diff --git a/src/main/java/org/mitre/synthea/export/flexporter/Mapping.java b/src/main/java/org/mitre/synthea/export/flexporter/Mapping.java
 index 76f90a9..dcc8d59 100644
 --- a/src/main/java/org/mitre/synthea/export/flexporter/Mapping.java

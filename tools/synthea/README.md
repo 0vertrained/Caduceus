@@ -9,8 +9,9 @@ jar is built here instead:
   applies `synthea.patch`, and builds the same `uberJar` upstream publishes.
 - `synthea.patch` changes library versions and nothing else in the simulation: HAPI FHIR 8.12.1 (HL7 FHIR core
   6.9.12), Jackson 2.22.4 for every module, Guava 33.7.2, SnakeYAML 2.5, commons-text 1.15.0, Log4j 2.26.1, and
-  constraints that lift transitive libraries to fixed releases. SnakeYAML 2 needs explicit `LoaderOptions`, which
-  is the patch's only source change (three lines).
+  constraints that lift transitive libraries to fixed releases. Two source changes follow the libraries' own API
+  changes: SnakeYAML 2 needs explicit `LoaderOptions` (three lines), and HL7 FHIR core 6 moved its FHIRPath
+  classes to `org.hl7.fhir.r4.fhirpath` (imports in the flexporter, which `make data` does not use).
 
 Two checks keep this honest: CI fails if Grype finds any vulnerability with a released fix in the built jar, and
 the dataset must regenerate byte for byte, which shows the upgrades did not change what Synthea generates. The
