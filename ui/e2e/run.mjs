@@ -90,6 +90,29 @@ if (!(await page.evaluate(() => document.activeElement?.id === "fax-member_id"))
 }
 await shot(page, "02d-fax-errors");
 await axe(page, "02d-fax-errors");
+// Not on the fax: marked on the field, the request to the clinic is written, and the fax waits for their answer.
+await page.getByRole("button", { name: "Not on the fax: ask the clinic for the member ID" }).click();
+await page.getByRole("region", { name: "Ask Mesa Verde Orthopedics, Santa Fe" }).waitFor();
+await page.getByRole("button", { name: "Ask the clinic for it" }).click();
+await page.getByRole("heading", { name: "Waiting on Mesa Verde Orthopedics, Santa Fe" }).waitFor();
+if (await page.locator(".asked .paper").getByText(/Shelba|Gulgowski/).count()) report.failures.push("clinic request names the patient");
+await shot(page, "02e-fax-asked");
+await axe(page, "02e-fax-asked");
+// The whole page, larger.
+await page.getByRole("button", { name: "View the whole fax" }).click();
+await page.getByRole("button", { name: "Zoom in" }).click();
+await page.getByRole("region", { name: "The fax page, at 150%" }).waitFor();
+await page.getByRole("region", { name: "The fax page, at 150%" }).locator("img").waitFor();
+await shot(page, "02f-fax-whole");
+await axe(page, "02f-fax-whole");
+await page.getByRole("button", { name: "Hide the whole fax" }).click();
+await page.getByRole("link", { name: "Back to your queue" }).click();
+await page.getByRole("region", { name: "Arrived by fax" }).getByText("Waiting on Mesa Verde Orthopedics, Santa Fe").first().waitFor();
+await shot(page, "02g-queue-fax-waiting");
+await axe(page, "02g-queue-fax-waiting");
+await page.locator('a[href="/intake/FAX-0003"]').click();
+await page.getByRole("button", { name: "The clinic sent it" }).click();
+await page.getByRole("button", { name: "Create the case" }).waitFor();
 // Text where the fax has text, lists for the plan, the clinician and the service, three boxes for the date.
 const want = faxes["FAX-0003"].expected;
 for (const [key, label] of Object.entries({ referral: "Referral number", patient_name: "Patient name",
@@ -113,8 +136,8 @@ const check = page.getByRole("region", { name: "The patient in the chart" });
 await check.getByText(/^This is Shelba Gulgowski/).first().waitFor();
 await page.getByLabel("Year", { exact: true }).fill("1942");
 await check.getByText("The date of birth differs.").first().waitFor();
-await shot(page, "02e-fax-chart");
-await axe(page, "02e-fax-chart");
+await shot(page, "02h-fax-chart");
+await axe(page, "02h-fax-chart");
 await check.getByRole("button", { name: /^Use the chart’s value/ }).click();
 await check.getByRole("button", { name: "Yes, this is the patient" }).click();
 await check.getByText("Confirmed as the patient").first().waitFor();

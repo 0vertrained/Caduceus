@@ -25,10 +25,10 @@ from caduceus.criteria.dsl import CriteriaSet
 from caduceus.criteria.engine import Engine
 from caduceus.drafting import Drafter, mid_sentence, patient_name
 from caduceus.fhir.store import FhirStore
-from caduceus.intake import LABELS, check, form, iso_date, read_fax, unchecked
+from caduceus.intake import FORM, LABELS, check, clinic_request, form, iso_date, read_fax, unchecked
 from caduceus.payer import MockPayer, build_appeal_bundle, build_reply_bundle, build_request_bundle
 from caduceus.tools import ToolGateway, build_gateway
-from caduceus.words import long_date
+from caduceus.words import clock, long_date
 
 UNDO_SECONDS = 30
 NOTE_LIMIT = 4000  # characters; a payer's question is answered in a paragraph or two
@@ -312,6 +312,53 @@ class Workflow:
                 "on_file": self.catalog.get("coverage", {}).get(patient["id"]) if patient else None,
                 "candidates": [] if patient else [card(p) for p in nearest]}
 
+    def ask_clinic(self, who: Principal, fax_id: str, missing: list[str], resend: bool = False,
+                   referral: str | None = None) -> Fax:
+        """The fax does not clearly give some fields (or is too poor to read at all): write the request to the clinic
+        that sent it, and hold the fax until they answer. Caduceus shows the request for a person to send; it sends
+        nothing itself. The audit log keeps which fields, to whom, and a hash of the words."""
+        self._require(who, Role.PA_SPECIALIST)
+        fax = self._fax(fax_id)
+        if fax.status == "waiting_on_clinic":
+            raise ActionRefused("The clinic has already been asked. Mark that they sent it first.")
+        if fax.status != "read":
+            raise ActionRefused("This fax is not waiting to be checked.")
+        if set(missing) - set(FORM):
+            raise ActionRefused("Choose the fields the fax does not give from the form.")
+        keys = [k for k in FORM if k in set(missing)]
+        if not keys and not resend:
+            raise ActionRefused("Choose what the fax does not give clearly, then ask the clinic.")
+        checking = self.intake_form(fax)
+        read = {f["key"]: f for f in checking["fields"]}["referral"]
+        # Name the referral only by a number a person gave or the fax gave clearly; never a guess.
+        number = referral if referral and re.fullmatch(r"\d{4}-\d{4}", referral) else \
+            read["read_as"] if not read["problem"] else None
+        received = self.now().astimezone(self.tz)
+        at = fax.received_at.astimezone(self.tz)
+        text = clinic_request(checking["clinic"], None if "referral" in keys else number,
+                              f"{long_date(at.date())} at {clock(at, self.tz)}", keys, resend)
+        fax.status = "waiting_on_clinic"
+        fax.request = {"kind": "resend" if resend else "missing", "missing": keys, "to": checking["clinic"],
+                       "text": text, "asked_by": who.name, "asked_at": received.isoformat()}
+        self.faxes.save(fax)  # type: ignore[union-attr]
+        self.audit.append(who.id, who.role, "fax.clinic_asked", fax.id,
+                          {"kind": fax.request["kind"], "missing": keys, "to": checking["clinic"],
+                           "text_sha256": sha256_of(text)})
+        return fax
+
+    def clinic_sent(self, who: Principal, fax_id: str) -> Fax:
+        """The clinic answered: the fax can be checked and finished. (In the demo the same page stands in for what
+        the clinic sends.)"""
+        self._require(who, Role.PA_SPECIALIST)
+        fax = self._fax(fax_id)
+        if fax.status != "waiting_on_clinic":
+            raise ActionRefused("This fax is not waiting on the clinic.")
+        fax.status = "read"
+        fax.request = (fax.request or {}) | {"answered_by": who.name, "answered_at": self.now().isoformat()}
+        self.faxes.save(fax)  # type: ignore[union-attr]
+        self.audit.append(who.id, who.role, "fax.clinic_replied", fax.id, {"kind": fax.request.get("kind")})
+        return fax
+
     def confirm_fax(self, who: Principal, fax_id: str, values: dict[str, str],
                     checked: list[str] | None = None) -> Case:
         """A person confirms the fields (correcting any) against the page; only then is the case created. Every field
@@ -320,8 +367,10 @@ class Workflow:
         self._require(who, Role.PA_SPECIALIST)
         fax = self._fax(fax_id)
         if fax.status != "read":
-            raise ActionRefused("This fax has already been turned into a case." if fax.status == "confirmed"
-                                else "Caduceus has not read this fax yet.")
+            why = {"confirmed": "This fax has already been turned into a case.",
+                   "waiting_on_clinic": "This fax is waiting on the clinic. Mark that they sent it, then finish "
+                                        "checking it."}
+            raise ActionRefused(why.get(fax.status, "Caduceus has not read this fax yet."))
         values = {key: str(values.get(key) or "").strip() for key, _ in LABELS}
         service = self.catalog["services"].get(values["service_code"])
         values["service"] = service["display"] if service else ""

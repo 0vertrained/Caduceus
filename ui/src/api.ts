@@ -238,9 +238,15 @@ export interface PatientMatch {
   on_file: { payer: string; member_id_last4: string } | null;
   candidates: ChartCard[];
 }
+/** What a person asked the sending clinic for; shown for them to send, never sent by Caduceus. */
+export interface ClinicRequest {
+  kind: "missing" | "resend"; missing: string[]; to: string | null; text: string; asked_by: string; asked: string;
+  answered: string | null;
+}
 export interface FaxRow {
-  id: string; status: "received" | "read" | "confirmed"; received: string; pages: number;
+  id: string; status: "received" | "read" | "waiting_on_clinic" | "confirmed"; received: string; pages: number;
   referral: string | null; patient: string | null; to_check: number; clinic: string | null; case_id: string | null;
+  request: ClinicRequest | null;
 }
 export interface FaxView extends FaxRow {
   fields: FaxField[]; size: [number, number]; engine: string; image: string;

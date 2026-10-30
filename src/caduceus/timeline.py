@@ -14,6 +14,7 @@ from zoneinfo import ZoneInfo
 
 from caduceus.audit.log import AuditEvent
 from caduceus.auth import DEV_USERS
+from caduceus.intake import ASKED_FOR, listed
 
 AGENT_IDS = {"caduceus-agent", "intake"}
 STEP_WORDS = {"enrichment": "read the record, the referral packet and the payer's requirements",
@@ -76,6 +77,15 @@ def sentence(e: AuditEvent, clinician: str) -> str:
             return "Approved sending the note. It waited 30 seconds before it was sent."
         case "dispatch.error":
             return "Sending failed; it will be tried again."
+        case "fax.clinic_asked":
+            to = d.get("to") or "the referring clinic"
+            if d.get("kind") == "resend":
+                return f"Asked {to} to fax the referral again, because the copy was too poor to read."
+            asked = [ASKED_FOR.get(k, k) for k in d.get("missing", [])] or ["what was missing"]
+            return (f"Asked {to} for {listed(asked)}. The request was shown to send by fax or phone; "
+                    "Caduceus sent nothing.")
+        case "fax.clinic_replied":
+            return "Marked that the clinic sent what was asked for."
     return e.action.replace(".", " ").capitalize() + "."
 
 

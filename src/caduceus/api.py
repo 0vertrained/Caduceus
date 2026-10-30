@@ -204,6 +204,12 @@ class ConfirmFaxBody(BaseModel):
     checked: list[Annotated[str, Field(max_length=40)]] = Field(default_factory=list, max_length=20)
 
 
+class AskClinicBody(BaseModel):
+    missing: list[Annotated[str, Field(max_length=40)]] = Field(default_factory=list, max_length=10)
+    resend: bool = False
+    referral: str | None = Field(default=None, max_length=9)  # the number as the person has it, to name in the request
+
+
 class MatchBody(BaseModel):
     """A patient lookup. The name travels in the body, never the URL, so it stays out of access logs."""
     name: str = Field(max_length=120)
@@ -471,7 +477,14 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
                "pages": len(fax.pages) + 1, "referral": by_key.get("referral", {}).get("value"),
                "patient": by_key.get("patient_name", {}).get("value"),
                "to_check": sum(1 for f in checking["fields"] if f["problem"]) if checking else 0,
-               "clinic": checking and checking["clinic"], "case_id": fax.case_id}
+               "clinic": checking and checking["clinic"], "case_id": fax.case_id, "request": None}
+        if fax.request:
+            labels = {f["key"]: f["label"] for f in checking["fields"]} if checking else {}
+            r = fax.request
+            out["request"] = {"kind": r["kind"], "missing": [labels.get(k, k) for k in r["missing"]], "to": r["to"],
+                              "text": r["text"], "asked_by": r["asked_by"],
+                              "asked": moment(r["asked_at"], now(), live.svc.tz),
+                              "answered": r.get("answered_at") and moment(r["answered_at"], now(), live.svc.tz)}
         if detail:
             out |= {"fields": fields, "size": (fax.reading or {}).get("size"),
                     "engine": (fax.reading or {}).get("engine"), "image": f"/api/intake/{fax.id}/image"}
@@ -514,6 +527,17 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
     def match_patient(fax_id: str, body: MatchBody, who: Principal = Depends(role(Role.PA_SPECIALIST))):
         load_fax(fax_id)
         return live.svc.workflow.match_patient(who, fax_id, body.name, body.birth_date, body.ref)
+
+    @app.post("/api/intake/{fax_id}/ask-clinic")
+    def ask_clinic(fax_id: str, body: AskClinicBody, who: Principal = Depends(role(Role.PA_SPECIALIST))):
+        load_fax(fax_id)
+        return fax_view(live.svc.workflow.ask_clinic(who, fax_id, body.missing, body.resend, body.referral),
+                        detail=True)
+
+    @app.post("/api/intake/{fax_id}/clinic-sent")
+    def clinic_sent(fax_id: str, who: Principal = Depends(role(Role.PA_SPECIALIST))):
+        load_fax(fax_id)
+        return fax_view(live.svc.workflow.clinic_sent(who, fax_id), detail=True)
 
     @app.post("/api/intake/{fax_id}/confirm")
     def confirm_fax(fax_id: str, body: ConfirmFaxBody, who: Principal = Depends(principal)):

@@ -202,6 +202,68 @@ def test_the_patient_is_found_in_the_chart_or_the_closest_are_offered(inbox):
     assert not any("Shelba" in str(e.detail) or "Gulgow" in str(e.detail) for e in searches)
 
 
+def test_a_fax_missing_something_waits_on_the_clinic_until_they_send_it(inbox):
+    from caduceus.audit.log import sha256_of
+    from caduceus.timeline import timeline
+    svc, client = inbox
+    client.get("/api/intake/FAX-0003", headers=DOLORES)
+
+    def ask(body: dict, who: dict = DOLORES):
+        return client.post("/api/intake/FAX-0003/ask-clinic", headers=who, json=body)
+
+    assert ask({"missing": []}).status_code == 409                       # say what is missing
+    assert ask({"missing": ["social_security_number"]}).status_code == 409  # only the form's own fields
+    assert ask({"missing": ["member_id"]}, who=REYES).status_code == 403
+    assert ask({"missing": ["member_id"]}, who=as_user("sam")).status_code == 403
+    fax = ask({"missing": ["diagnosis", "member_id"], "referral": "2026-1029"}).json()
+    assert fax["status"] == "waiting_on_clinic"
+    asked = fax["request"]
+    assert asked["missing"] == ["Member ID", "Diagnosis"] and asked["to"] == "Mesa Verde Orthopedics, Santa Fe"
+    assert asked["text"].startswith("To Mesa Verde Orthopedics, Santa Fe:\n\nWe received referral 2026-1029 from "
+                                    "you by fax on October 29, 2026 at 10:35 am, but the cover sheet does not "
+                                    "clearly give the member ID and the diagnosis and its ICD-10 code.")
+    assert "Shelba" not in asked["text"] and "Gulgowski" not in asked["text"]  # the referral, never the patient
+    assert asked["asked_by"] == "Dolores Montoya" and asked["asked"] == "today at 1:00 pm"
+
+    # While it waits, nothing becomes a case, and the queue's fax list says so.
+    assert ask({"missing": ["member_id"]}).status_code == 409
+    values = form_start(client, "FAX-0003")
+    held = client.post("/api/intake/FAX-0003/confirm", headers=DOLORES, json={"values": values})
+    assert held.status_code == 409 and "waiting on the clinic" in held.json()["message"]
+    listed = {f["id"]: f for f in client.get("/api/intake", headers=DOLORES).json()["faxes"]}
+    assert listed["FAX-0003"]["status"] == "waiting_on_clinic" and listed["FAX-0003"]["request"]["to"]
+
+    # The audit log keeps what was asked of whom and a hash of the words, not the words.
+    event = next(e for e in svc.audit.events("FAX-0003") if e.action == "fax.clinic_asked")
+    assert event.detail == {"kind": "missing", "missing": ["member_id", "diagnosis"],
+                            "to": "Mesa Verde Orthopedics, Santa Fe", "text_sha256": sha256_of(asked["text"])}
+
+    assert client.post("/api/intake/FAX-0003/clinic-sent", headers=REYES).status_code == 403
+    back = client.post("/api/intake/FAX-0003/clinic-sent", headers=DOLORES).json()
+    assert back["status"] == "read" and back["request"]["answered"] == "today at 1:00 pm"
+    assert client.post("/api/intake/FAX-0003/clinic-sent", headers=DOLORES).status_code == 409
+    fixed = values | {"member_id": "MV084522654", "diagnosis": "M54.50 Low back pain, unspecified"}
+    made = client.post("/api/intake/FAX-0003/confirm", headers=DOLORES, json={
+        "values": fixed, "checked": ["referral", "patient_name", "payer", "clinician", "service_code"]})
+    assert made.json() == {"case_id": "2026-1029"}
+
+    said = [e["what"] for e in timeline(svc.audit.events("FAX-0003"), "Dr. Ana Reyes", svc.tz, T0)]
+    assert ("Asked Mesa Verde Orthopedics, Santa Fe for the member ID and the diagnosis and its ICD-10 code. The "
+            "request was shown to send by fax or phone; Caduceus sent nothing.") in said
+    assert "Marked that the clinic sent what was asked for." in said
+
+
+def test_a_fax_too_poor_to_read_is_sent_back_in_one_step(inbox):
+    _, client = inbox
+    client.get("/api/intake/FAX-0002", headers=DOLORES)
+    fax = client.post("/api/intake/FAX-0002/ask-clinic", headers=DOLORES, json={"resend": True}).json()
+    assert fax["status"] == "waiting_on_clinic" and fax["request"]["kind"] == "resend"
+    # The referral number was read clearly, so the request names it; it asks for the whole referral again.
+    assert fax["request"]["text"].startswith("To Mesa Verde Orthopedics, Rio Rancho:\n\nWe received referral "
+                                             "2026-1027 from you by fax")
+    assert "too poor to read. Please fax the whole referral again" in fax["request"]["text"]
+
+
 def test_the_clinics_match_the_ones_the_cover_sheets_are_drawn_with():
     import ast
 
