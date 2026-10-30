@@ -75,3 +75,52 @@ def test_the_demo_starts_with_its_own_seeded_data(monkeypatch):
     client = TestClient(create_app(dispatch_interval=None))
     rows = [r for g in client.get("/api/queue", headers=DOLORES).json()["groups"] for r in g["cases"]]
     assert len(rows) == 11
+
+
+# Behind Netlify ------------------------------------------------------------------------------------------------
+
+KEY = "netlify-proxy-signing-key-for-tests-only-0123456789"
+
+
+def netlify_signature(key: str = KEY, **claims) -> dict:
+    import time
+
+    import jwt
+    body = {"iss": "netlify", "exp": int(time.time()) + 60, "deploy_context": "production",
+            "site_url": "https://caduceus-demo.netlify.app"} | claims
+    return {"x-nf-sign": jwt.encode(body, key, algorithm="HS256")}
+
+
+@pytest.fixture()
+def behind_netlify():
+    svc = build_services(demo_settings(proxy_signing_key=KEY))
+    seed(svc)
+    return TestClient(create_app(svc, dispatch_interval=None))
+
+
+def test_requests_netlify_signed_are_answered(behind_netlify):
+    r = behind_netlify.get("/api/me", headers=DOLORES | netlify_signature())
+    assert r.status_code == 200 and r.json()["name"] == "Dolores Montoya"
+
+
+@pytest.mark.parametrize("headers", [
+    {},                                                    # straight to the Cloud Run address
+    netlify_signature(key="someone-elses-key-that-is-also-long-enough-0123"),
+    netlify_signature(exp=1),                              # long expired
+    netlify_signature(iss="not-netlify"),
+    {"x-nf-sign": "not-a-token"},
+])
+def test_anything_else_is_refused(behind_netlify, headers):
+    r = behind_netlify.get("/api/queue", headers=DOLORES | headers)
+    assert r.status_code == 403
+    assert "only through the Caduceus demo site" in r.json()["message"]
+    assert r.headers["Cache-Control"] == "no-store" and "default-src 'self'" in r.headers["Content-Security-Policy"]
+
+
+def test_health_answers_without_a_signature(behind_netlify):
+    assert behind_netlify.get("/api/health").status_code == 200
+
+
+def test_a_short_signing_key_is_refused():
+    with pytest.raises(InsecureConfiguration, match="at least 32 bytes"):
+        demo_settings(proxy_signing_key="short").check()
