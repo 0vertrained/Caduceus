@@ -69,7 +69,10 @@ await say(page, "Three referrals arrived by fax. Caduceus read them with OCR ins
 await page.locator('a[href="/intake/FAX-0003"]').click();
 await page.getByRole("heading", { name: "Check the fax" }).waitFor();
 await page.locator(".crop").first().waitFor();
+await page.evaluate(() => document.querySelector(".crop")?.scrollIntoView({ block: "center" }));
+await pause(300);
 await still(page, "fax-check");
+await page.evaluate(() => window.scrollTo(0, 0));
 await say(page, "This one is a poor copy. Every field Caduceus was unsure of comes to a person, beside the part of the page it came from.", 4800);
 await page.mouse.wheel(0, 500);
 await pause(1500);
