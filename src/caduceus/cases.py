@@ -19,6 +19,7 @@ class State(StrEnum):
     RETURNED = "returned"              # sent back to the ordering clinic for a correction
     SUBMITTED = "submitted"            # with the payer
     PENDED = "pended"                  # payer asked for more information
+    AWAITING_NOTE = "awaiting_note"    # the payer asked for a note; with the ordering clinician to write it
     APPROVED = "approved"              # payer approved
     DENIED = "denied"                  # payer denied
 
@@ -61,6 +62,9 @@ class Case(BaseModel):
     returned_reason: str | None = None
     submission: dict[str, Any] | None = None
     payer_response: dict[str, Any] | None = None
+    # The answer to a payer's request for more: who asked the clinician, and the note they signed (or that they
+    # could not document it). Sent to the payer only after a PA specialist approves it.
+    reply: dict[str, Any] | None = None
     last_action: LastAction | None = None
     version: int = 0
 
@@ -87,6 +91,14 @@ class Case(BaseModel):
         for r in self.effective_results():
             counts[r["status"]] += 1
         return counts
+
+    @property
+    def sent_since_last_action(self) -> bool:
+        """True once something the last action led to has reached the payer. That action can no longer be undone;
+        an action taken after the payer already had the request (asking for a note, say) still can."""
+        sub = self.submission or {}
+        return bool(sub.get("sent")) and (self.last_action is None
+                                          or sub != self.last_action.prior.get("submission"))
 
     @property
     def ready_to_approve(self) -> bool:

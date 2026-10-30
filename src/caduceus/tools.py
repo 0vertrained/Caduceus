@@ -54,7 +54,7 @@ ALLOWLIST: dict[str, frozenset[str]] = {
                              "ehr.search_observations", "documents.list_packet", "policies.criteria_set_for"}),
     "drafting": frozenset({"documents.list_packet", "documents.get_page"}),
     "review": frozenset({"tickets.set_state", "documents.get_page"}),
-    "submission": frozenset({"payer.submit"}),
+    "submission": frozenset({"payer.submit", "payer.respond"}),
     "follow_up": frozenset({"payer.status", "tickets.set_state"}),
 }
 
@@ -95,7 +95,7 @@ def _ago(as_of: date, days: int | None) -> date | None:
 
 def build_gateway(audit: AuditLog, store: FhirStore, library: dict[str, CriteriaSet],
                   set_state: Callable[[str, str, str], None], submit: Callable[..., dict],
-                  status: Callable[[str], dict]) -> ToolGateway:
+                  status: Callable[[str], dict], respond: Callable[..., dict]) -> ToolGateway:
     gw = ToolGateway(audit)
 
     # ehr: narrow, read-scoped views of the record. No generic FHIR search is exposed.
@@ -164,6 +164,9 @@ def build_gateway(audit: AuditLog, store: FhirStore, library: dict[str, Criteria
                          "Move a case to another queue state.", writes=True))
     gw.register(ToolSpec("payer.submit", "payer", frozenset({Role.AGENT_RUNTIME}), submit,
                          "Submit an approved request to the payer.", writes=True))
+    gw.register(ToolSpec("payer.respond", "payer", frozenset({Role.AGENT_RUNTIME}), respond,
+                         "Send the payer the documentation it asked for, once a person has approved it.",
+                         writes=True))
     gw.register(ToolSpec("payer.status", "payer", frozenset({Role.AGENT_RUNTIME}), status,
                          "Read the payer's decision on a submission."))
     return gw

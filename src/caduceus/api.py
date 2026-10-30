@@ -76,6 +76,10 @@ class DraftBody(BaseModel):
     text: str = Field(max_length=20_000)
 
 
+class NoteBody(BaseModel):
+    text: str = Field(max_length=20_000)
+
+
 def create_app(services: Services | None = None, dispatch_interval: float | None = 5.0,
                fresh_demo: Callable[[], Services] | None = None) -> FastAPI:
     """dispatch_interval=None (tests) starts no background threads: no outbox dispatcher, no demo resets."""
@@ -264,6 +268,14 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
     def approve(case_id: str, who: Principal = Depends(principal)):
         return view(live.svc.workflow.approve(who, load(case_id).id), who)
 
+    @app.post("/api/cases/{case_id}/request-note")
+    def request_note(case_id: str, who: Principal = Depends(principal)):
+        return view(live.svc.workflow.request_note(who, load(case_id).id), who)
+
+    @app.post("/api/cases/{case_id}/send-note")
+    def send_note(case_id: str, who: Principal = Depends(principal)):
+        return view(live.svc.workflow.approve_reply(who, load(case_id).id), who)
+
     @app.post("/api/cases/{case_id}/return")
     def return_case(case_id: str, body: ReturnBody, who: Principal = Depends(principal)):
         return view(live.svc.workflow.return_for_correction(who, load(case_id).id, body.reason), who)
@@ -277,7 +289,7 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
         case = live.svc.workflow.undo(who, load(case_id).id)
         if who.role == Role.CLINICIAN:
             return live.presenter.attestation(case, live.svc.workflow.drafter.chart_summary(
-                case, live.presenter.patient(case), case.attestation_requested))
+                case, live.presenter.patient(case), case.attestation_requested), now())
         return view(case, who)
 
     @app.get("/api/cases/{case_id}/history")
@@ -288,10 +300,11 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
 
     @app.get("/api/attestations")
     def my_attestations(who: Principal = Depends(role(Role.CLINICIAN))):
-        mine = [c for c in live.svc.cases.all() if c.state == State.AWAITING_ATTESTATION
+        mine = [c for c in live.svc.cases.all() if c.state in (State.AWAITING_ATTESTATION, State.AWAITING_NOTE)
                 and c.ordering_clinician["id"] == who.clinician_id]
-        return [{"case_id": c.id, "patient": live.presenter.row(c, now())["patient"], "service": c.service["short"]}
-                for c in mine]
+        return [{"case_id": c.id, "patient": live.presenter.row(c, now())["patient"], "service": c.service["short"],
+                 "kind": "note" if c.state == State.AWAITING_NOTE else "attestation"}
+                for c in sorted(mine, key=lambda c: c.due_at)]
 
     @app.get("/api/attestations/{case_id}")
     def attestation(case_id: str, who: Principal = Depends(role(Role.CLINICIAN))):
@@ -301,14 +314,28 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
         live.svc.audit.append(who.id, who.role, "attestation.viewed", case_id)
         summary = live.svc.workflow.drafter.chart_summary(case, live.presenter.patient(case),
                                                      case.attestation_requested or [])
-        return live.presenter.attestation(case, summary)
+        return live.presenter.attestation(case, summary, now())
 
     @app.post("/api/attestations/{case_id}")
     def sign(case_id: str, body: AttestBody, who: Principal = Depends(role(Role.CLINICIAN))):
         case = live.svc.workflow.sign_attestation(who, load(case_id).id, body.answers)
-        out = live.presenter.attestation(case, "")
+        out = live.presenter.attestation(case, "", now())
         out["undo_until"] = case.last_action.undo_until.isoformat() if case.last_action else None
         out["answers"] = body.answers
+        return out
+
+    @app.post("/api/attestations/{case_id}/note")
+    def sign_note(case_id: str, body: NoteBody, who: Principal = Depends(role(Role.CLINICIAN))):
+        case = live.svc.workflow.sign_note(who, load(case_id).id, body.text)
+        out = live.presenter.attestation(case, "", now())
+        out["undo_until"] = case.last_action.undo_until.isoformat() if case.last_action else None
+        return out
+
+    @app.post("/api/attestations/{case_id}/decline-note")
+    def decline_note(case_id: str, who: Principal = Depends(role(Role.CLINICIAN))):
+        case = live.svc.workflow.decline_note(who, load(case_id).id)
+        out = live.presenter.attestation(case, "", now())
+        out["undo_until"] = case.last_action.undo_until.isoformat() if case.last_action else None
         return out
 
     ui = Path(os.environ.get("CADUCEUS_UI_DIST") or Path(__file__).resolve().parents[2] / "ui" / "dist")

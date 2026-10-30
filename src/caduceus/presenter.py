@@ -14,7 +14,7 @@ from caduceus.cases import Case, State
 from caduceus.criteria.dsl import CriteriaSet
 from caduceus.drafting import age_on, patient_name
 from caduceus.fhir.store import FhirStore, document_text
-from caduceus.workflow import UNDO_SECONDS, approve_blocked_reason
+from caduceus.workflow import NOTE_LIMIT, UNDO_SECONDS, approve_blocked_reason
 
 URGENT = timedelta(hours=2)
 
@@ -28,6 +28,13 @@ def clock(dt: datetime, tz: ZoneInfo) -> str:
 
 def long_date(d: date) -> str:
     return f"{d:%B} {d.day}, {d.year}"
+
+
+def moment(dt: datetime | str, now: datetime, tz: ZoneInfo) -> str:
+    """'today at 1:12 pm', or 'October 28, 2026 at 9:05 am' for another day."""
+    dt = datetime.fromisoformat(dt) if isinstance(dt, str) else dt
+    day = dt.astimezone(tz).date()
+    return f"{'today' if day == now.astimezone(tz).date() else long_date(day)} at {clock(dt, tz)}"
 
 
 def due(due_at: datetime, now: datetime, tz: ZoneInfo) -> dict[str, Any]:
@@ -69,14 +76,17 @@ def status(case: Case) -> dict[str, str]:
         State.RETURNED: {"key": "returned", "word": f"Returned to {clin}"},
         State.SUBMITTED: ({"key": "waiting_payer", "word": "Waiting on the payer"} if sub.get("sent")
                           else {"key": "sending", "word": "Sending to the payer"}),
-        State.PENDED: {"key": "payer_question", "word": "The payer asked a question"},
+        State.PENDED: ({"key": "ready", "word": "Ready to approve"} if (case.reply or {}).get("note")
+                       else {"key": "payer_question", "word": "The payer asked a question"}),
+        State.AWAITING_NOTE: {"key": "waiting_clinician", "word": f"Waiting on {clin}"},
         State.APPROVED: {"key": "approved", "word": "Approved by the payer"},
         State.DENIED: {"key": "denied", "word": "Denied by the payer"},
     }[case.state]
 
 
 ACTIVE = {State.REVIEW, State.PENDED}
-WAITING = {State.AWAITING_ATTESTATION, State.RETURNED, State.SUBMITTED}
+WITH_CLINICIAN = {State.AWAITING_ATTESTATION, State.AWAITING_NOTE}
+WAITING = WITH_CLINICIAN | {State.RETURNED, State.SUBMITTED}
 
 
 class Presenter:
@@ -109,7 +119,7 @@ class Presenter:
         return {
             "now": now.isoformat(),
             "counts": {"open": len(active), "due_today": len(groups["today"]), "approved_today": approved_today,
-                       "with_clinicians": sum(c.state == State.AWAITING_ATTESTATION for c in cases)},
+                       "with_clinicians": sum(c.state in WITH_CLINICIAN for c in cases)},
             "groups": [{"key": k, "title": {"today": "Due today", "tomorrow": "Due tomorrow", "later": "Later"}[k],
                         "cases": v} for k, v in groups.items()],
             "waiting": waiting,
@@ -139,10 +149,11 @@ class Presenter:
             packet.append({"id": doc_id, "page": pages[doc_id], "title": doc.get("description", "Page")})
         last = case.last_action
         undo = None
-        if last and last.actor == viewer_id and now <= last.undo_until and not (case.submission or {}).get("sent"):
+        if last and last.actor == viewer_id and now <= last.undo_until and not case.sent_since_last_action:
             undo = {"action": last.action, "until": last.undo_until.isoformat(), "seconds": UNDO_SECONDS}
         total = sum(counts.values())
         blocked = approve_blocked_reason(case)
+        reply = case.reply or {}
         return {
             "id": case.id, "state": case.state.value, "status": status(case),
             "patient": {"name": patient_name(p), "birth_date": long_date(born),
@@ -157,11 +168,33 @@ class Presenter:
             "summary": summary_sentence(case, counts, total),
             "actions": {"can_approve": case.ready_to_approve, "approve_blocked_reason": blocked,
                         "can_request_attestation": case.state == State.REVIEW and counts["unknown"] > 0,
-                        "can_return": case.state in ACTIVE},
+                        "can_return": case.state in ACTIVE,
+                        "can_ask_for_note": case.state == State.PENDED and not reply.get("note")
+                        and not reply.get("declined_by"),
+                        "can_send_note": case.state == State.PENDED and bool(reply.get("note"))},
             "undo": undo,
             "returned_reason": case.returned_reason,
             "payer_response": case.payer_response,
             "submission": case.submission,
+            "reply": self.reply(case, now),
+        }
+
+    def reply(self, case: Case, now: datetime) -> dict[str, Any] | None:
+        """The payer's request for more, and where its answer stands, in words."""
+        if case.state not in (State.PENDED, State.AWAITING_NOTE) and not case.reply:
+            return None
+        reply = case.reply or {}
+        attested = [{"text": r["text"], "by": r["attested_by"], "at": moment(r["attested_at"], now, self.tz)}
+                    for r in case.effective_results() if r.get("attested_by") and r["status"] == "met"]
+        note = reply.get("note")
+        return {
+            "question": reply.get("question") or (case.payer_response or {}).get("decision", {}).get("question"),
+            "attested": attested,
+            "requested_by": reply.get("requested_by"),
+            "note": note and {"text": note["text"], "author": note["author"],
+                              "signed_at": moment(note["signed_at"], now, self.tz)},
+            "declined": reply.get("declined_by") and {"by": reply["declined_by"],
+                                                      "at": moment(reply["declined_at"], now, self.tz)},
         }
 
     def page(self, doc_id: str, case: Case) -> dict[str, Any]:
@@ -173,10 +206,10 @@ class Presenter:
                 "pages": len(case.packet), "date": long_date(date.fromisoformat(when)) if when else None,
                 "author": (doc.get("author") or [{}])[0].get("display"), "text": document_text(doc)}
 
-    def attestation(self, case: Case, summary: str) -> dict[str, Any]:
+    def attestation(self, case: Case, summary: str, now: datetime) -> dict[str, Any]:
         p = self.patient(case)
         crit = {c.id: c for c in self.library[case.criteria_set].criteria}
-        return {
+        out = {
             "case_id": case.id, "state": case.state.value,
             "patient": {"name": patient_name(p), "birth_date": long_date(date.fromisoformat(p["birthDate"]))},
             "service": case.service["display"], "ordered": long_date(case.received_at.astimezone(self.tz).date()),
@@ -185,17 +218,37 @@ class Presenter:
                            "help": crit[cid].attestation_help} for cid in case.attestation_requested],
             "payer": case.payer["name"],
             "requested_by": case.attestation_requested_by or "The prior authorization team",
+            "note_request": None,
         }
+        if case.reply:
+            signed = {a.criterion_id: a for a in case.attestations if a.answer == "yes"}
+            out["requested_by"] = case.reply.get("requested_by") or out["requested_by"]
+            out["note_request"] = {
+                "question": case.reply.get("question"),
+                "confirmed": [{"question": crit[c].attestation_question or crit[c].text,
+                               "policy": crit[c].policy_sentence, "at": moment(signed[c].signed_at, now, self.tz)}
+                              for c in case.reply.get("criteria", []) if c in signed],
+                "limit": NOTE_LIMIT,
+            }
+        return out
 
 
 def summary_sentence(case: Case, counts: dict[str, int], total: int) -> str:
     words = {1: "One", 2: "Two", 3: "Three", 4: "Four", 5: "Five"}
     met = words.get(counts["met"], str(counts["met"]))
     lead = f"{met} of {words.get(total, str(total)).lower()} criteria are met."
+    clin, payer = case.ordering_clinician["name"], case.payer["name"]
     if case.state == State.AWAITING_ATTESTATION:
-        return f"{lead} Waiting for {case.ordering_clinician['name']} to sign."
-    if case.state == State.PENDED and case.payer_response:
-        return f"The payer asked: {case.payer_response['decision'].get('question', 'for more information')}"
+        return f"{lead} Waiting for {clin} to sign."
+    if case.state == State.AWAITING_NOTE:
+        return f"Waiting for {clin} to write the note {payer} asked for."
+    if case.state == State.PENDED:
+        reply = case.reply or {}
+        if reply.get("note"):
+            return f"{clin} signed the note. Read it, then send it to {payer}."
+        if reply.get("declined_by"):
+            return f"{clin} cannot document this, so there is no note to send. Return the case to the clinic."
+        return f"{payer} needs a note from {clin} before it decides."
     if case.state != State.REVIEW:
         return lead
     reason = approve_blocked_reason(case)
