@@ -211,7 +211,13 @@ function SidePanel({ c, panel, setPanel, onSaved }: {
     setPage(null);
     api<Page>(`/api/cases/${c.id}/pages/${panel.docId}`).then(setPage).catch((e: ApiError) => setError(e.message));
   }, [panel, c.id]);
-  useEffect(() => { heading.current?.focus(); }, [panel, page]);
+  // Move focus to the panel's heading when the person changes panels, but not when the case first opens: that
+  // would skip the patient's name for a screen reader and scroll past the case header.
+  const opened = useRef(false);
+  useEffect(() => {
+    if (opened.current) heading.current?.focus();
+    opened.current = true;
+  }, [panel, page]);
 
   const pending = c.criteria.results.filter((r) => r.status === "unknown");
   const signedBy = c.criteria.results.find((r) => r.attested_by)?.attested_by;
@@ -440,6 +446,15 @@ function CaseHistory({ c }: { c: CaseView }) {
 }
 
 function DecisionBar({ c, setCase, reload }: { c: CaseView; setCase: (c: CaseView) => void; reload: () => void }) {
+  // The bar's real height, so the page keeps a focused field clear of it (WCAG 2.4.11), however much it wraps.
+  const bar = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = bar.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => document.documentElement.style.setProperty("--bar-space", `${el.offsetHeight}px`));
+    ro.observe(el);
+    return () => { ro.disconnect(); document.documentElement.style.removeProperty("--bar-space"); };
+  }, []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [returning, setReturning] = useState(false);
@@ -537,9 +552,11 @@ function DecisionBar({ c, setCase, reload }: { c: CaseView; setCase: (c: CaseVie
       case comes back to you when they sign it.</span></>;
     actions = <>{undo}<Link to="/" className="btn btn--primary btn--large">Next case</Link></>;
   } else if (c.state === "submitted" && !c.submission?.sent) {
+    // The countdown is for the eye; a screen reader hears one steady sentence instead of a number every second.
     summary = <><CheckCircle size={26} /><span><strong>Approved.</strong> Sending
       {c.submission?.kind === "reply" ? " the note" : c.submission?.kind === "appeal" ? " the appeal" : ""} to {c.payer.name}
-      {sendLeft > 0 ? ` in ${sendLeft} seconds` : " now"}.</span></>;
+      <span aria-hidden="true">{sendLeft > 0 ? ` in ${sendLeft} seconds` : " now"}</span>
+      <span className="visually-hidden"> after 30 seconds, unless you undo it</span>.</span></>;
     actions = <>{undo}<Link to="/" className="btn btn--primary btn--large">Next case</Link></>;
   } else if (c.state === "returned") {
     summary = <span><strong>Returned to {c.ordering_clinician.name}.</strong> Reason: {c.returned_reason}</span>;
@@ -551,7 +568,7 @@ function DecisionBar({ c, setCase, reload }: { c: CaseView; setCase: (c: CaseVie
   }
 
   return (
-    <div className="decision-bar" role="region" aria-label="Next step">
+    <div className="decision-bar" role="region" aria-label="Next step" ref={bar}>
       <div className="decision-bar__inner">
         <p id="bar-summary" className="decision-bar__summary" role="status">{summary}</p>
         <div className="decision-bar__actions">{actions}</div>

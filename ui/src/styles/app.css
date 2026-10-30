@@ -290,6 +290,10 @@ mark { background: var(--mark); color: var(--ink); padding: 1px 2px; border-radi
   position: sticky; bottom: 0; z-index: 2; background: var(--paper); border-top: 1px solid #c9d0d6;
   box-shadow: 0 -4px 12px rgba(26, 35, 48, 0.06); margin-top: auto;
 }
+/* On a small or short screen a sticky bar would cover too much of the page: it scrolls with the case instead. */
+@media (max-width: 560px), (max-height: 620px) { .decision-bar { position: static; } }
+/* Headings and regions that receive focus from code are not controls: no focus box on them. */
+h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus, main[tabindex="-1"]:focus { outline: none; }
 .decision-bar__inner {
   max-width: var(--content-width); margin: 0 auto; padding: var(--space-4) var(--space-7);
   display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) 20px; min-height: var(--bar-height);
