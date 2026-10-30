@@ -69,6 +69,9 @@ export function Header({ me, onSignOut }: { me: Me | null; onSignOut: () => void
                   onClick={() => setSize("larger")}>Larger</button>
         </div>
       </div>
+      {me && me.role !== "clinician" && (
+        <Link to="/outcomes" className="btn--text" style={{ display: "inline-flex", alignItems: "center" }}>Outcomes</Link>
+      )}
       <Link to="/help" className="btn--text" style={{ display: "inline-flex", alignItems: "center" }}>Help</Link>
       {me && (
         <div className="header__user">

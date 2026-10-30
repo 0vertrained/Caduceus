@@ -165,6 +165,10 @@ await axe(small, "11-case-320px");
 
 await page.goto(base + "/help");
 await axe(page, "12-help");
+await page.goto(base + "/outcomes");
+await page.getByRole("heading", { name: "Where patient information went" }).waitFor();
+await shot(page, "12b-outcomes");
+await axe(page, "12b-outcomes");
 
 // The request approved above leaves the outbox after its undo window, and this payer pends it: it wants the
 // note behind the attestation. The specialist asks for it, the clinician writes and signs it, the specialist sends

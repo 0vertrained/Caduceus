@@ -9,6 +9,7 @@ import { HelpPage } from "./pages/Help";
 import { QueuePage } from "./pages/Queue";
 import { SignInPage } from "./pages/SignIn";
 import { IntakePage } from "./pages/Intake";
+import { OutcomesPage } from "./pages/Outcomes";
 
 export function App() {
   const [me, setMe] = useState<Me | null>(null);
@@ -64,6 +65,7 @@ export function App() {
             <Route path="/cases/:id" element={<CaseReviewPage />} />
             <Route path="/attest/:id" element={<AttestPage />} />
             <Route path="/intake/:id" element={<IntakePage />} />
+            <Route path="/outcomes" element={<OutcomesPage />} />
             <Route path="/help" element={<HelpPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
