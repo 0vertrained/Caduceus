@@ -68,6 +68,11 @@ class Router:
             self._usage(span, completion)
             return RoutedCompletion(completion, "phi")
 
+    def recordings(self) -> dict[str, dict]:
+        """Replies the de-identified route has seen, for scripts/record_completions.py."""
+        export = getattr(self._external, "export", None)
+        return export() if export else {}
+
     def complete_deid(self, task: str, system: str, parts: list[StampedText], case_id: str,
                       ctx: PatientContext, max_tokens: int = 800) -> RoutedCompletion:
         for part in parts:

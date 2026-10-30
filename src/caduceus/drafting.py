@@ -111,9 +111,15 @@ class Drafter:
             out = self._router.complete_deid("draft_request", DRAFT_SYSTEM, [stamped], case.id, ctx)
         except (InVpcUnavailable, ProviderUnavailable, UnstampedPayload) as e:
             return {"text": template, "route": "template", "model": None, "fallback_reason": type(e).__name__}
-        text = reidentify(out.completion.text.strip(), result.token_map)
+        reply = out.completion.text.strip()
+        text = reidentify(reply, result.token_map)
+        # What left Caduceus, for the reviewer: it is de-identified by construction, so it may be kept and shown.
+        sent = {"text": stamped.text, "policy": stamped.stamp.policy, "text_sha256": stamped.stamp.text_sha256,
+                "vendor": out.completion.vendor, "cached": out.completion.cached,
+                "input_tokens": out.completion.input_tokens, "output_tokens": out.completion.output_tokens,
+                "tokens_filled_in": sum(reply.count(token) for token in result.token_map)}
         return {"text": text, "route": out.route, "model": out.completion.model,
-                "deid_removed": dict(result.removed)}
+                "deid_removed": dict(result.removed), "sent": sent}
 
     def chart_summary(self, case: Case, patient: dict, criterion_ids: list[str]) -> str:
         results = [r for r in case.effective_results() if r["criterion_id"] in criterion_ids]

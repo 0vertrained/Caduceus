@@ -19,7 +19,14 @@ from caduceus.drafting import Drafter
 from caduceus.fhir.store import FhirStore, HapiFhirStore, LocalBundleStore
 from caduceus.payer import MockPayer
 from caduceus.router import Router
-from caduceus.router.providers import AnthropicMessagesProvider, OpenAICompatibleProvider
+from caduceus.router.providers import (
+    AnthropicMessagesProvider,
+    CachingProvider,
+    OllamaChatProvider,
+    OpenAICompatibleProvider,
+    Provider,
+    StubProvider,
+)
 from caduceus.workflow import Workflow
 
 
@@ -29,6 +36,10 @@ def _env(name: str, default: str | None = None):
 
 class InsecureConfiguration(ValueError):
     """The settings would run the service in a way that is only safe on a developer's machine."""
+
+
+DEFAULT_MODELS = {"anthropic": "claude-sonnet-5-5", "ollama": "gpt-oss:120b", "stub": "stub-1"}
+FIXED_QUOTA = {"ollama"}  # providers whose keys cannot run up a bill: the only kind the public demo may hold
 
 
 @dataclass
@@ -47,8 +58,14 @@ class Settings:
     fhir_base_url: str | None = _env("CADUCEUS_FHIR_BASE_URL")
     in_vpc_url: str | None = _env("CADUCEUS_IN_VPC_URL")
     in_vpc_model: str = _env("CADUCEUS_IN_VPC_MODEL", "llama3.1:8b")
+    # The external model only ever sees de-identified, stamped text (the router enforces it). anthropic is billed
+    # per token; ollama (Ollama Cloud) is a subscription with fixed limits; stub is for development and tests.
+    external_provider: str = _env("CADUCEUS_EXTERNAL_PROVIDER", "anthropic")
+    external_base_url: str | None = _env("CADUCEUS_EXTERNAL_BASE_URL")
     external_api_key: str | None = _env("CADUCEUS_EXTERNAL_API_KEY")
-    external_model: str = _env("CADUCEUS_EXTERNAL_MODEL", "claude-sonnet-5-5")
+    external_model: str | None = _env("CADUCEUS_EXTERNAL_MODEL")
+    # Recorded external replies (scripts/record_completions.py). The demo uses data/recorded/completions.json.
+    model_recordings: str | None = _env("CADUCEUS_MODEL_RECORDINGS")
     # demo: the public demo. Development sign-in, synthetic data seeded in memory, reset on a schedule.
     demo_reset_hours: str = _env("CADUCEUS_DEMO_RESET_HOURS", "6")
     # Shared with Netlify: when set, only requests Netlify proxied and signed (x-nf-sign) are answered.
@@ -59,8 +76,13 @@ class Settings:
             raise InsecureConfiguration("CADUCEUS_AUTH_MODE must be dev, demo or oidc.")
         if self.proxy_signing_key is not None and len(self.proxy_signing_key.encode()) < 32:
             raise InsecureConfiguration("CADUCEUS_PROXY_SIGNING_KEY must be at least 32 bytes.")
-        if self.auth_mode == "demo" and self.external_api_key:
-            raise InsecureConfiguration("The public demo must not hold a model API key: anyone could spend it.")
+        if self.external_provider not in DEFAULT_MODELS:
+            raise InsecureConfiguration("CADUCEUS_EXTERNAL_PROVIDER must be anthropic, ollama or stub.")
+        if self.external_provider == "stub" and self.auth_mode != "dev":
+            raise InsecureConfiguration("The stub model is for development and tests only.")
+        if self.auth_mode == "demo" and self.external_api_key and self.external_provider not in FIXED_QUOTA:
+            raise InsecureConfiguration("The public demo must not hold a metered model API key: anyone could spend "
+                                        "it. Use a key with a fixed quota (Ollama Cloud).")
         if self.auth_mode == "oidc":
             if not self.deid_key or len(self.deid_key.encode()) < 32:
                 raise InsecureConfiguration("Set CADUCEUS_DEID_KEY (at least 32 bytes) outside development.")
@@ -97,9 +119,38 @@ def build_services(settings: Settings | None = None, conn: sqlite3.Connection | 
     key = s.deid_key.encode() if s.deid_key else secrets.token_bytes(32)  # dev: a fresh key per process
     deid = SafeHarborDeidentifier(key)
     in_vpc = OpenAICompatibleProvider(s.in_vpc_url, s.in_vpc_model) if s.in_vpc_url else None
-    external = AnthropicMessagesProvider(s.external_api_key, s.external_model) if s.external_api_key else None
+    external = _external_provider(s)
+    recordings = (Path(s.model_recordings) if s.model_recordings
+                  else s.data_dir / "recorded" / "completions.json" if s.auth_mode == "demo" else None)
+    if external is not None or (recordings is not None and recordings.exists()):
+        external = CachingProvider(external, recordings, model=s.external_model)
     router = Router(in_vpc, external, deid) if (in_vpc or external) else None
 
     workflow = Workflow(cases, audit, store, library, engine, Drafter(router, deid), MockPayer())
     auth = Authenticator(s.auth_mode, s.oidc_jwks_url, s.oidc_issuer, s.oidc_audience)
     return Services(s, ZoneInfo(s.clinic_tz), audit, cases, store, workflow, auth, router, conn)
+
+
+def _external_provider(s: Settings) -> Provider | None:
+    model = s.external_model or DEFAULT_MODELS[s.external_provider]
+    if s.external_provider == "stub":
+        return StubProvider(_stub_reply, name="external", model=model, vendor="a stub model (tests only)")
+    if not s.external_api_key:
+        return None
+    if s.external_provider == "ollama":
+        return OllamaChatProvider(s.external_api_key, model, base_url=s.external_base_url or "https://ollama.com")
+    return AnthropicMessagesProvider(s.external_api_key, model,
+                                     base_url=s.external_base_url or "https://api.anthropic.com")
+
+
+def _stub_reply(_system: str, user: str) -> str:
+    """A fixed, predictable paragraph built from the de-identified facts, keeping their tokens."""
+    lines = user.splitlines()
+    who = lines[0].removeprefix("Patient: ").rstrip(".") if lines else "The patient"
+    what = lines[1].removeprefix("Requested service: ").rstrip(".") if len(lines) > 1 else "the requested service"
+    met = [ln[2:].split(":")[0].lower() for ln in lines if ln.startswith("- ") and ": met." in ln]
+    waiting = [ln[2:].split(":")[0].lower() for ln in lines if ln.startswith("- ") and "awaiting" in ln]
+    text = f"{who} is referred for {what}. The record documents {', '.join(met) or 'the criteria below'}."
+    if waiting:
+        text += f" The ordering clinician has been asked to confirm {', '.join(waiting)}."
+    return text
