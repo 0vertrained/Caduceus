@@ -10,11 +10,14 @@ from datetime import date, datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from caduceus.cases import Case, State
+from caduceus.audit.log import AuditEvent
+from caduceus.cases import Case, Fax, State
 from caduceus.criteria.dsl import CriteriaSet
 from caduceus.drafting import age_on, patient_name
-from caduceus.fhir.store import FhirStore, document_text
+from caduceus.fhir.store import FhirStore, document_text, fax_image
+from caduceus.intake import fields_in_words
 from caduceus.payer import RULE_PLANS, STANDARD_DECISION_DAYS
+from caduceus.timeline import who
 from caduceus.words import clock, long_date, moment, took
 from caduceus.workflow import NOTE_LIMIT, UNDO_SECONDS, approve_blocked_reason
 
@@ -230,7 +233,28 @@ class Presenter:
         when = doc.get("date", "")[:10]
         return {"id": doc_id, "title": doc.get("description", "Page"), "page": case.packet.index(doc_id) + 1,
                 "pages": len(case.packet), "date": long_date(date.fromisoformat(when)) if when else None,
-                "author": (doc.get("author") or [{}])[0].get("display"), "text": document_text(doc)}
+                "author": (doc.get("author") or [{}])[0].get("display"), "text": document_text(doc),
+                # A faxed page keeps its image: the text beside it is only what OCR read.
+                "image": f"/api/cases/{case.id}/pages/{doc_id}/image" if fax_image(doc) else None}
+
+    def came_by_fax(self, fax: Fax | None, events: list[AuditEvent], clinic: str | None,
+                    now: datetime) -> dict[str, Any] | None:
+        """How a case created from a fax came to be, read from the fax's audit events: who checked it against the
+        page, when, what they corrected, and whether the clinic was asked for anything first."""
+        confirmed = next((e for e in reversed(events) if e.action == "fax.confirmed"), None)
+        if fax is None or confirmed is None:
+            return None
+        corrected = fields_in_words(confirmed.detail.get("corrected", []))
+        asked = [e for e in events if e.action == "fax.clinic_asked"]
+        words = f"Came by fax from {clinic}." if clinic else "Came by fax."
+        words += f" {who(confirmed)} checked it against the page {moment(confirmed.ts, now, self.tz)}"
+        words += f" and corrected {corrected}." if corrected else "; nothing needed correcting."
+        if asked:
+            last = asked[-1].detail
+            words += (" Before that, the clinic was asked to fax it again." if last.get("kind") == "resend"
+                      else f" Before that, the clinic was asked for {fields_in_words(last.get('missing', []))}.")
+        return {"from": clinic, "by": who(confirmed), "at": moment(confirmed.ts, now, self.tz),
+                "corrected": corrected or None, "asked_clinic": bool(asked), "words": words}
 
     def attestation(self, case: Case, summary: str, now: datetime) -> dict[str, Any]:
         p = self.patient(case)

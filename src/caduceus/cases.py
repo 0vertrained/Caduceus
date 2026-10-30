@@ -157,6 +157,29 @@ class FaxRepository:
         return [Fax.model_validate(json.loads(r[0])) for r in rows]
 
 
+class DocumentRepository:
+    """Documents Caduceus files itself, kept with the cases: a faxed referral's cover sheet, with the text read from it
+    and a pointer to the page image, becomes page 1 of the case's packet. Same shape as the record's DocumentReferences,
+    so the tools and screens read them alike (see caduceus.fhir.store.WithFiledDocuments)."""
+
+    def __init__(self, conn: sqlite3.Connection):
+        self._conn = conn
+        self._lock = threading.Lock()
+        with self._lock:
+            conn.execute("CREATE TABLE IF NOT EXISTS documents (id TEXT PRIMARY KEY, data TEXT)")
+            conn.commit()
+
+    def save(self, doc: dict[str, Any]) -> None:
+        with self._lock:
+            self._conn.execute("INSERT OR REPLACE INTO documents(id, data) VALUES (?, ?)", (doc["id"], json.dumps(doc)))
+            self._conn.commit()
+
+    def get(self, doc_id: str) -> dict[str, Any] | None:
+        with self._lock:
+            row = self._conn.execute("SELECT data FROM documents WHERE id = ?", (doc_id,)).fetchone()
+        return json.loads(row[0]) if row else None
+
+
 class StaleCase(Exception):
     pass
 

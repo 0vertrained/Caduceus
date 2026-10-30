@@ -14,12 +14,13 @@ from zoneinfo import ZoneInfo
 
 from caduceus.audit.log import AuditEvent
 from caduceus.auth import DEV_USERS
-from caduceus.intake import ASKED_FOR, listed
+from caduceus.intake import ASKED_FOR, fields_in_words, listed
 
 AGENT_IDS = {"caduceus-agent", "intake"}
 STEP_WORDS = {"enrichment": "read the record, the referral packet and the payer's requirements",
               "drafting": "read the packet to write the draft", "review": "move the case to review",
-              "submission": "send it to the payer", "follow_up": "read the payer's decision and file it"}
+              "submission": "send it to the payer", "follow_up": "read the payer's decision and file it",
+              "intake": "read the faxed cover sheet"}
 VIEWS = {"case.viewed": "Opened the case", "page.viewed": "Read a packet page",
          "attestation.viewed": "Opened the request to attest", "fax.viewed": "Opened the fax",
          "fax.patient_searched": "Looked the patient up in the chart"}
@@ -41,8 +42,21 @@ def plural(n: int, one: str, many: str) -> str:
 def sentence(e: AuditEvent, clinician: str) -> str:
     d = e.detail or {}
     match e.action:
+        case "case.received" if d.get("from"):
+            return f"Created the case from the checked fax: {plural(d.get('pages', 0), 'page', 'pages')}, the cover " \
+                   "sheet first."
         case "case.received":
             return f"Received the referral, {plural(d.get('pages', 0), 'page', 'pages')}."
+        case "fax.received":
+            return f"Received a referral by fax, {plural(d.get('pages', 0), 'page', 'pages')}."
+        case "fax.read":
+            n = d.get("to_check", 0)
+            return "Read the cover sheet with OCR, inside Mesa Verde’s systems. " + (
+                f"{plural(n, 'field', 'fields')} went to a person to check." if n else "Every field was read clearly.")
+        case "fax.confirmed":
+            corrected = fields_in_words(d.get("corrected", []))
+            return f"Checked the fax against the page{f', corrected {corrected},' if corrected else ''} and created " \
+                   "the case."
         case "criteria.evaluated":
             c = d.get("counts", {})
             return (f"Checked the record against the coverage policy: {c.get('met', 0)} met, "

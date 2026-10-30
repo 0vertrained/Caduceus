@@ -8,6 +8,7 @@ the page before any case is created (ADR 6). Nothing downstream is built on an u
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import re
 import shutil
@@ -266,8 +267,34 @@ ASKED_FOR = {"referral": "the referral number", "patient_name": "the patient’s
              "diagnosis": "the diagnosis and its ICD-10 code"}
 
 
+# What a sentence calls each field ("corrected the member ID and the ordering clinician").
+FIELD_WORDS = {"referral": "the referral number", "patient_name": "the patient’s name",
+               "birth_date": "the date of birth", "member_id": "the member ID", "payer": "the health plan",
+               "clinician": "the ordering clinician",
+               "service_code": "the requested service", "service": "the requested service",
+               "diagnosis": "the diagnosis"}
+
+
 def listed(items: list[str]) -> str:
     return items[0] if len(items) == 1 else f"{', '.join(items[:-1])} and {items[-1]}"
+
+
+def fields_in_words(keys: Iterable[str]) -> str:
+    """The fields, in the order the cover sheet gives them, as a sentence names them; empty if there are none."""
+    named = list(dict.fromkeys(FIELD_WORDS[k] for k, _ in LABELS if k in set(keys)))
+    return listed(named) if named else ""
+
+
+def cover_sheet(doc_id: str, fax_file: str, reading: dict[str, Any], received_at: str, clinic: str | None) -> dict:
+    """The faxed cover sheet as a document for the case's packet: the text read from it, and where its image is. Shaped
+    like the record's DocumentReferences, so every tool and screen that reads a packet page reads this one too."""
+    text = reading.get("text") or "\n".join(f"{f['label']}: {f['value']}" for f in reading.get("fields", []))
+    return {"resourceType": "DocumentReference", "id": doc_id, "status": "current", "description": "Fax cover sheet",
+            "date": received_at, "author": [{"display": clinic}] if clinic else [],
+            "content": [{"attachment": {"contentType": "text/plain", "title": "Read by OCR",
+                                        "data": base64.b64encode(text.encode()).decode()}},
+                        {"attachment": {"contentType": "image/png", "title": "The faxed page",
+                                        "url": f"fax:{fax_file}"}}]}
 
 
 def clinic_request(clinic: str | None, referral: str | None, received: str, missing: list[str], resend: bool) -> str:

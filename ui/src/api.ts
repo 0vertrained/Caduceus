@@ -176,6 +176,8 @@ export interface CaseView {
   submission: { kind?: "reply" | "appeal"; sent?: boolean; send_after?: string; approved_by?: string; submission_id?: string } | null;
   reply: PayerReply | null;
   read_only: boolean;
+  /** For a case created from a fax: who checked it against the page, when, and what they corrected. */
+  came_by_fax: { from: string | null; by: string; at: string; corrected: string | null; asked_clinic: boolean; words: string } | null;
 }
 
 export interface TimelineEntry {
@@ -199,7 +201,10 @@ export interface PayerReply {
   declined: { by: string; at: string } | null;
 }
 
-export interface Page { id: string; title: string; page: number; pages: number; date: string | null; author: string | null; text: string }
+export interface Page {
+  id: string; title: string; page: number; pages: number; date: string | null; author: string | null; text: string;
+  image: string | null;  // a faxed page keeps its image; its text is what OCR read
+}
 
 export interface AttestationView {
   case_id: string;

@@ -439,7 +439,10 @@ mark { background: var(--mark); color: var(--ink); padding: 0.05em 0.15em; margi
 .fax-viewer__page { max-height: 75vh; }
 .fax-viewer__page img, .whole-page img { display: block; max-width: none; }
 .whole-page { max-height: 360px; max-width: 560px; }
+.whole-page--tall { max-height: 70vh; max-width: none; }
 .whole-page img { width: 100%; }
+.side__fax { display: flex; flex-direction: column; gap: var(--space-2); }
+.case-head__fax { color: var(--ink-2); max-width: 70ch; }
 
 /* A tick a person gives a field: "Matches the fax" */
 .tick { display: inline-flex; align-items: center; gap: var(--space-3); min-height: 44px; padding: 0 var(--space-3) 0 0;

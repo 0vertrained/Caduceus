@@ -13,12 +13,12 @@ from zoneinfo import ZoneInfo
 
 from caduceus.audit.log import AuditLog
 from caduceus.auth import Authenticator
-from caduceus.cases import CaseRepository, FaxRepository
+from caduceus.cases import CaseRepository, DocumentRepository, FaxRepository
 from caduceus.criteria.engine import Engine
 from caduceus.criteria.loader import load_library, load_lock
 from caduceus.deid.safe_harbor import SafeHarborDeidentifier
 from caduceus.drafting import Drafter
-from caduceus.fhir.store import FhirStore, HapiFhirStore, LocalBundleStore
+from caduceus.fhir.store import FhirStore, HapiFhirStore, LocalBundleStore, WithFiledDocuments
 from caduceus.payer import MockPayer
 from caduceus.router import Router
 from caduceus.router.providers import (
@@ -116,8 +116,9 @@ def build_services(settings: Settings | None = None, conn: sqlite3.Connection | 
         if s.db_path != ":memory:":
             Path(s.db_path).parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(s.db_path, check_same_thread=False)
-    audit, cases = AuditLog(conn), CaseRepository(conn)
-    store: FhirStore = HapiFhirStore(s.fhir_base_url) if s.fhir_base_url else LocalBundleStore(s.data_dir)
+    audit, cases, filed = AuditLog(conn), CaseRepository(conn), DocumentRepository(conn)
+    record: FhirStore = HapiFhirStore(s.fhir_base_url) if s.fhir_base_url else LocalBundleStore(s.data_dir)
+    store = WithFiledDocuments(record, filed)
     policies = s.data_dir / "policies"
     library, engine = load_library(policies), Engine(load_lock(policies))
 
@@ -134,7 +135,7 @@ def build_services(settings: Settings | None = None, conn: sqlite3.Connection | 
     tz = ZoneInfo(s.clinic_tz)
     workflow = Workflow(cases, audit, store, library, engine, Drafter(router, deid),
                         MockPayer(published=load_lock(policies)), faxes=FaxRepository(conn),
-                        catalog=_catalog(s.data_dir), fax_dir=s.data_dir / "faxes", tz=tz)
+                        catalog=_catalog(s.data_dir), fax_dir=s.data_dir / "faxes", tz=tz, filed=filed)
     auth = Authenticator(s.auth_mode, s.oidc_jwks_url, s.oidc_issuer, s.oidc_audience)
     return Services(s, tz, audit, cases, store, workflow, auth, router, conn)
 

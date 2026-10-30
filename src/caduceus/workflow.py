@@ -20,12 +20,21 @@ from typing import Any
 
 from caduceus.audit.log import AuditLog, sha256_of
 from caduceus.auth import AGENT, Principal, Role
-from caduceus.cases import Attestation, Case, CaseRepository, Fax, FaxRepository, LastAction, State
+from caduceus.cases import (
+    Attestation,
+    Case,
+    CaseRepository,
+    DocumentRepository,
+    Fax,
+    FaxRepository,
+    LastAction,
+    State,
+)
 from caduceus.criteria.dsl import CriteriaSet
 from caduceus.criteria.engine import Engine
 from caduceus.drafting import Drafter, mid_sentence, patient_name
 from caduceus.fhir.store import FhirStore
-from caduceus.intake import FORM, LABELS, check, clinic_request, form, iso_date, read_fax, unchecked
+from caduceus.intake import FORM, LABELS, check, clinic_request, cover_sheet, form, iso_date, read_fax, unchecked
 from caduceus.payer import MockPayer, build_appeal_bundle, build_reply_bundle, build_request_bundle
 from caduceus.tools import ToolGateway, build_gateway
 from caduceus.words import clock, long_date
@@ -49,10 +58,12 @@ class Workflow:
     def __init__(self, cases: CaseRepository, audit: AuditLog, store: FhirStore, library: dict[str, CriteriaSet],
                  engine: Engine, drafter: Drafter, payer: MockPayer,
                  clock: Callable[[], datetime] = lambda: datetime.now(UTC), faxes: FaxRepository | None = None,
-                 catalog: dict[str, Any] | None = None, fax_dir: Path | None = None, tz: tzinfo = UTC):
+                 catalog: dict[str, Any] | None = None, fax_dir: Path | None = None, tz: tzinfo = UTC,
+                 filed: DocumentRepository | None = None):
         self.cases, self.audit, self.store, self.library = cases, audit, store, library
         self.engine, self.drafter, self.payer, self.now = engine, drafter, payer, clock
         self.faxes, self.fax_dir = faxes, fax_dir
+        self.filed = filed  # documents Caduceus files itself; the store finds them by id (WithFiledDocuments)
         self.tz = tz  # the clinic's time zone, for times a refusal or a request to a clinic gives in words
         # What a referral may name: the services this team handles, the payers, the ordering clinicians on file.
         self.catalog = catalog or {"services": {}, "clinicians": {}, "clinics": {}, "payers": set()}
@@ -394,13 +405,28 @@ class Workflow:
         if self.cases.get(values["referral"]) is not None:
             raise ActionRefused(f"A case for referral {values['referral']} already exists.", field="referral",
                                 case_id=values["referral"])
+        # The same patient and service already open under another referral: a second request would be a duplicate.
+        # Refused rather than allowed with a warning; the person opens the case that exists. Only a payer's approval
+        # closes a case: a denial can still be appealed, and a returned case can still come back.
+        same = next((c for c in sorted(self.cases.all(), key=lambda c: c.id) if c.patient_id == patient_id
+                     and c.service["code"] == values["service_code"] and c.state != State.APPROVED), None)
+        if same is not None:
+            raise ActionRefused(f"Case {same.id} is already open for this patient and this service, so this referral "
+                                "would be a second request. Open that case instead.", field="service_code",
+                                case_id=same.id)
         read = {f["key"]: f for f in (fax.reading or {}).get("fields", [])}
         flagged = [f["key"] for f in fields if f["problem"]]
+        packet = list(fax.pages)
+        if self.filed is not None:  # the cover sheet is page 1 of the referral, as the fax numbers it
+            cover = cover_sheet(f"cover-{fax.id.lower()}", fax.file, fax.reading or {}, fax.received_at.isoformat(),
+                                self.intake_form(fax)["clinic"])
+            self.filed.save(cover)
+            packet = [cover["id"], *packet]
         case = Case(id=values["referral"], patient_id=patient_id,
                     service={k: service[k] for k in ("system", "code", "display", "short")},
                     criteria_set=service["criteria_set"], as_of=fax.as_of,
                     payer={"name": values["payer"], "member_id_last4": values["member_id"][-4:]},
-                    ordering_clinician=self.catalog["clinicians"][values["clinician"]], packet=fax.pages,
+                    ordering_clinician=self.catalog["clinicians"][values["clinician"]], packet=packet,
                     received_at=fax.received_at, due_at=fax.received_at + timedelta(hours=fax.due_in_hours))
         self.cases.save(case)
         self.audit.append(who.id, who.role, "fax.confirmed", fax.id, {
