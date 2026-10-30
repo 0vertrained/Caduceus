@@ -14,7 +14,7 @@ from __future__ import annotations
 import re
 import threading
 from collections.abc import Callable
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta, tzinfo
 from pathlib import Path
 from typing import Any
 
@@ -43,10 +43,11 @@ class Workflow:
     def __init__(self, cases: CaseRepository, audit: AuditLog, store: FhirStore, library: dict[str, CriteriaSet],
                  engine: Engine, drafter: Drafter, payer: MockPayer,
                  clock: Callable[[], datetime] = lambda: datetime.now(UTC), faxes: FaxRepository | None = None,
-                 catalog: dict[str, Any] | None = None, fax_dir: Path | None = None):
+                 catalog: dict[str, Any] | None = None, fax_dir: Path | None = None, tz: tzinfo = UTC):
         self.cases, self.audit, self.store, self.library = cases, audit, store, library
         self.engine, self.drafter, self.payer, self.now = engine, drafter, payer, clock
         self.faxes, self.fax_dir = faxes, fax_dir
+        self.tz = tz  # the clinic's time zone, for times a refusal or a request to a clinic gives in words
         # What a referral may name: the services this team handles, the payers, the ordering clinicians on file.
         self.catalog = catalog or {"services": {}, "clinicians": {}, "payers": set()}
         self._dispatch_lock = threading.Lock()  # one dispatcher at a time: a request is never sent twice
