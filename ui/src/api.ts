@@ -163,6 +163,7 @@ export interface CaseView {
   actions: {
     can_approve: boolean; approve_blocked_reason: string | null; can_request_attestation: boolean; can_return: boolean;
     can_ask_for_note: boolean; can_send_note: boolean; can_send_appeal: boolean; can_edit_appeal: boolean;
+    can_recall: boolean;
   };
   payer_clock: { applies: boolean; plan_type: string; decided?: boolean; within?: boolean; words: string } | null;
   requirements: { matches: boolean; plan_type: string; checked_at: string } | null;

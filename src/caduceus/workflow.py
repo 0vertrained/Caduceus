@@ -37,12 +37,13 @@ from caduceus.fhir.store import FhirStore
 from caduceus.intake import FORM, LABELS, check, clinic_request, cover_sheet, form, iso_date, read_fax, unchecked
 from caduceus.payer import MockPayer, build_appeal_bundle, build_reply_bundle, build_request_bundle
 from caduceus.tools import ToolGateway, build_gateway
-from caduceus.words import clock, long_date
+from caduceus.words import clock, long_date, moment
 
 UNDO_SECONDS = 30
 NOTE_LIMIT = 4000  # characters; a payer's question is answered in a paragraph or two
 SNAPSHOT_FIELDS = ("state", "attestation_requested", "attestation_requested_at", "attestation_requested_by",
                    "attestations", "returned_reason", "submission", "payer_response", "draft", "reply", "appeal")
+APPROVALS = ("case.approved", "reply.approved", "appeal.approved")  # what puts something in the outbox
 
 
 class ActionRefused(Exception):
@@ -510,13 +511,45 @@ class Workflow:
         last = case.last_action
         if last is None or last.actor != who.id:
             raise ActionRefused("There is nothing of yours to undo on this case.")
-        if self.now() > last.undo_until:
-            raise ActionRefused("The 30 seconds to undo have passed. Use the case history to recall it.")
         if case.sent_since_last_action:
-            raise ActionRefused("This has already reached the payer.")
+            raise ActionRefused(self._reached(case))
+        if self.now() > last.undo_until:
+            if case.state == State.SUBMITTED:
+                raise ActionRefused("The 30 seconds to undo have passed, but it has not been sent yet. Recall it "
+                                    "instead.")
+            raise ActionRefused("The 30 seconds to undo have passed.")
         restored = Case.model_validate(case.model_dump(mode="json") | last.prior | {"last_action": None})
         self.audit.append(who.id, who.role, "action.undone", case_id, {"undone": last.action})
         return self.cases.save(restored)
+
+    def recall(self, who: Principal, case_id: str) -> Case:
+        """Take back an approval that has not reached the payer: after the 30-second undo, until the outbox sends it.
+        Any PA specialist can, not only the one who approved. The case goes back to where the approval found it: a
+        request to review, a note to the payer's question, an appeal to the denial. Once sent, nothing is recalled,
+        and the refusal says when it reached the payer."""
+        self._require(who, Role.PA_SPECIALIST)
+        with self._dispatch_lock:  # never at the moment the outbox is sending it
+            case = self._get(case_id)
+            sub = case.submission or {}
+            if sub.get("sent"):
+                raise ActionRefused(self._reached(case))
+            if case.state != State.SUBMITTED:
+                raise ActionRefused("Nothing approved is waiting to be sent on this case.")
+            last = case.last_action
+            if last is None or last.action not in APPROVALS:
+                raise ActionRefused("This approval cannot be recalled here. Ask an administrator.")
+            self.audit.append(who.id, who.role, "case.recalled", case_id,
+                              {"kind": sub.get("kind") or "request", "approval_seq": sub.get("approval_seq"),
+                               "approved_by": sub.get("approved_by_id")})
+            restored = Case.model_validate(case.model_dump(mode="json") | last.prior | {"last_action": None})
+            return self.cases.save(restored)
+
+    def _reached(self, case: Case) -> str:
+        """That something already reached the payer, and when: it can no longer be undone or recalled."""
+        sub = case.submission or {}
+        what = {"reply": "The note", "appeal": "The appeal"}.get(sub.get("kind"), "The request")
+        when = f" {moment(sub['sent_at'], self.now(), self.tz)}" if sub.get("sent_at") else ""
+        return f"{what} reached {case.payer['name']}{when}, so it cannot be undone or recalled."
 
     # Internals -----------------------------------------------------------------------------------------
 
