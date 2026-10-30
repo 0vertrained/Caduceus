@@ -66,8 +66,11 @@ export function sandboxLink(): string {
 /** Something changed on the server: the tour listens for this to move on. */
 export const CHANGED = "caduceus:changed";
 
+/** A refusal can name the form field it is about, or a case that already covers what was asked. */
+export interface Refusal { field?: string; case_id?: string }
+
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(public status: number, message: string, public refusal: Refusal = {}) {
     super(message);
   }
 }
@@ -81,13 +84,16 @@ export async function api<T>(path: string, init: RequestInit = {}, as: "json" | 
   const res = await fetch(path, { ...init, headers, cache: "no-store" });
   if (!res.ok) {
     let message = "Something went wrong. Try again in a moment.";
+    let refusal: Refusal = {};
     try {
       const body = await res.json();
-      message = body.message ?? body.detail ?? message;
+      const said = body.message ?? body.detail;
+      if (typeof said === "string") message = said;  // a 422's detail is a list for developers, not words
+      refusal = { field: body.field, case_id: body.case_id };
     } catch {
       /* keep the default message */
     }
-    throw new ApiError(res.status, message);
+    throw new ApiError(res.status, message, refusal);
   }
   if (init.method && init.method !== "GET") window.dispatchEvent(new Event(CHANGED));
   return (as === "blob" ? res.blob() : res.json()) as Promise<T>;
@@ -214,10 +220,23 @@ export interface FaxField {
   key: string; label: string; value: string; confidence: number;
   box: [number, number, number, number] | null; problem: string | null;
 }
+/** One line of the check-the-fax form, in page order, with the value the form starts on. */
+export interface FormField {
+  key: string; label: string; kind: "text" | "select" | "date"; read_as: string; initial: string;
+  problem: string | null; confidence: number; box: [number, number, number, number] | null; at_clinic?: string[];
+}
+export interface FaxChoices {
+  payers: string[];
+  clinicians: { name: string; specialty: string; clinic: string | null }[];
+  services: { code: string; label: string }[];
+}
 export interface FaxRow {
   id: string; status: "received" | "read" | "confirmed"; received: string; pages: number;
-  referral: string | null; patient: string | null; to_check: number; case_id: string | null;
+  referral: string | null; patient: string | null; to_check: number; clinic: string | null; case_id: string | null;
 }
-export interface FaxView extends FaxRow { fields: FaxField[]; size: [number, number]; engine: string; image: string }
+export interface FaxView extends FaxRow {
+  fields: FaxField[]; size: [number, number]; engine: string; image: string;
+  form: FormField[]; sender: { read_as: string; box: [number, number, number, number] | null }; choices: FaxChoices;
+}
 
 export interface Me { id: string; name: string; role: "pa_specialist" | "clinician" | "admin" | "auditor" }

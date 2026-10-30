@@ -73,10 +73,16 @@ await still(page, "fax-check");
 await say(page, "This one is a poor copy. Every field Caduceus was unsure of comes to a person, beside the part of the page it came from.", 4800);
 await page.mouse.wheel(0, 500);
 await pause(1500);
-const labels = { referral: "Referral number", patient_name: "Patient name", birth_date: "Date of birth", member_id: "Member ID",
-  payer: "Health plan", clinician: "Ordering clinician", service_code: "CPT/HCPCS code", service: "Requested service", diagnosis: "Diagnosis" };
-for (const [key, label] of Object.entries(labels)) await page.getByLabel(label, { exact: true }).fill(faxes["FAX-0003"].expected[key]);
-await say(page, "She corrects the misreads against the page. Only then is the case created and checked.", 2600);
+const want = faxes["FAX-0003"].expected;
+for (const [key, label] of Object.entries({ member_id: "Member ID", diagnosis: "Diagnosis" })) {
+  await page.getByLabel(label, { exact: true }).fill(want[key]);
+}
+await page.getByLabel("Ordering clinician", { exact: true }).selectOption(want.clinician);
+await page.getByLabel("Requested service", { exact: true }).selectOption(want.service_code);
+for (const box of await page.getByRole("checkbox", { name: /^Matches the fax/ }).all()) {
+  if (!(await box.isChecked())) await box.check();
+}
+await say(page, "She corrects the misreads and ticks each unsure field against the page. Only then is the case created and checked.", 3200);
 await page.getByRole("button", { name: "Create the case" }).click();
 await page.getByRole("heading", { name: "Coverage criteria" }).waitFor();
 await say(page, "Caduceus matched the patient and checked the policy: her back pain began three weeks ago, short of six, and it says so.", 4600);
