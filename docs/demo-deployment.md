@@ -13,9 +13,12 @@ browser gets its own copy of the cases (a random id it keeps and sends with ever
 never change what another sees. Copies are cloned in milliseconds from a seeded template, at most 60 are kept (the
 least recently used goes first), and each starts over after 6 hours or when its visitor asks. A banner on every page
 says the patients are synthetic, and a guided tour follows one case to the payer's approval, saying who to act as
-at each step. The tour's phone link opens the same copy on another device. No model is configured, so drafts come from the
-deterministic template; to show the PHI router with a real model, run it locally with
-`docker compose --profile llm`.
+at each step. The tour's phone link opens the same copy on another device. Drafts are written by a model on Ollama Cloud through the
+PHI router's de-identified route, and each case page shows exactly what was sent. The deploy records the model's
+replies into the image, so a cold start makes no calls; the running demo calls the model only for a request it has
+not seen. Ollama Cloud is a subscription with fixed limits, so its key can use up a quota but never run up a bill,
+and the demo refuses any metered key. Without a key the demo still runs, with drafts from the deterministic template.
+There is no in-VPC model in the demo, so the chart summary a clinician sees comes from the template too.
 
 ## One-time setup
 
@@ -53,6 +56,11 @@ For the signing key:
 - Give it no `dev` value: values in the dev context stay readable.
 
 Copy the key straight from Cloud Shell into Netlify; it never needs to be anywhere else. Trigger a deploy.
+
+**4. The draft model (optional).** Create an API key at ollama.com/settings/keys, then in Cloud Shell run
+`infra/demo/add-model-key.sh YOUR_PROJECT_ID`. It asks for the key without echoing it and stores it in Secret
+Manager. The model is set by `EXTERNAL_MODEL` in `.github/workflows/deploy-demo.yml` (`gpt-oss:120b`); the deploy
+warns, listing what Ollama Cloud offers, if that name is not available. Run the deploy-demo workflow afterwards.
 
 ## Checking it
 

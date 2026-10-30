@@ -36,6 +36,10 @@ jobs:
       DEPLOY_SA: caduceus-deployer@project-fc4eda29-999d-4812-a00.iam.gserviceaccount.com
       RUNTIME_SA: caduceus-demo-runtime@project-fc4eda29-999d-4812-a00.iam.gserviceaccount.com
       SERVICE: caduceus-demo
+      # The draft model, on Ollama Cloud: a subscription with fixed limits, so its key cannot run up a bill. It sees
+      # only de-identified, stamped text. Its key lives in Secret Manager (infra/demo/add-model-key.sh).
+      MODEL_SECRET: caduceus-model-api-key
+      EXTERNAL_MODEL: gpt-oss:120b
       COMMIT: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -46,6 +50,30 @@ jobs:
         with:
           workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ env.DEPLOY_SA }}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - name: Record the draft model's replies into the image
+        # Without a key the demo still runs: drafts come from the template, and the case page says so.
+        run: |
+          if ! key="$(gcloud secrets versions access latest --secret "$MODEL_SECRET" --project "$PROJECT" 2>/dev/null)" \
+              || [ -z "$key" ]; then
+            echo "::notice title=Draft model::No key in Secret Manager ($MODEL_SECRET); drafts use the template."
+            exit 0
+          fi
+          echo "::add-mask::$key"
+          models="$(curl -fsS -H "Authorization: Bearer $key" https://ollama.com/api/tags | jq -r '.models[].name')" || models=""
+          if ! grep -qxF "$EXTERNAL_MODEL" <<< "$models"; then
+            echo "::warning title=Draft model::$EXTERNAL_MODEL is not offered on Ollama Cloud. Offered: $(tr "\n" " " <<< "$models")"
+          fi
+          python -m venv /tmp/rec && /tmp/rec/bin/pip install -q .
+          if CADUCEUS_EXTERNAL_PROVIDER=ollama CADUCEUS_EXTERNAL_MODEL="$EXTERNAL_MODEL" CADUCEUS_EXTERNAL_API_KEY="$key" \
+              /tmp/rec/bin/python scripts/record_completions.py data/recorded/completions.json; then
+            echo "::notice title=Draft model::Recorded $(jq length data/recorded/completions.json) replies from $EXTERNAL_MODEL"
+          else
+            echo "::warning title=Draft model::Recording failed; the demo will call the model on first use instead."
+          fi
+          echo "MODEL_KEY=1" >> "$GITHUB_ENV"
       - name: Build and push the image
         run: |
           image="${REGION}-docker.pkg.dev/${PROJECT}/caduceus/api:${COMMIT}"
@@ -57,11 +85,13 @@ jobs:
         # One instance at most: the demo keeps its cases in memory, and one instance bounds the bill.
         # Request-based billing and no minimum instances: idle costs nothing, and a cold start reseeds.
         run: |
+          secrets="CADUCEUS_PROXY_SIGNING_KEY=caduceus-proxy-signing-key:latest"
+          if [ "${MODEL_KEY:-}" = 1 ]; then secrets="$secrets,CADUCEUS_EXTERNAL_API_KEY=$MODEL_SECRET:latest"; fi
           gcloud run deploy "$SERVICE" --project "$PROJECT" --region "$REGION" --image "$IMAGE" \
-            --service-account "$RUNTIME_SA" --port 8000 --cpu 1 --memory 512Mi --concurrency 40 \
+            --service-account "$RUNTIME_SA" --port 8000 --cpu 1 --memory 1Gi --concurrency 40 \
             --min-instances 0 --max-instances 1 --allow-unauthenticated \
-            --set-env-vars CADUCEUS_AUTH_MODE=demo,CADUCEUS_DEMO_RESET_HOURS=6 \
-            --set-secrets CADUCEUS_PROXY_SIGNING_KEY=caduceus-proxy-signing-key:latest \
+            --set-env-vars "CADUCEUS_AUTH_MODE=demo,CADUCEUS_DEMO_RESET_HOURS=6,CADUCEUS_EXTERNAL_PROVIDER=ollama,CADUCEUS_EXTERNAL_MODEL=$EXTERNAL_MODEL" \
+            --set-secrets "$secrets" \
             --quiet
       - name: The API is up, and refuses requests that did not come through Netlify
         run: |

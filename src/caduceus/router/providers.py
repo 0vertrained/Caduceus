@@ -6,8 +6,13 @@ would leave the process.
 
 from __future__ import annotations
 
+import hashlib
+import json
+import threading
+from collections import OrderedDict
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, replace
+from pathlib import Path
 
 import httpx
 
@@ -19,6 +24,8 @@ class Completion:
     provider: str
     input_tokens: int
     output_tokens: int
+    vendor: str = ""        # who runs the model, as a person would name it
+    cached: bool = False    # a saved reply to an identical earlier request, not a new call
 
 
 class ProviderUnavailable(Exception):
@@ -78,18 +85,96 @@ class AnthropicMessagesProvider(Provider):
         data = r.json()
         text = "".join(b.get("text", "") for b in data.get("content", []) if b.get("type") == "text")
         usage = data.get("usage", {})
-        return Completion(text, self.model, self.name, usage.get("input_tokens", 0), usage.get("output_tokens", 0))
+        return Completion(text, self.model, self.name, usage.get("input_tokens", 0), usage.get("output_tokens", 0),
+                          vendor="Anthropic")
+
+
+class OllamaChatProvider(Provider):
+    """Ollama's chat API: Ollama Cloud at ollama.com, or an Ollama server. Ollama Cloud is a subscription with fixed
+    usage limits rather than per-token billing, so a key that leaks or is abused can exhaust a quota but never run
+    up a bill."""
+
+    def __init__(self, api_key: str | None, model: str, client: httpx.Client | None = None,
+                 base_url: str = "https://ollama.com", name: str = "external", vendor: str = "Ollama Cloud"):
+        self.name, self.model, self.vendor = name, model, vendor
+        self._url = base_url.rstrip("/") + "/api/chat"
+        self._headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
+        self._client = client or httpx.Client(timeout=90)
+
+    def complete(self, system: str, user: str, max_tokens: int = 800) -> Completion:
+        # Reasoning models spend part of the token budget thinking before they answer, so allow room for both.
+        body = {"model": self.model, "stream": False, "options": {"temperature": 0, "num_predict": max_tokens + 3200},
+                "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]}
+        try:
+            r = self._client.post(self._url, json=body, headers=self._headers)
+            r.raise_for_status()
+        except httpx.HTTPError as e:
+            raise ProviderUnavailable(f"{self.name} provider unavailable: {type(e).__name__}") from e
+        data = r.json()
+        text = (data.get("message") or {}).get("content", "").strip()
+        if not text:
+            raise ProviderUnavailable(f"{self.name} provider returned no answer")
+        return Completion(text, self.model, self.name, data.get("prompt_eval_count", 0), data.get("eval_count", 0),
+                          vendor=self.vendor)
+
+
+class CachingProvider(Provider):
+    """Remembers replies by the exact request (model, instructions, text, limit), for the life of the process and
+    across every demo visitor's copy, so an identical request is answered once. It can start from recorded replies
+    (a JSON file written by scripts/record_completions.py), so a cold start makes no calls at all. With no live
+    provider it answers only what was recorded. Only the de-identified route is ever cached."""
+
+    LIMIT = 2_000
+    _replies: OrderedDict[str, Completion] = OrderedDict()
+    _lock = threading.Lock()
+
+    def __init__(self, inner: Provider | None, recordings: Path | None = None, model: str | None = None):
+        self._inner = inner
+        recorded = json.loads(recordings.read_text()) if recordings is not None and recordings.exists() else {}
+        for key, c in recorded.items():
+            self._remember(key, Completion(**{k: c[k] for k in Completion.__dataclass_fields__ if k in c}))
+        models = [c["model"] for c in recorded.values()]
+        self.name = inner.name if inner else "external"
+        self.model = inner.model if inner else (model or max(set(models), key=models.count, default="recorded"))
+
+    @staticmethod
+    def key(model: str, system: str, user: str, max_tokens: int) -> str:
+        return hashlib.sha256(json.dumps([model, system, user, max_tokens]).encode()).hexdigest()
+
+    def _remember(self, key: str, completion: Completion) -> None:
+        with self._lock:
+            self._replies[key] = replace(completion, cached=False)
+            self._replies.move_to_end(key)
+            while len(self._replies) > self.LIMIT:
+                self._replies.popitem(last=False)
+
+    def complete(self, system: str, user: str, max_tokens: int = 800) -> Completion:
+        key = self.key(self.model, system, user, max_tokens)
+        with self._lock:
+            hit = self._replies.get(key)
+        if hit is not None:
+            return replace(hit, cached=True)
+        if self._inner is None:
+            raise ProviderUnavailable("no recorded reply for this request, and no live model")
+        completion = self._inner.complete(system, user, max_tokens)
+        self._remember(key, completion)
+        return completion
+
+    def export(self) -> dict[str, dict]:
+        with self._lock:
+            return {k: asdict(v) for k, v in self._replies.items() if v.model == self.model}
 
 
 class StubProvider(Provider):
     """Deterministic provider for tests and for running the demo with no model at all."""
 
-    def __init__(self, responder: Callable[[str, str], str], name: str = "stub", model: str = "stub-1"):
-        self.name, self.model = name, model
+    def __init__(self, responder: Callable[[str, str], str], name: str = "stub", model: str = "stub-1",
+                 vendor: str = ""):
+        self.name, self.model, self.vendor = name, model, vendor
         self._responder = responder
         self.calls: list[tuple[str, str]] = []
 
     def complete(self, system: str, user: str, max_tokens: int = 800) -> Completion:
         self.calls.append((system, user))
         text = self._responder(system, user)
-        return Completion(text, self.model, self.name, len(user.split()), len(text.split()))
+        return Completion(text, self.model, self.name, len(user.split()), len(text.split()), vendor=self.vendor)

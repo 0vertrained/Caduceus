@@ -14,7 +14,7 @@ real data.
 | Notes a clinician writes when a payer asks for documentation | Yes | Case store, exactly as signed; sent only to that payer, after a person approves; the audit log keeps a hash |
 | The audit log | Treated as PHI: free-text reasons a person types (for example, why a case was returned) can contain it | Same database, append-only; archived to an object-locked S3 bucket |
 | Case numbers in URLs and server logs | An internal identifier, kept inside the boundary | API access logs (KMS-encrypted CloudWatch) |
-| Text sent to the external model | De-identified only, and only for drafting | Leaves the VPC; nothing else does |
+| Text sent to the external model | De-identified only, and only for drafting | Leaves the VPC; nothing else does. Anthropic in the target deployment; Ollama Cloud in the public demo (hosted mainly in the US; Ollama states prompts and replies are not logged or trained on). Each draft keeps a copy of exactly what was sent, which the case page shows |
 | Patient names typed into search | Yes | Never leaves the browser tab: the term travels in history state, not the URL, so it cannot reach server or load-balancer logs |
 
 ## Where it flows
