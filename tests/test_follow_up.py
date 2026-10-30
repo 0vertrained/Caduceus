@@ -1,4 +1,4 @@
-"""After a person acts: recalling an approval that has not been sent."""
+"""After a person acts: recalling an approval that has not been sent, and a returned case the clinic resubmits."""
 
 from __future__ import annotations
 
@@ -87,3 +87,32 @@ def test_a_recalled_appeal_goes_back_to_the_denial(env):  # noqa: F811
     case = client.post("/api/cases/2026-1038/recall", headers=DOLORES).json()
     assert case["state"] == "denied" and case["actions"]["can_send_appeal"] and case["appeal"]["draft"]["text"]
     assert svc.workflow.dispatch_due() == []
+
+
+def test_a_returned_case_the_clinic_resubmits_is_prepared_again(env):  # noqa: F811
+    svc, client, clock = env
+    assert client.post("/api/cases/2026-1043/resubmitted", headers=DOLORES).status_code == 409  # not returned
+    _sign_harold(client)  # signed for the referral as it was
+    client.post("/api/cases/2026-1043/return", headers=DOLORES, json={"reason": "The red-flag exam is not documented."})
+    q = client.get("/api/queue", headers=DOLORES).json()
+    waiting = next(w for w in q["waiting"] if w["id"] == "2026-1043")
+    assert waiting["status"]["key"] == "returned" and waiting["next"] == "Open it when the clinic resubmits."
+    returned = client.get("/api/cases/2026-1043", headers=DOLORES).json()
+    assert returned["actions"]["can_resubmit"] is True
+    assert client.get("/api/cases/2026-1043", headers=as_user("sam")).json()["actions"]["can_resubmit"] is False
+
+    assert client.post("/api/cases/2026-1043/resubmitted", headers=REYES).status_code == 403
+    assert client.post("/api/cases/2026-1043/resubmitted", headers=as_user("sam")).status_code == 403
+    clock.advance(minutes=5)
+    case = client.post("/api/cases/2026-1043/resubmitted", headers=DOLORES).json()
+    # Prepared afresh: checked again, a new draft, and what the record does not answer goes to the clinician again.
+    assert case["state"] == "review" and case["returned_reason"] is None and case["undo"] is None
+    assert case["status"]["key"] == "needs_clinician" and case["actions"]["can_request_attestation"]
+    assert case["criteria"]["checked_at"] == "1:05 pm" and case["draft"]["text"]
+    actions = [e.action for e in svc.audit.events("2026-1043")]
+    assert actions.index("case.resubmitted") < max(i for i, a in enumerate(actions) if a == "criteria.evaluated")
+    q = client.get("/api/queue", headers=DOLORES).json()
+    assert all(w["id"] != "2026-1043" for w in q["waiting"]) and q["groups"][0]["cases"][0]["id"] == "2026-1043"
+    said = [e["what"] for e in client.get("/api/cases/2026-1043/timeline", headers=DOLORES).json()["entries"]]
+    assert "Marked that the clinic resubmitted it. Caduceus prepares it again from the start." in said
+    assert client.post("/api/cases/2026-1043/resubmitted", headers=DOLORES).status_code == 409

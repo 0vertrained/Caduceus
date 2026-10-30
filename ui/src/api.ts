@@ -130,7 +130,7 @@ export interface Queue {
   now: string;
   counts: { open: number; due_today: number; approved_today: number; with_clinicians: number };
   groups: { key: "today" | "tomorrow" | "later"; title: string; cases: QueueRow[] }[];
-  waiting: { id: string; patient: string; status: Status; since: string }[];
+  waiting: { id: string; patient: string; status: Status; since: string; next: string | null }[];
 }
 
 export interface Evidence { display: string; date: string | null; document_id: string | null; page: number | null; sentence: string | null }
@@ -163,7 +163,7 @@ export interface CaseView {
   actions: {
     can_approve: boolean; approve_blocked_reason: string | null; can_request_attestation: boolean; can_return: boolean;
     can_ask_for_note: boolean; can_send_note: boolean; can_send_appeal: boolean; can_edit_appeal: boolean;
-    can_recall: boolean;
+    can_recall: boolean; can_resubmit: boolean;
   };
   payer_clock: { applies: boolean; plan_type: string; decided?: boolean; within?: boolean; words: string } | null;
   requirements: { matches: boolean; plan_type: string; checked_at: string } | null;

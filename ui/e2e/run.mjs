@@ -215,6 +215,17 @@ await page.goto(base + "/cases/2026-1038");
 await page.getByRole("button", { name: "Approve and send" }).click();
 await page.getByRole("status").filter({ hasText: "Approved." }).waitFor();
 
+// A case returned to the clinic, then resubmitted: Caduceus prepares it again and it is back in review.
+await page.goto(base + "/cases/2026-1031");
+await page.getByRole("button", { name: "Return for correction" }).click();
+await page.getByLabel(/^What needs correcting/).fill("The sleep study report is missing its date.");
+await page.getByRole("button", { name: /^Return to / }).click();
+await page.getByRole("button", { name: "The clinic resubmitted" }).waitFor();
+await shot(page, "09b-case-returned");
+await axe(page, "09b-case-returned");
+await page.getByRole("button", { name: "The clinic resubmitted" }).click();
+await page.getByRole("button", { name: "Return for correction" }).waitFor();
+
 // Larger text and reflow at 320 CSS px.
 await page.goto(base + "/");
 await page.getByRole("button", { name: "Larger" }).click();

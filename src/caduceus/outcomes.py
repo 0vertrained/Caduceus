@@ -16,7 +16,7 @@ from caduceus.cases import Case, Fax, State
 HUMAN_ACTIONS = {"attestation.requested", "attestation.signed", "case.approved", "case.returned", "draft.edited",
                  "note.requested", "note.signed", "note.declined", "reply.approved", "appeal.edited",
                  "appeal.approved", "fax.confirmed", "action.undone", "fax.clinic_asked", "fax.clinic_replied",
-                 "case.recalled"}
+                 "case.recalled", "case.resubmitted"}
 
 
 def pct(n: int, d: int) -> str:

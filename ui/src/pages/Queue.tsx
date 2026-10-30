@@ -96,7 +96,7 @@ function Waiting({ data }: { data: QueueData }) {
         {data.waiting.map((w) => (
           <li key={w.id} className="waiting__item">
             <Link to={`/cases/${w.id}`} className="waiting__name">{w.patient}</Link>
-            <span className="muted">{w.status.word} since {glue(w.since)}</span>
+            <span className="muted">{w.status.word} since {glue(w.since)}.{w.next ? ` ${w.next}` : ""}</span>
           </li>
         ))}
       </ul>

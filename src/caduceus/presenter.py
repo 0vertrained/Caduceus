@@ -122,7 +122,8 @@ class Presenter:
         for c in sorted((c for c in cases if c.state in WAITING), key=lambda c: c.id):
             since = (c.last_action.at if c.last_action else c.attestation_requested_at) or c.received_at
             waiting.append({"id": c.id, "patient": patient_name(self.patient(c)), "status": status(c),
-                            "since": clock(since, self.tz)})
+                            "since": clock(since, self.tz),
+                            "next": "Open it when the clinic resubmits." if c.state == State.RETURNED else None})
         return {
             "now": now.isoformat(),
             "counts": {"open": len(active), "due_today": len(groups["today"]), "approved_today": approved_today,
@@ -172,7 +173,8 @@ class Presenter:
                    # Approved but not sent, and this person cannot undo it (their 30 seconds passed, or it was
                    # someone else's approval): it can still be recalled until the outbox sends it.
                    "can_recall": case.state == State.SUBMITTED and not (case.submission or {}).get("sent")
-                   and undo is None}
+                   and undo is None,
+                   "can_resubmit": case.state == State.RETURNED}
         return {
             "id": case.id, "version": case.version, "state": case.state.value, "status": status(case),
             "patient": {"name": patient_name(p), "birth_date": long_date(born),
