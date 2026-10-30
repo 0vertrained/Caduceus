@@ -44,6 +44,11 @@ def describe(f: dict) -> str:
     return f"{f['package']} {f['version']} ({f['type']}): {f['id']}, {f['severity']}, {fix}"
 
 
+def escape(text: str) -> str:
+    """Workflow-command escaping, so a finding cannot end its annotation early or inject another command."""
+    return text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+
+
 def counts(items: list[dict]) -> str:
     c = Counter(f["severity"] for f in items)
     return ", ".join(f"{c[s]} {s.lower()}" for s in SEVERITIES if c[s]) or "none"
@@ -64,11 +69,14 @@ def main(argv: list[str] | None = None) -> int:
     headline = (f"{len(items)} known vulnerabilities: {len(fixed)} with a released fix ({counts(fixed)}), "
                 f"{len(unfixed)} without one ({counts(unfixed)})")
     print(f"::notice title={args.label}::{headline}")
+    if items:  # the full list in one annotation, since each kind is capped at 10 per step
+        listing = "%0A".join(escape(describe(f)) for f in items)
+        print(f"::notice title={args.label}, every finding::{listing}")
     failing = {"fixed": fixed, "any": items, "none": []}[args.fail_on]
     for f in failing[:MAX_ANNOTATIONS]:
-        print(f"::error title={args.label}::{describe(f)}")
+        print(f"::error title={args.label}::{escape(describe(f))}")
     for f in [f for f in items if f not in failing][:MAX_ANNOTATIONS]:
-        print(f"::warning title={args.label}::{describe(f)}")
+        print(f"::warning title={args.label}::{escape(describe(f))}")
 
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
