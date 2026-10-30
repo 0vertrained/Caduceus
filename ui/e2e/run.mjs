@@ -125,6 +125,11 @@ await shot(page, "09-case-sending");
 await view(page, "09-case-sending");
 await axe(page, "09-case-sending");
 
+// A second case, sent now so the payer's answer is back by the end of the walk. This payer denies it.
+await page.goto(base + "/cases/2026-1038");
+await page.getByRole("button", { name: "Approve and send" }).click();
+await page.getByRole("status").filter({ hasText: "Approved." }).waitFor();
+
 // Larger text and reflow at 320 CSS px.
 await page.goto(base + "/");
 await page.getByRole("button", { name: "Larger" }).click();
@@ -175,17 +180,28 @@ await tour(page).getByText("Tour complete").waitFor({ timeout: 10_000 });
 await shot(page, "17-case-approved");
 await axe(page, "17-case-approved");
 
+// The denial names its reason; Caduceus has drafted an appeal from the policy and the record.
+await page.goto(base + "/cases/2026-1038");
+await page.getByRole("heading", { name: /denied it$/ }).waitFor({ timeout: 60_000 });
+await shot(page, "18-case-denied");
+await axe(page, "18-case-denied");
+await page.getByRole("button", { name: /^Send the appeal to / }).click();
+await page.getByRole("status").filter({ hasText: "Sending the appeal" }).waitFor();
+await page.getByRole("status").filter({ hasText: /^Approved by / }).waitFor({ timeout: 60_000 });
+await axe(page, "19-appeal-approved");
+await page.goto(caseUrl);
+
 // The case history, then the tour's last step: the auditor checks that none of it was changed.
 await page.getByRole("button", { name: "Show the history" }).click();
 await page.getByText("Asked Dr. Ana Reyes for the note the payer wants.").waitFor();
-await shot(page, "18-case-history");
-await axe(page, "18-case-history");
+await shot(page, "20-case-history");
+await axe(page, "20-case-history");
 await tour(page).getByRole("button", { name: "Switch to Sam Whitlock" }).click();
 await page.getByRole("status").filter({ hasText: /^Read only\./ }).waitFor();
 await page.getByRole("button", { name: "Show the history" }).click();
 await page.getByRole("button", { name: "Check that nothing was changed" }).click();
 await page.getByText(/^Intact\. All [\d,]+ events/).waitFor();
-await axe(page, "19-auditor-verifies");
+await axe(page, "21-auditor-verifies");
 
 await browser.close();
 console.log(JSON.stringify(report, null, 2));

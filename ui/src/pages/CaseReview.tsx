@@ -108,6 +108,10 @@ function CaseHeader({ c }: { c: CaseView }) {
             <dd className="facts__value">{c.service.display}</dd></div>
           <div className="facts__item"><dt className="facts__term">Ordered by</dt>
             <dd className="facts__value">{c.ordering_clinician.name}, {c.ordering_clinician.specialty}</dd></div>
+          {c.payer_clock && (
+            <div className="facts__item facts__item--wide"><dt className="facts__term">The payer’s decision</dt>
+              <dd className="facts__value">{c.payer_clock.words}</dd></div>
+          )}
         </dl>
         <details className="details">
           <summary className="details__summary">More details about this request</summary>
@@ -170,6 +174,13 @@ function Criteria({ c, open }: { c: CaseView; open: (p: Panel) => void }) {
           {c.criteria.source_kind === "development-paraphrase" ? " (development criteria)" : ""}. A criterion is marked
           met only when its evidence is found in the record.
         </p>
+        {c.requirements && (c.requirements.matches ? (
+          <p>{c.payer.name} confirmed through its coverage-requirements service, at {c.requirements.checked_at}, that
+            this needs prior authorization under the same policy version approved here.</p>
+        ) : (
+          <p className="alert">{c.payer.name} publishes a different version of this policy than the one approved here.
+            Have it reviewed before approving.</p>
+        ))}
         <details>
           <summary className="details__summary">Read the policy text</summary>
           <ul className="policy-list">
@@ -308,6 +319,58 @@ function PayerQuestion({ c, reply }: { c: CaseView; reply: PayerReply }) {
         <p><strong>{reply.declined.by} cannot document this.</strong> They said so {reply.declined.at}. Nothing was
           sent to {c.payer.name}.</p>
       ) : null}
+    </section>
+  );
+}
+
+function Denial({ c, onSaved }: { c: CaseView; onSaved: (c: CaseView) => void }) {
+  const a = c.appeal!;
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(a.draft?.text ?? "");
+  const [error, setError] = useState<string | null>(null);
+  const save = async () => {
+    try {
+      onSaved(await api<CaseView>(`/api/cases/${c.id}/appeal`, { method: "PUT", body: JSON.stringify({ text }) }));
+      setEditing(false);
+    } catch (e) {
+      setError((e as ApiError).message);
+    }
+  };
+  const how = a.draft?.route === "external" ? `by ${a.draft.model} from de-identified facts` : "from the template";
+  return (
+    <section className="panel payer-question" aria-labelledby="denial-title">
+      <h2 id="denial-title" className="section-title">{c.payer.name} denied it</h2>
+      {a.reason && <p className="payer-question__ask">{a.reason}</p>}
+      {a.policy_sentence && (
+        <dl className="sent-facts denial__facts">
+          <div><dt>What the policy says</dt><dd>{a.policy_sentence}</dd></div>
+          <div><dt>What the record shows</dt><dd>{a.record}</dd></div>
+        </dl>
+      )}
+      {a.draft && (
+        <figure className="payer-question__note">
+          <figcaption className="support">Appeal drafted {how}{a.draft.edited_by ? `, then edited by ${a.draft.edited_by}` : ""}.</figcaption>
+          {editing ? (
+            <>
+              <label className="field-label" htmlFor="appeal-text">The appeal sent to {c.payer.name}</label>
+              <textarea id="appeal-text" className="input textarea" rows={10} value={text} onChange={(e) => setText(e.target.value)} />
+              {error && <p role="alert" className="alert">{error}</p>}
+              <div className="decision-bar__actions">
+                <button type="button" className="btn btn--primary" onClick={save}>Save the appeal</button>
+                <button type="button" className="btn btn--secondary" onClick={() => { setEditing(false); setText(a.draft?.text ?? ""); }}>Cancel</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="paper">{a.draft.text}</div>
+              {c.actions.can_edit_appeal && (
+                <button type="button" className="btn btn--secondary" style={{ alignSelf: "flex-start" }}
+                        onClick={() => { setText(a.draft?.text ?? ""); setEditing(true); }}>Edit the appeal</button>
+              )}
+            </>
+          )}
+        </figure>
+      )}
     </section>
   );
 }
@@ -456,13 +519,26 @@ function DecisionBar({ c, setCase, reload }: { c: CaseView; setCase: (c: CaseVie
         ) : c.actions.can_return ? returnButton(true) : null}
       </>
     );
+  } else if (c.state === "denied") {
+    actions = (
+      <>
+        {c.actions.can_return && (
+          <button type="button" className="btn--text" onClick={() => setReturning(true)} aria-expanded={returning}>
+            Return for correction</button>
+        )}
+        {c.actions.can_send_appeal && (
+          <button type="button" className="btn btn--primary btn--large" disabled={busy} onClick={() => act("send-appeal")}>
+            Send the appeal to {c.payer.name}</button>
+        )}
+      </>
+    );
   } else if (c.state === "awaiting_note") {
     summary = <><CheckCircle size={26} /><span><strong>Asked {c.ordering_clinician.name} for the note.</strong> This
       case comes back to you when they sign it.</span></>;
     actions = <>{undo}<Link to="/" className="btn btn--primary btn--large">Next case</Link></>;
   } else if (c.state === "submitted" && !c.submission?.sent) {
     summary = <><CheckCircle size={26} /><span><strong>Approved.</strong> Sending
-      {c.submission?.kind === "reply" ? " the note" : ""} to {c.payer.name}
+      {c.submission?.kind === "reply" ? " the note" : c.submission?.kind === "appeal" ? " the appeal" : ""} to {c.payer.name}
       {sendLeft > 0 ? ` in ${sendLeft} seconds` : " now"}.</span></>;
     actions = <>{undo}<Link to="/" className="btn btn--primary btn--large">Next case</Link></>;
   } else if (c.state === "returned") {
@@ -516,6 +592,9 @@ export function CaseReviewPage() {
         <Link to="/" className="back-link"><ChevronLeft />Back to your queue</Link>
         <CaseHeader c={c} />
         {c.reply && ["pended", "awaiting_note", "submitted"].includes(c.state) && <PayerQuestion c={c} reply={c.reply} />}
+        {c.appeal && (c.state === "denied" || c.submission?.kind === "appeal") && c.state !== "approved" && (
+          <Denial key={c.appeal.draft?.text} c={c} onSaved={setData} />
+        )}
         <div className="case-body">
           <Criteria c={c} open={setPanel} />
           <SidePanel key={`${c.id}-${c.draft?.text?.length}`} c={c} panel={panel} setPanel={setPanel} onSaved={setData} />

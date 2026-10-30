@@ -23,7 +23,8 @@ export function HelpPage() {
              ["needs_clinician", "Needs a clinician", "The record does not answer one or more criteria. Ask the ordering clinician."],
              ["not_met", "Criteria not met", "The record shows a criterion is not met. Return it to the clinic with a reason."],
              ["waiting_clinician", "Waiting on a clinician", "You asked for a signature or a note. The case returns when they sign."],
-             ["payer_question", "The payer asked a question", "The payer needs more before deciding. Ask the ordering clinician for the note."]] as const).map(([k, w, d]) => (
+             ["payer_question", "The payer asked a question", "The payer needs more before deciding. Ask the ordering clinician for the note."],
+             ["denied", "Denied by the payer", "The payer said no and gave its reason. Caduceus drafts an appeal from the policy and the record; read it, then send it."]] as const).map(([k, w, d]) => (
             <li key={k} className="waiting__item"><StatusWord statusKey={k} word={w} /><span className="muted">{d}</span></li>
           ))}
         </ul>

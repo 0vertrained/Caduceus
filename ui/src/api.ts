@@ -156,12 +156,18 @@ export interface CaseView {
   summary: string;
   actions: {
     can_approve: boolean; approve_blocked_reason: string | null; can_request_attestation: boolean; can_return: boolean;
-    can_ask_for_note: boolean; can_send_note: boolean;
+    can_ask_for_note: boolean; can_send_note: boolean; can_send_appeal: boolean; can_edit_appeal: boolean;
   };
+  payer_clock: { applies: boolean; plan_type: string; decided?: boolean; within?: boolean; words: string } | null;
+  requirements: { matches: boolean; plan_type: string; checked_at: string } | null;
+  appeal: {
+    reason: string | null; criterion: string | null; policy_sentence: string | null; record: string | null;
+    draft: { text: string; route: string; model: string | null; edited_by?: string; sent?: SentToModel } | null;
+  } | null;
   undo: { action: string; until: string; seconds: number } | null;
   returned_reason: string | null;
   payer_response: { decision: { code: string; display: string; question?: string; authorization_number?: string } } | null;
-  submission: { kind?: "reply"; sent?: boolean; send_after?: string; approved_by?: string; submission_id?: string } | null;
+  submission: { kind?: "reply" | "appeal"; sent?: boolean; send_after?: string; approved_by?: string; submission_id?: string } | null;
   reply: PayerReply | null;
   read_only: boolean;
 }
