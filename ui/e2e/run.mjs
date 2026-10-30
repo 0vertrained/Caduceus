@@ -108,6 +108,16 @@ for (const box of await page.getByRole("checkbox", { name: /^Matches the fax/ })
   if (!(await box.isChecked())) await box.check();
 }
 await page.getByText(/^(\d+) of \1 checked$/).first().waitFor();
+// The patient in the chart: a date of birth that disagrees with the record shows both, and the record's can be taken.
+const check = page.getByRole("region", { name: "The patient in the chart" });
+await check.getByText(/^This is Shelba Gulgowski/).first().waitFor();
+await page.getByLabel("Year", { exact: true }).fill("1942");
+await check.getByText("The date of birth differs.").first().waitFor();
+await shot(page, "02e-fax-chart");
+await axe(page, "02e-fax-chart");
+await check.getByRole("button", { name: /^Use the chart’s value/ }).click();
+await check.getByRole("button", { name: "Yes, this is the patient" }).click();
+await check.getByText("Confirmed as the patient").first().waitFor();
 await page.getByRole("button", { name: "Create the case" }).click();
 await page.getByRole("heading", { name: "Coverage criteria" }).waitFor();
 if (!page.url().endsWith("/cases/2026-1029")) report.failures.push(`fax: expected case 2026-1029, got ${page.url()}`);

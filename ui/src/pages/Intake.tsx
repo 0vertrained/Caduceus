@@ -1,6 +1,6 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { api, ApiError, type FaxChoices, type FaxView, type FormField } from "../api";
+import { api, ApiError, type ChartCard, type FaxChoices, type FaxView, type FormField, type PatientMatch } from "../api";
 import { ErrorMessage, ErrorSummary, type FormError } from "../components/ErrorSummary";
 import { Crop, useAuthImage } from "../components/FaxImage";
 import { ChevronLeft, CheckCircle, Triangle } from "../components/Icons";
@@ -114,6 +114,94 @@ function Choice({ f, choices, value, onChange, describedBy, invalid, clinic }: {
   );
 }
 
+const sameName = (a: string, b: string) => a.trim().toLowerCase().replace(/\s+/g, " ") === b.trim().toLowerCase().replace(/\s+/g, " ");
+
+/** Where the fax and the record disagree on something the record holds: both, and a way to take the record's. */
+function Differs({ label, fax, record, source, use, onUse }: {
+  label: string; fax: string; record: string; source: string; use?: string; onUse?: () => void;
+}) {
+  return (
+    <div className="differs">
+      <p><strong>{label} differs.</strong> On the fax: {fax || "nothing"}. {source}: {record}.</p>
+      {onUse && <button type="button" className="btn btn--secondary btn--start" onClick={onUse}>
+        {use}<span className="visually-hidden"> for the {label.toLowerCase()}</span></button>}
+    </div>
+  );
+}
+
+/** The patient in the chart: the one record with this name and date of birth, confirmed by a person, or the closest
+ *  few to choose from. Only what the record holds is compared. */
+function PatientCheck({ match, looking, failure, name, born, confirmed, onLook, onConfirm, onUseName, onUseBorn }: {
+  match: PatientMatch | null; looking: boolean; failure: string | null; name: string; born: string; confirmed: boolean;
+  onLook: (ref?: string) => void; onConfirm: (ref: string | null) => void; onUseName: (c: ChartCard) => void;
+  onUseBorn: (c: ChartCard) => void;
+}) {
+  const chart = match?.patient ?? null;
+  const nameDiffers = chart ? !sameName(name, chart.name) : false;
+  const bornDiffers = chart ? born !== chart.birth_date : false;
+  const where = (c: ChartCard) => `born ${c.born}${c.city ? `, ${c.city}` : ""}`;
+  let body: ReactNode;
+  if (looking) {
+    body = <p role="status" className="muted">Looking in the chart.</p>;
+  } else if (!match) {
+    body = (
+      <>
+        <p className="support">Look the patient up by the name and date of birth above, so the case is for the right person.</p>
+        <button type="button" className="btn btn--secondary btn--start" onClick={() => onLook()}>Find the patient in the chart</button>
+      </>
+    );
+  } else if (chart) {
+    body = (
+      <>
+        <p className="match__who">{nameDiffers || bornDiffers ? "Is this the patient? " : "This is "}<strong>{chart.name}</strong>, {where(chart)}.</p>
+        {nameDiffers && <Differs label="The name" fax={name} record={chart.name} source="In the chart"
+                                 use="Use the chart’s value" onUse={() => onUseName(chart)} />}
+        {bornDiffers && <Differs label="The date of birth" fax={born} record={chart.born} source="In the chart"
+                                 use="Use the chart’s value" onUse={() => onUseBorn(chart)} />}
+        {!nameDiffers && !bornDiffers && (confirmed ? (
+          <p className="match__done"><span className="status status--seal"><CheckCircle size={20} /><span>Confirmed as the patient</span></span>{" "}
+            <button type="button" className="link-button" onClick={() => onConfirm(null)}>Not the right person?</button></p>
+        ) : (
+          <button type="button" className="btn btn--secondary btn--start" onClick={() => onConfirm(chart.ref)}>Yes, this is the patient</button>
+        ))}
+        {!confirmed && <button type="button" className="link-button link-button--start" onClick={() => onLook()}>Look up again</button>}
+      </>
+    );
+  } else if (match.candidates.length) {
+    body = (
+      <>
+        <p>No one in the chart has exactly this name and date of birth. {match.candidates.length === 1
+          ? "This is the closest. Is it the patient?" : "These are the closest. Is it one of them?"}</p>
+        <ul className="match__list">
+          {match.candidates.map((c) => (
+            <li key={c.ref} className="match__item">
+              <span><strong>{c.name}</strong>, {where(c)}</span>
+              <button type="button" className="btn btn--secondary" onClick={() => onLook(c.ref)}>
+                This is the patient<span className="visually-hidden">: {c.name}, {where(c)}</span></button>
+            </li>
+          ))}
+        </ul>
+        <button type="button" className="link-button link-button--start" onClick={() => onLook()}>Look up again</button>
+      </>
+    );
+  } else {
+    body = (
+      <>
+        <p>No one in the chart is close to this name and date of birth. Check both against the fax. If the fax does not
+          give them clearly, ask the clinic.</p>
+        <button type="button" className="btn btn--secondary btn--start" onClick={() => onLook()}>Look up again</button>
+      </>
+    );
+  }
+  return (
+    <section className="match" id="patient-check" tabIndex={-1} aria-labelledby="match-title">
+      <h2 id="match-title" className="match__title">The patient in the chart</h2>
+      {body}
+      {failure && <p role="alert" className="alert">{failure}</p>}
+    </section>
+  );
+}
+
 export function IntakePage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -122,15 +210,42 @@ export function IntakePage() {
   const [values, setValues] = useState<Record<string, string>>({});
   const [dob, setDob] = useState<Parts>({ month: "", day: "", year: "" });
   const [ticked, setTicked] = useState<Set<string>>(new Set());
-  const [errors, setErrors] = useState<FormError[]>([]);
+  const [raised, setRaised] = useState<FormError[]>([]);
+  const [attempt, setAttempt] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [match, setMatch] = useState<PatientMatch | null>(null);
+  const [confirmed, setConfirmed] = useState<string | null>(null);
+  const [looking, setLooking] = useState(false);
+  const [lookFailure, setLookFailure] = useState<string | null>(null);
+  const lookedUp = useRef<string | null>(null);
   useTitle("Check the fax");
+
+  const lookUp = async (name: string, born: string, ref?: string) => {
+    setLooking(true);
+    setLookFailure(null);
+    try {
+      // The name goes in the request body, never the address: addresses reach logs.
+      setMatch(await api<PatientMatch>(`/api/intake/${id}/match`, { method: "POST", body: JSON.stringify({ name, birth_date: born, ref }) }));
+      setConfirmed(null);
+    } catch (e) {
+      setLookFailure((e as ApiError).message);
+    } finally {
+      setLooking(false);
+    }
+  };
 
   useEffect(() => {
     if (!data?.form) return;
-    setValues(Object.fromEntries(data.form.map((f) => [f.key, f.initial])));
-    setDob(split(data.form.find((f) => f.key === "birth_date")?.initial ?? ""));
+    const start = Object.fromEntries(data.form.map((f) => [f.key, f.initial]));
+    setValues(start);
+    setDob(split(start.birth_date ?? ""));
     setTicked(new Set());
+    // Look the patient up once, as the fax gives them, when it gives both a name and a whole date.
+    if (data.status === "read" && lookedUp.current !== data.id && start.patient_name && /^\d\d\/\d\d\/\d{4}$/.test(start.birth_date ?? "")) {
+      lookedUp.current = data.id;
+      void lookUp(start.patient_name, start.birth_date);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
   if (error) return <div className="page"><p role="alert" className="alert">{error.message}</p><Link to="/">Back to your queue</Link></div>;
@@ -141,7 +256,10 @@ export function IntakePage() {
   const isChecked = (f: FormField) => ticked.has(f.key) || changed(f);
   const flagged = data.form.filter((f) => f.problem);
   const done = flagged.filter(isChecked).length;
-  const errorFor = (key: string) => errors.find((e) => e.key === key);
+  const chart = match?.patient ?? null;
+  const exact = chart !== null && sameName(values.patient_name ?? "", chart.name) && joined(dob) === chart.birth_date;
+  const patientConfirmed = exact && confirmed === chart?.ref;
+  const onFile = chart ? match?.on_file ?? null : null;
 
   const validate = (): FormError[] => {
     const found: FormError[] = [];
@@ -152,13 +270,22 @@ export function IntakePage() {
         found.push({ key: f.key, target: `tick-${f.key}`,
                      message: `Check the ${NAMED[f.key]} against the fax, then tick “Matches the fax”, or correct it` });
       }
+      if (f.key === "birth_date" && !patientConfirmed) {
+        found.push({ key: "patient", target: "patient-check", message: !chart ? "Find the patient in the chart, and confirm it is them"
+          : exact ? "Confirm the patient in the chart" : "Make the name and date of birth match the chart, or check them against the fax" });
+      }
     }
     return found;
   };
+  // What the last attempt found, less anything fixed since. A server's refusal stays until the next attempt.
+  const stillWrong = validate();
+  const errors = raised.filter((e) => e.server || stillWrong.some((w) => w.key === e.key));
+  const errorFor = (key: string) => errors.find((e) => e.key === key);
 
   const create = async () => {
     const found = validate();
-    setErrors(found);
+    setRaised(found);
+    setAttempt((n) => n + 1);
     if (found.length) return;
     setBusy(true);
     try {
@@ -170,7 +297,8 @@ export function IntakePage() {
       const err = e as ApiError;
       const f = data.form.find((x) => x.key === err.refusal.field);
       const at = f && (err.message.includes("Matches the fax") ? `tick-${f.key}` : f.kind === "date" ? "dob-month" : `fax-${f.key}`);
-      setErrors([{ key: f?.key ?? "form", message: err.message, target: at, caseId: err.refusal.case_id }]);
+      setRaised([{ key: f?.key ?? "form", message: err.message, target: at, caseId: err.refusal.case_id, server: true }]);
+      setAttempt((n) => n + 1);
       setBusy(false);
     }
   };
@@ -184,7 +312,7 @@ export function IntakePage() {
   return (
     <div className="page intake">
       <Link to="/" className="back-link"><ChevronLeft />Back to your queue</Link>
-      <ErrorSummary errors={errors} />
+      <ErrorSummary errors={errors} attempt={attempt} />
       <div className="intake__intro">
         <h1 className="page-title">Check the fax</h1>
         <p className="lead">{data.status === "confirmed" ? "This fax is already a case." : flagged.length
@@ -205,8 +333,10 @@ export function IntakePage() {
             const describedBy = [`why-${f.key}`, err && err.target !== `tick-${f.key}` ? errId : ""].filter(Boolean).join(" ");
             const invalid = Boolean(err && err.target !== `tick-${f.key}`);
             const crop = <Crop src={image} size={data.size} box={f.box} label={NAMED[f.key]} />;
+            const memberId = values.member_id ?? "";
             return (
-              <div key={f.key} className={`intake__field${f.problem ? " intake__field--check" : ""}${err ? " intake__field--error" : ""}`}>
+              <Fragment key={f.key}>
+              <div className={`intake__field${f.problem ? " intake__field--check" : ""}${err ? " intake__field--error" : ""}`}>
                 {f.kind === "date" ? (
                   <fieldset className="fieldset intake__date" aria-describedby={`hint-dob ${describedBy}`}>
                     <legend className="field-label">{f.label}</legend>
@@ -242,6 +372,14 @@ export function IntakePage() {
                     )}
                   </>
                 )}
+                {f.key === "payer" && onFile && values.payer && values.payer !== onFile.payer && (
+                  <Differs label="The health plan" fax={values.payer} record={onFile.payer} source="On file for this patient"
+                           use="Use the plan on file" onUse={() => setValues({ ...values, payer: onFile.payer })} />
+                )}
+                {f.key === "member_id" && onFile && /^[A-Z]{2}\d{9}$/.test(memberId) && memberId.slice(-4) !== onFile.member_id_last4 && (
+                  <div className="differs"><p><strong>The member ID differs.</strong> This one ends in {memberId.slice(-4)}; the
+                    one on file for this patient ends in {onFile.member_id_last4}. Check it against the fax.</p></div>
+                )}
                 {f.problem && (
                   <div className="intake__tick">
                     <label className={`tick${ticked.has(f.key) ? " tick--on" : ""}`} htmlFor={`tick-${f.key}`}>
@@ -254,6 +392,15 @@ export function IntakePage() {
                   </div>
                 )}
               </div>
+              {f.key === "birth_date" && (
+                <PatientCheck match={match} looking={looking} failure={lookFailure} name={values.patient_name ?? ""}
+                              born={joined(dob)} confirmed={patientConfirmed}
+                              onLook={(ref) => void lookUp(values.patient_name ?? "", joined(dob), ref)}
+                              onConfirm={setConfirmed}
+                              onUseName={(c) => setValues({ ...values, patient_name: c.name })}
+                              onUseBorn={(c) => setDob(split(c.birth_date))} />
+              )}
+              </Fragment>
             );
           })}
           <div className="intake__actions">

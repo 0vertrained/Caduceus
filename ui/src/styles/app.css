@@ -396,6 +396,21 @@ mark { background: var(--mark); color: var(--ink); padding: 0.05em 0.15em; margi
 .intake__tick { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-4); }
 .select { padding-right: 8px; text-overflow: ellipsis; }
 
+/* The patient in the chart, and anything the fax and the record disagree on */
+.match { display: flex; flex-direction: column; gap: var(--space-3); padding: 18px 20px; margin: 0 -4px;
+  background: var(--seal-wash); border: 1px solid var(--hairline); border-radius: var(--radius-control); }
+.match:focus { outline: var(--focus-ring); outline-offset: 3px; }
+.match__title { font-size: var(--text-body); font-weight: 600; line-height: 1.4; }
+.match__who { font-size: var(--text-lead); line-height: 1.4; }
+.match__who strong { font-family: var(--font-serif); font-weight: 600; }
+.match__done { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-4); }
+.match__list { display: flex; flex-direction: column; }
+.match__item { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-4);
+  padding: 10px 0; border-top: 1px solid var(--rule-soft); }
+.link-button--start { align-self: flex-start; }
+.differs { display: flex; flex-direction: column; gap: var(--space-2); padding: 12px 14px; background: var(--paper);
+  border: 1px solid var(--rule); border-left: 4px solid var(--caution); border-radius: var(--radius-control); }
+
 /* A tick a person gives a field: "Matches the fax" */
 .tick { display: inline-flex; align-items: center; gap: var(--space-3); min-height: 44px; padding: 0 var(--space-3) 0 0;
   font-weight: 600; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }

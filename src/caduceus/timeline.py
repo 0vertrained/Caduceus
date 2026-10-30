@@ -20,7 +20,8 @@ STEP_WORDS = {"enrichment": "read the record, the referral packet and the payer'
               "drafting": "read the packet to write the draft", "review": "move the case to review",
               "submission": "send it to the payer", "follow_up": "read the payer's decision and file it"}
 VIEWS = {"case.viewed": "Opened the case", "page.viewed": "Read a packet page",
-         "attestation.viewed": "Opened the request to attest"}
+         "attestation.viewed": "Opened the request to attest", "fax.viewed": "Opened the fax",
+         "fax.patient_searched": "Looked the patient up in the chart"}
 ROLE_WORDS = {"pa_specialist": "PA specialist", "clinician": "ordering clinician", "admin": "administrator",
               "auditor": "auditor", "agent_runtime": "agent"}
 

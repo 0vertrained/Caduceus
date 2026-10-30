@@ -230,6 +230,14 @@ export interface FaxChoices {
   clinicians: { name: string; specialty: string; clinic: string | null }[];
   services: { code: string; label: string }[];
 }
+/** A record in the chart, as much as a person needs to know it is the right one; `ref` names it for this fax only. */
+export interface ChartCard { ref: string; name: string; born: string; birth_date: string; city: string | null }
+export interface PatientMatch {
+  status: "matched" | "chosen" | "candidates" | "none";
+  patient: ChartCard | null;
+  on_file: { payer: string; member_id_last4: string } | null;
+  candidates: ChartCard[];
+}
 export interface FaxRow {
   id: string; status: "received" | "read" | "confirmed"; received: string; pages: number;
   referral: string | null; patient: string | null; to_check: number; clinic: string | null; case_id: string | null;

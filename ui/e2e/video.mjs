@@ -82,7 +82,8 @@ await page.getByLabel("Requested service", { exact: true }).selectOption(want.se
 for (const box of await page.getByRole("checkbox", { name: /^Matches the fax/ }).all()) {
   if (!(await box.isChecked())) await box.check();
 }
-await say(page, "She corrects the misreads and ticks each unsure field against the page. Only then is the case created and checked.", 3200);
+await page.getByRole("button", { name: "Yes, this is the patient" }).click();
+await say(page, "She corrects the misreads, ticks each unsure field against the page, and confirms the patient in the chart. Only then is the case created and checked.", 3800);
 await page.getByRole("button", { name: "Create the case" }).click();
 await page.getByRole("heading", { name: "Coverage criteria" }).waitFor();
 await say(page, "Caduceus matched the patient and checked the policy: her back pain began three weeks ago, short of six, and it says so.", 4600);

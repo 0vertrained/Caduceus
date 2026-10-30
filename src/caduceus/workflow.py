@@ -23,11 +23,12 @@ from caduceus.auth import AGENT, Principal, Role
 from caduceus.cases import Attestation, Case, CaseRepository, Fax, FaxRepository, LastAction, State
 from caduceus.criteria.dsl import CriteriaSet
 from caduceus.criteria.engine import Engine
-from caduceus.drafting import Drafter, mid_sentence
+from caduceus.drafting import Drafter, mid_sentence, patient_name
 from caduceus.fhir.store import FhirStore
 from caduceus.intake import LABELS, check, form, iso_date, read_fax, unchecked
 from caduceus.payer import MockPayer, build_appeal_bundle, build_reply_bundle, build_request_bundle
 from caduceus.tools import ToolGateway, build_gateway
+from caduceus.words import long_date
 
 UNDO_SECONDS = 30
 NOTE_LIMIT = 4000  # characters; a payer's question is answered in a paragraph or two
@@ -275,6 +276,41 @@ class Workflow:
 
     def intake_form(self, fax: Fax) -> dict[str, Any]:
         return form(fax.reading or {}, self.catalog)
+
+    def match_patient(self, who: Principal, fax_id: str, name: str, birth_date: str,
+                      ref: str | None = None) -> dict[str, Any]:
+        """Look the faxed patient up in the chart. One record with exactly this name and date of birth is the match;
+        otherwise the closest few, for the person to choose from (`ref` names their choice). What comes back is only
+        what the chart holds: the name, the date of birth and the city, and the health plan on file if there is one.
+        Records are named by a reference made for this fax, never by their record number."""
+        self._require(who, Role.PA_SPECIALIST)
+        fax = self._fax(fax_id)
+        if fax.status != "read":
+            raise ActionRefused("This fax is not waiting to be checked.")
+        born = iso_date(birth_date.strip()) or ""
+        exact = self.store.find_patient(name, born) if name.strip() and born else None
+        nearest = self.store.candidates(name, born) if name.strip() else []
+
+        def ref_of(patient_id: str) -> str:
+            return sha256_of(f"{fax.id}:{patient_id}")[:16]
+
+        chosen = next((p for p in nearest if ref_of(p["id"]) == ref), None) if ref and not exact else None
+        if ref and not exact and chosen is None:
+            raise ActionRefused("That record is no longer among the closest to this name and date of birth. "
+                                "Look the patient up again.")
+        patient = self.store.record(exact).patient if exact else chosen
+        status = "matched" if exact else "chosen" if chosen else "candidates" if nearest else "none"
+        self.audit.append(who.id, who.role, "fax.patient_searched", fax.id,
+                          {"result": status, "candidates": 0 if patient else len(nearest)})
+
+        def card(p: dict) -> dict[str, Any]:
+            d = date.fromisoformat(p["birthDate"])
+            return {"ref": ref_of(p["id"]), "name": patient_name(p), "born": long_date(d),
+                    "birth_date": f"{d:%m/%d/%Y}", "city": ((p.get("address") or [{}])[0]).get("city")}
+
+        return {"status": status, "patient": card(patient) if patient else None,
+                "on_file": self.catalog.get("coverage", {}).get(patient["id"]) if patient else None,
+                "candidates": [] if patient else [card(p) for p in nearest]}
 
     def confirm_fax(self, who: Principal, fax_id: str, values: dict[str, str],
                     checked: list[str] | None = None) -> Case:
