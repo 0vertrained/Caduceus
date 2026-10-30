@@ -20,6 +20,7 @@ from caduceus.audit.log import TamperDetected
 from caduceus.auth import AuthError, Principal, Role
 from caduceus.cases import Case, StaleCase, State
 from caduceus.presenter import Presenter
+from caduceus.ratelimit import DemoLimits
 from caduceus.seed import fresh_demo_services
 from caduceus.tools import ToolForbidden, ToolNotAllowed
 from caduceus.workflow import ActionRefused
@@ -118,6 +119,22 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
     app.state.live = live
 
     signing_key = live.svc.settings.proxy_signing_key
+    app.state.demo_limits = DemoLimits() if live.demo else None
+
+    @app.middleware("http")
+    async def limit_demo_requests(request: Request, call_next):
+        """Registered first, so it runs after the signature check: only requests that came through the site
+        count. Behind Netlify the visitor's address is in the forwarded headers, not the connection."""
+        limits = request.app.state.demo_limits
+        if limits is not None and request.url.path != "/api/health":
+            visitor = (request.headers.get("x-nf-client-connection-ip")
+                       or request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+                       or (request.client.host if request.client else "unknown"))
+            wait = limits.check(visitor, write=request.method in ("POST", "PUT", "PATCH", "DELETE"))
+            if wait:
+                return JSONResponse({"message": "Too many requests from your address. Wait a few minutes and "
+                                                "try again."}, status_code=429, headers={"Retry-After": str(wait)})
+        return await call_next(request)
 
     @app.middleware("http")
     async def require_proxy_signature(request: Request, call_next):
