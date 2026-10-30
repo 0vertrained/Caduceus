@@ -24,6 +24,8 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     runs-on: ubuntu-24.04
+    outputs:
+      recorded: ${{ steps.record.outputs.recorded }}
     permissions:
       contents: read
       id-token: write  # GitHub's OIDC token, exchanged for short-lived Google credentials; no stored key
@@ -56,6 +58,7 @@ jobs:
         with:
           python-version: "3.13"
       - name: Record the draft model's replies into the image
+        id: record
         # Without a key the demo still runs: drafts come from the template, and the case page says so.
         run: |
           if ! key="$(gcloud secrets versions access latest --secret "$MODEL_SECRET" --project "$PROJECT" 2>/dev/null)" \
@@ -81,10 +84,18 @@ jobs:
           if CADUCEUS_EXTERNAL_PROVIDER=ollama CADUCEUS_EXTERNAL_MODEL="$EXTERNAL_MODEL" CADUCEUS_EXTERNAL_API_KEY="$key" \
               /tmp/rec/bin/python scripts/record_completions.py data/recorded/completions.json; then
             echo "::notice title=Draft model::Recorded $(jq length data/recorded/completions.json) replies from $EXTERNAL_MODEL"
+            echo "recorded=true" >> "$GITHUB_OUTPUT"
           else
             echo "::warning title=Draft model::Recording failed; the demo will call the model on first use instead."
           fi
           echo "MODEL_KEY=1" >> "$GITHUB_ENV"
+      - name: Keep the recorded replies (de-identified text only)
+        if: steps.record.outputs.recorded == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: model-recordings
+          path: data/recorded/completions.json
+          retention-days: 7
       - name: Build and push the image
         run: |
           image="${REGION}-docker.pkg.dev/${PROJECT}/caduceus/api:${COMMIT}"
@@ -113,3 +124,32 @@ jobs:
             echo "::error title=Demo API::Expected 403 for an unsigned request, got $code"; exit 1
           fi
           echo "::notice title=Demo API::Deployed ${COMMIT:0:7} to $url; unsigned requests are refused"
+
+  recordings:
+    # Publishes what the model saw and said (de-identified text only) to the model-recordings branch, where it can
+    # be reviewed and committed. A separate job, so the token that can write to the repository never runs alongside
+    # installed packages or the image build: this job only downloads one file and pushes it.
+    name: Publish the recorded model replies
+    needs: cloud-run
+    if: needs.cloud-run.outputs.recorded == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: model-recordings
+          path: recorded
+      - name: Push to the model-recordings branch
+        env:
+          TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          COMMIT: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          git init -q -b model-recordings published && cd published
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          cp ../recorded/completions.json .
+          git add completions.json
+          git commit -qm "Model replies recorded by the deploy of ${COMMIT:0:7}"
+          git push -qf "https://x-access-token:${TOKEN}@github.com/${REPOSITORY}.git" model-recordings
