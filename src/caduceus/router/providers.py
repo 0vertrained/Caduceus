@@ -110,10 +110,17 @@ class OllamaChatProvider(Provider):
 
     def complete(self, system: str, user: str, max_tokens: int = 800) -> Completion:
         # Reasoning models spend part of the token budget thinking before they answer, so allow room for both.
-        body = {"model": self.model, "stream": False, "options": {"temperature": 0, "num_predict": max_tokens + 7200},
+        # A paragraph of plain prose needs no reasoning: thinking is turned off, which keeps a reasoning model fast
+        # and its token budget for the answer. A model that cannot turn it off refuses the option (400), and is
+        # asked again without it, with room to think first.
+        body = {"model": self.model, "stream": False, "think": False,
+                "options": {"temperature": 0, "num_predict": max_tokens + 7200},
                 "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]}
         try:
             r = self._client.post(self._url, json=body, headers=self._headers)
+            if r.status_code == 400:
+                body.pop("think")
+                r = self._client.post(self._url, json=body, headers=self._headers)
             r.raise_for_status()
         except httpx.HTTPError as e:
             raise ProviderUnavailable(f"{self.name} provider unavailable: {_why(e)}") from e

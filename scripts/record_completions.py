@@ -25,17 +25,12 @@ from caduceus.auth import DEV_USERS
 from caduceus.seed import seed
 
 
-def main(argv: list[str] | None = None) -> int:
-    args = sys.argv[1:] if argv is None else argv
-    if len(args) != 1:
-        print(__doc__, file=sys.stderr)
-        return 2
-    out = Path(args[0])
+def story(out: Path) -> tuple[list[str], list[str], dict[str, dict]]:
+    """Run the demo's story once. Replies already recorded (in the file or earlier in this process) are reused."""
     svc = build_services(Settings(auth_mode="dev", db_path=":memory:", model_recordings=str(out)))
     if svc.router is None or not svc.router.external_enabled:
-        print("No external model is configured: set CADUCEUS_EXTERNAL_PROVIDER and CADUCEUS_EXTERNAL_API_KEY.",
-              file=sys.stderr)
-        return 1
+        raise SystemExit("No external model is configured: "
+                         "set CADUCEUS_EXTERNAL_PROVIDER and CADUCEUS_EXTERNAL_API_KEY.")
     clock = [datetime.now(UTC)]
     svc.workflow.now = lambda: clock[0]
     seed(svc, now=clock[0])
@@ -51,18 +46,33 @@ def main(argv: list[str] | None = None) -> int:
             svc.workflow.approve(DEV_USERS["dolores"], case.id)
     clock[0] += timedelta(seconds=31)  # past the undo window, so the outbox sends
     svc.workflow.dispatch_due()
-    missed = sorted(c.id for c in svc.cases.all()
-                    if (c.draft or {}).get("route") == "template" or (c.appeal or {}).get("route") == "template")
-    if missed:
-        reasons = sorted({(c.draft or {}).get("fallback_reason") or (c.appeal or {}).get("fallback_reason") or "?"
-                          for c in svc.cases.all() if c.id in missed})
-        print(f"The model did not answer for {', '.join(missed)} ({'; '.join(reasons)}); nothing was written.",
-              file=sys.stderr)
+    missed, reasons = [], []
+    for c in svc.cases.all():
+        for written in (c.draft or {}, c.appeal or {}):
+            if written.get("route") == "template":
+                missed.append(c.id)
+                reasons.append(written.get("fallback_reason") or "?")
+    return sorted(set(missed)), sorted(set(reasons)), svc.router.recordings()
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = sys.argv[1:] if argv is None else argv
+    if len(args) != 1:
+        print(__doc__, file=sys.stderr)
+        return 2
+    out = Path(args[0])
+    for _attempt in range(3):  # a dropped connection is retried; recorded replies are not asked for again
+        missed, reasons, recorded = story(out)
+        if not missed:
+            break
+    if not recorded:
+        print(f"The model did not answer ({'; '.join(reasons)}); nothing was written.", file=sys.stderr)
         return 1
-    recorded = svc.router.recordings()
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(recorded, indent=1, sort_keys=True) + "\n")
     print(f"{len(recorded)} replies from {next(iter(recorded.values()))['model']} recorded in {out}")
+    if missed:  # partial is still useful: those cases fall back to the template, and the deploy says which
+        print(f"Not recorded, after 3 tries: {', '.join(missed)} ({'; '.join(reasons)})", file=sys.stderr)
     return 0
 
 

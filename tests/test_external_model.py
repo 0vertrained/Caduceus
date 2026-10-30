@@ -114,3 +114,16 @@ def test_a_refusal_or_a_thinking_model_out_of_tokens_says_why():
     thinking = httpx.Response(200, json={"message": {"content": "", "thinking": "Let me consider..."}})
     with pytest.raises(ProviderUnavailable, match="after thinking, out of tokens"):
         ollama(lambda _r: thinking).complete("s", "u")
+
+
+def test_thinking_is_turned_off_and_a_model_that_refuses_is_asked_again_without_it():
+    bodies: list[dict] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        bodies.append(json.loads(request.content))
+        if "think" in bodies[-1]:
+            return httpx.Response(400, json={"error": "this model does not support thinking options"})
+        return httpx.Response(200, json={"message": {"content": "Reply."}, "prompt_eval_count": 3, "eval_count": 1})
+
+    assert ollama(handler).complete("s", "u").text == "Reply."
+    assert bodies[0]["think"] is False and "think" not in bodies[1]
