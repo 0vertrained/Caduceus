@@ -183,12 +183,14 @@ def test_edit_draft_is_recorded(env):
     case = client.put("/api/cases/2026-1041/draft", headers=DOLORES, json={"text": "Edited justification."}).json()
     assert case["draft"]["text"] == "Edited justification." and case["draft"]["edited_by"] == "Dolores Montoya"
     assert client.put("/api/cases/2026-1041/draft", headers=DOLORES, json={"text": "  "}).status_code == 409
+    assert client.put("/api/cases/2026-1041/draft", headers=DOLORES, json={"text": "x" * 20_001}).status_code == 422
     assert "draft.edited" in [e.action for e in svc.audit.events("2026-1041")]
 
 
 def test_return_needs_a_reason_and_shows_in_waiting(env):
     _, client, _ = env
     assert client.post("/api/cases/2026-1029/return", headers=DOLORES, json={"reason": " "}).status_code == 409
+    assert client.post("/api/cases/2026-1029/return", headers=DOLORES, json={"reason": "x" * 2_001}).status_code == 422
     client.post("/api/cases/2026-1029/return", headers=DOLORES, json={"reason": "Pain began 3 weeks ago; resubmit"})
     q = client.get("/api/queue", headers=DOLORES).json()
     assert any(w["id"] == "2026-1029" and w["status"]["key"] == "returned" for w in q["waiting"])
