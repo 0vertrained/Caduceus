@@ -23,13 +23,13 @@ from caduceus.criteria.dsl import CriteriaSet
 from caduceus.criteria.engine import Engine
 from caduceus.drafting import Drafter
 from caduceus.fhir.store import FhirStore
-from caduceus.payer import MockPayer, build_reply_bundle, build_request_bundle
+from caduceus.payer import MockPayer, build_appeal_bundle, build_reply_bundle, build_request_bundle
 from caduceus.tools import ToolGateway, build_gateway
 
 UNDO_SECONDS = 30
 NOTE_LIMIT = 4000  # characters; a payer's question is answered in a paragraph or two
 SNAPSHOT_FIELDS = ("state", "attestation_requested", "attestation_requested_at", "attestation_requested_by",
-                   "attestations", "returned_reason", "submission", "payer_response", "draft", "reply")
+                   "attestations", "returned_reason", "submission", "payer_response", "draft", "reply", "appeal")
 
 
 class ActionRefused(Exception):
@@ -44,7 +44,8 @@ class Workflow:
         self.engine, self.drafter, self.payer, self.now = engine, drafter, payer, clock
         self._dispatch_lock = threading.Lock()  # one dispatcher at a time: a request is never sent twice
         self.gateway: ToolGateway = build_gateway(audit, store, library, self._set_state, self._submit,
-                                                  self._payer_status, self._respond)
+                                                  self._payer_status, self._respond, self._appeal,
+                                                  self.payer.coverage_requirements)
 
     # Agent ---------------------------------------------------------------------------------------------
 
@@ -57,10 +58,15 @@ class Workflow:
         gw.call(AGENT, cid, "enrichment", "ehr.list_procedures", **common)
         gw.call(AGENT, cid, "enrichment", "documents.list_packet", packet=case.packet)
         gw.call(AGENT, cid, "enrichment", "policies.criteria_set_for", key=case.criteria_set)
+        required = gw.call(AGENT, cid, "enrichment", "payer.coverage_requirements", payer_name=case.payer["name"],
+                           service_code=case.service["code"], policy=case.criteria_set)
 
         record = self.store.record(case.patient_id, case.id)
         det = self.engine.evaluate(self.library[case.criteria_set], record, date.fromisoformat(case.as_of))
         case.determination, case.checked_at = det.to_dict(), self.now()
+        # The payer's published policy must be the one approved here; if the payer changed it, a person reviews it.
+        case.requirements = required | {"matches": required["policy"]["sha256"] == det.content_sha256,
+                                        "checked_at": self.now().isoformat()}
         self.audit.append(AGENT.id, AGENT.role, "criteria.evaluated", cid,
                           {"set": det.criteria_set, "set_sha256": det.content_sha256, "overall": det.overall,
                            "counts": det.counts, "result_sha256": sha256_of(det.to_dict())})
@@ -101,19 +107,23 @@ class Workflow:
             sub = case.submission or {}
             if case.state == State.SUBMITTED and not sub.get("sent") and \
                     datetime.fromisoformat(sub["send_after"]) <= self.now():
-                tool = "payer.respond" if sub.get("kind") == "reply" else "payer.submit"
+                tool = {"reply": "payer.respond", "appeal": "payer.appeal"}.get(sub.get("kind"), "payer.submit")
                 result = self.gateway.call(AGENT, case.id, "submission", tool, case_id=case.id,
                                            approval_seq=sub["approval_seq"])
                 decision = self.gateway.call(AGENT, case.id, "follow_up", "payer.status",
                                              submission_id=result["id"])
                 case = self._get(case.id)
                 case.payer_response = decision
-                new_state = State.APPROVED if decision["decision"]["code"] == "A1" else State.PENDED
+                new_state = {"A1": State.APPROVED, "A3": State.DENIED}.get(decision["decision"]["code"], State.PENDED)
                 if new_state == State.PENDED:
                     case.reply = None  # a new question starts a new reply
+                elif case.decided_at is None:
+                    case.decided_at = self.now()  # the decision clock stops at the first approval or denial
                 case = self.cases.save(case)
                 self.gateway.call(AGENT, case.id, "follow_up", "tickets.set_state", case_id=case.id,
                                   state=new_state.value, reason=decision["decision"]["display"])
+                if new_state == State.DENIED:
+                    self._draft_appeal(case.id)
                 sent.append(case.id)
         return sent
 
@@ -227,6 +237,43 @@ class Workflow:
                            "send_after": (self.now() + timedelta(seconds=UNDO_SECONDS)).isoformat()}
         return self.cases.save(case)
 
+    def _draft_appeal(self, case_id: str) -> None:
+        """After a denial the agent drafts the appeal from the payer's reason, the policy and the record."""
+        case = self._get(case_id)
+        self.gateway.call(AGENT, case.id, "drafting", "documents.list_packet", packet=case.packet)
+        appeal = self.drafter.appeal(case, self.store.record(case.patient_id, case.id).patient)
+        case.appeal = appeal | {"generated_at": self.now().isoformat()}
+        self.audit.append(AGENT.id, AGENT.role, "appeal.drafted", case.id,
+                          {"route": appeal["route"], "model": appeal.get("model"),
+                           "text_sha256": sha256_of(appeal["text"])})
+        self.cases.save(case)
+
+    def edit_appeal(self, who: Principal, case_id: str, text: str) -> Case:
+        self._require(who, Role.PA_SPECIALIST)
+        case = self._get(case_id)
+        if case.state != State.DENIED or not case.appeal:
+            raise ActionRefused("There is no appeal to edit on this case.")
+        if not text.strip():
+            raise ActionRefused("The appeal cannot be empty.")
+        case.appeal = case.appeal | {"text": text.strip(), "edited_by": who.name, "edited_at": self.now().isoformat()}
+        self.audit.append(who.id, who.role, "appeal.edited", case_id, {"text_sha256": sha256_of(text.strip())})
+        return self.cases.save(case)
+
+    def approve_appeal(self, who: Principal, case_id: str) -> Case:
+        """Approve sending the appeal. Like a request, it waits in the outbox for the undo window."""
+        self._require(who, Role.PA_SPECIALIST)
+        case = self._get(case_id)
+        if case.state != State.DENIED or not case.appeal:
+            raise ActionRefused("There is no denial to appeal on this case.")
+        event = self.audit.append(who.id, who.role, "appeal.approved", case_id,
+                                  {"appeal_sha256": sha256_of(case.appeal["text"])})
+        self._remember(case, who, "appeal.approved")
+        case.state = State.SUBMITTED
+        case.submission = {"kind": "appeal", "approval_seq": event.seq, "approved_by": who.name,
+                           "approved_by_id": who.id, "approved_at": self.now().isoformat(), "sent": False,
+                           "send_after": (self.now() + timedelta(seconds=UNDO_SECONDS)).isoformat()}
+        return self.cases.save(case)
+
     def edit_draft(self, who: Principal, case_id: str, text: str) -> Case:
         self._require(who, Role.PA_SPECIALIST)
         case = self._get(case_id)
@@ -242,7 +289,7 @@ class Workflow:
     def return_for_correction(self, who: Principal, case_id: str, reason: str) -> Case:
         self._require(who, Role.PA_SPECIALIST)
         case = self._get(case_id)
-        if case.state not in (State.REVIEW, State.PENDED):
+        if case.state not in (State.REVIEW, State.PENDED, State.DENIED):
             raise ActionRefused("Only a case under review can be returned.")
         if not reason.strip():
             raise ActionRefused("Say what needs correcting so the clinic can fix it.")
@@ -313,6 +360,7 @@ class Workflow:
     def _submit(self, case_id: str, approval_seq: int) -> dict[str, Any]:
         """The payer.submit tool. Sends the request a person approved, and nothing else."""
         case, _ = self._outbox(case_id, approval_seq, "case.approved", None)
+        case.sent_at = case.sent_at or self.now()
         bundle = build_request_bundle(case)
         result = self.payer.submit(bundle, case.payer["name"])
         case.submission = (case.submission or {}) | {"sent": True, "sent_at": self.now().isoformat(),
@@ -332,6 +380,17 @@ class Workflow:
         self.cases.save(case)
         return result
 
+    def _appeal(self, case_id: str, approval_seq: int) -> dict[str, Any]:
+        """The payer.appeal tool. Sends the appeal a person approved, exactly as it was when they approved it."""
+        case, approval = self._outbox(case_id, approval_seq, "appeal.approved", "appeal")
+        if sha256_of((case.appeal or {}).get("text", "")) != approval.detail.get("appeal_sha256"):
+            raise ActionRefused("The appeal changed after it was approved.")
+        result = self.payer.appeal(build_appeal_bundle(case), case.payer["name"], case.payer_response["id"])
+        case.submission = (case.submission or {}) | {"sent": True, "sent_at": self.now().isoformat(),
+                                                     "submission_id": result["id"]}
+        self.cases.save(case)
+        return result
+
     def _payer_status(self, submission_id: str) -> dict[str, Any]:
         return self.payer.status(submission_id)
 
@@ -346,6 +405,9 @@ def approve_blocked_reason(case: Case) -> str | None:
         return "This case is not waiting for your review."
     if c["unmet"]:
         return f"{c['unmet']} criterion is not met." if c["unmet"] == 1 else f"{c['unmet']} criteria are not met."
+    if case.requirements and not case.requirements.get("matches"):
+        return (f"{case.payer['name']} publishes a different version of this policy than the one approved here. "
+                "Have the policy reviewed before approving.")
     if c["unknown"]:
         name = case.ordering_clinician["name"]
         return f"{name} needs to confirm {'the last one' if c['unknown'] == 1 else str(c['unknown']) + ' items'}."

@@ -371,7 +371,7 @@ def test_the_case_history_reads_in_plain_words_and_only_an_auditor_verifies_it(e
     whats = [e["what"] for e in mine["entries"]]
     assert mine["can_verify"] is False and mine["events"] == len(svc.audit.events("2026-1043"))
     assert "Received the referral, 4 pages." in whats
-    assert "Used 5 tools to read the patient's record and the referral packet." in whats
+    assert "Used 6 tools to read the record, the referral packet and the payer's requirements." in whats
     assert "Asked Dr. Ana Reyes to confirm 1 item." in whats and "Signed, answering yes." in whats
     assert any(w == "Opened the case (2 times)." for w in whats)  # repeated views collapse into one line
     refused = [e for e in mine["entries"] if e["kind"] == "refused"]
