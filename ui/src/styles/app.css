@@ -237,6 +237,22 @@ ul, ol { padding: 0; list-style: none; }
 .sent-facts dd { margin: 0; }
 mark { background: var(--mark); color: var(--ink); padding: 1px 2px; border-radius: 2px; }
 
+/* Case history: the audit trail in plain words ------------------------------------------------- */
+.history { padding: 24px 36px; display: flex; flex-direction: column; gap: var(--space-4); }
+.history__head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--space-3) var(--space-5); }
+.history__head .support { max-width: 62ch; }
+.history__body { display: flex; flex-direction: column; gap: var(--space-4); }
+.history__list { display: flex; flex-direction: column; }
+.history__item { display: grid; grid-template-columns: 7.5em minmax(10em, 14em) minmax(0, 1fr); gap: 2px var(--space-4);
+  padding: 10px 0; border-top: 1px solid var(--rule-soft); }
+.history__at { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.history__who { display: inline-flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.history__who svg { color: var(--caution); align-self: center; }
+.history__what { display: flex; flex-direction: column; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.history__item--view { color: var(--ink-2); }
+.history__item--refused { background: var(--caution-tint); margin: 0 -12px; padding: 10px 12px; border-radius: var(--radius-control); }
+.history__verify { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-4); }
+
 /* Decision bar ---------------------------------------------------------------------------------- */
 
 .decision-bar {
@@ -327,7 +343,8 @@ mark { background: var(--mark); color: var(--ink); padding: 1px 2px; border-radi
   .tour__inner { padding: var(--space-3) var(--space-4); }
   .page { padding: var(--space-4) var(--space-4) var(--space-7); }
   .helper__steps, .facts { grid-template-columns: minmax(0, 1fr); }
-  .row, .case-head, .criteria, .side, .payer-question { padding-left: var(--space-4); padding-right: var(--space-4); }
+  .row, .case-head, .criteria, .side, .payer-question, .history { padding-left: var(--space-4); padding-right: var(--space-4); }
+  .history__item { grid-template-columns: minmax(0, 1fr); }
   .page-title { font-size: 2rem; }
   .case-name { font-size: 2rem; }
   .decision-bar__inner { padding: var(--space-3) var(--space-4); }

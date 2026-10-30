@@ -125,7 +125,7 @@ class Presenter:
             "waiting": waiting,
         }
 
-    def case(self, case: Case, now: datetime, viewer_id: str) -> dict[str, Any]:
+    def case(self, case: Case, now: datetime, viewer_id: str, read_only: bool = False) -> dict[str, Any]:
         p = self.patient(case)
         born = date.fromisoformat(p["birthDate"])
         cset = self.library[case.criteria_set]
@@ -154,8 +154,14 @@ class Presenter:
         total = sum(counts.values())
         blocked = approve_blocked_reason(case)
         reply = case.reply or {}
+        actions = {"can_approve": case.ready_to_approve, "approve_blocked_reason": blocked,
+                   "can_request_attestation": case.state == State.REVIEW and counts["unknown"] > 0,
+                   "can_return": case.state in ACTIVE,
+                   "can_ask_for_note": case.state == State.PENDED and not reply.get("note")
+                   and not reply.get("declined_by"),
+                   "can_send_note": case.state == State.PENDED and bool(reply.get("note"))}
         return {
-            "id": case.id, "state": case.state.value, "status": status(case),
+            "id": case.id, "version": case.version, "state": case.state.value, "status": status(case),
             "patient": {"name": patient_name(p), "birth_date": long_date(born),
                         "age": age_on(p, date.fromisoformat(case.as_of))},
             "service": case.service, "payer": case.payer, "ordering_clinician": case.ordering_clinician,
@@ -166,18 +172,16 @@ class Presenter:
                          "counts": counts, "total": total, "results": results},
             "draft": case.draft,
             "summary": summary_sentence(case, counts, total),
-            "actions": {"can_approve": case.ready_to_approve, "approve_blocked_reason": blocked,
-                        "can_request_attestation": case.state == State.REVIEW and counts["unknown"] > 0,
-                        "can_return": case.state in ACTIVE,
-                        "can_ask_for_note": case.state == State.PENDED and not reply.get("note")
-                        and not reply.get("declined_by"),
-                        "can_send_note": case.state == State.PENDED and bool(reply.get("note"))},
+            "actions": actions,
             "undo": undo,
             "returned_reason": case.returned_reason,
             "payer_response": case.payer_response,
             "submission": case.submission,
             "reply": self.reply(case, now),
-        }
+            "read_only": read_only,
+        } | ({"actions": {k: False if k.startswith("can_") else v for k, v in actions.items()},
+              "summary": "Read only. Only a prior-authorization specialist can act on a case."}
+             if read_only else {})
 
     def reply(self, case: Case, now: datetime) -> dict[str, Any] | None:
         """The payer's request for more, and where its answer stands, in words."""
