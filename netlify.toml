@@ -1,0 +1,46 @@
+# The public demo's front end. Netlify serves the built UI and proxies /api/* to the API on Cloud Run, signing
+# every proxied request so the API can refuse anything that did not come through this site.
+#
+# Set in Netlify (Site configuration > Environment variables), see docs/demo-deployment.md:
+#   CADUCEUS_API_ORIGIN         the Cloud Run service URL, written into the proxy rule at build time
+#   CADUCEUS_PROXY_SIGNING_KEY  the key Cloud Run also holds; its scopes must include Runtime
+
+[build]
+  base = "ui"
+  command = "bash ../scripts/netlify_build.sh"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# The API. The placeholder host is on the reserved .invalid domain, so if the build ever failed to replace it,
+# requests would fail rather than go anywhere unexpected.
+[[redirects]]
+  from = "/api/*"
+  to = "https://CADUCEUS-API-ORIGIN.invalid/api/:splat"
+  status = 200
+  force = true
+  signed = "CADUCEUS_PROXY_SIGNING_KEY"
+
+# Everything else is the single-page app.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# The same headers the API sends with its own pages.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; img-src 'self' data:; style-src 'self'; font-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Cross-Origin-Opener-Policy = "same-origin"
+
+# Vite fingerprints asset file names, so they can be cached for good.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
