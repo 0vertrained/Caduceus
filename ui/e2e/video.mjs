@@ -16,13 +16,17 @@ const browser = await chromium.launch();
 const context = await browser.newContext({ viewport: size, recordVideo: { dir, size }, bypassCSP: true });
 await context.addInitScript((id) => {
   localStorage.setItem("caduceus.sandbox", id);
+  // Instant scrolling, so a button the walk is about to press is never mid-scroll.
+  document.addEventListener("DOMContentLoaded", () => { document.documentElement.style.scrollBehavior = "auto"; });
+  // Sign-in lives in tab storage; a new tab (each clip is one) starts as Dolores unless a switch already happened.
+  if (!sessionStorage.getItem("caduceus.devUser") && location.pathname !== "/") sessionStorage.setItem("caduceus.devUser", "dolores");
   window.__caption = (text) => {
     let el = document.getElementById("__caption");
     if (!el) {
       el = document.createElement("div");
       el.id = "__caption";
-      el.style.cssText = "position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:2147483647;" +
-        "max-width:980px;padding:14px 22px;border-radius:10px;background:rgba(13,19,27,.92);color:#fff;" +
+      el.style.cssText = "position:fixed;left:50%;bottom:150px;transform:translateX(-50%);z-index:2147483647;" +
+        "max-width:980px;padding:14px 22px;border-radius:10px;background:rgba(13,19,27,.92);color:#fff;pointer-events:none;" +
         "font:500 22px/1.35 'Source Sans 3',system-ui,sans-serif;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.25)";
       document.body.appendChild(el);
     }
