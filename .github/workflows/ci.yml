@@ -152,7 +152,14 @@ jobs:
             docker pull -q "$ref" > /dev/null
             echo "::notice title=Base image::$ref resolved to $(docker image inspect --format '{{index .RepoDigests 0}}' "$ref")"
           done
+      - name: Install Grype (pinned release, checksum verified)
+        run: scripts/install_grype.sh
+      - name: Known vulnerabilities in the image (fails on any with a released fix)
+        run: |
+          grype docker:caduceus-api:ci -o json --file grype-image.json
+          python3 scripts/vuln_report.py grype-image.json --label "Container image" --fail-on fixed
       - name: Smoke test
+        if: ${{ !cancelled() }}
         run: |
           docker run -d --name api -p 127.0.0.1:8000:8000 --read-only --tmpfs /tmp \
             -v caduceus-state:/var/lib/caduceus -e CADUCEUS_AUTH_MODE=dev \
@@ -162,18 +169,18 @@ jobs:
           curl -fsS -H "X-Caduceus-User: dolores" http://127.0.0.1:8000/api/queue | python3 -c "import json,sys; q=json.load(sys.stdin); assert sum(len(g['cases']) for g in q['groups']) > 0"
           curl -fsS http://127.0.0.1:8000/ | grep -q '<div id="root">'
       - name: Refuses to start without a de-identification key outside development
+        if: ${{ !cancelled() }}
         run: |
-          if docker run --rm caduceus-api:ci python -c "from caduceus.app_factory import build_services; build_services()"; then
+          if docker run --rm caduceus-api:ci python -c "from caduceus.app_factory import build_services; build_services()" > refusal.log 2>&1; then
             echo "expected the default (OIDC) configuration to refuse to start without CADUCEUS_DEID_KEY"; exit 1
           fi
+          grep -q "InsecureConfiguration: Set CADUCEUS_DEID_KEY" refusal.log || { cat refusal.log; exit 1; }
+      - name: Show the container log on the run page when the image job fails
+        if: failure()
+        run: |
+          { docker logs api 2>&1 || true; cat refusal.log 2>/dev/null || true; } | tail -n 40 | python3 -c "import sys; t = sys.stdin.read().replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A'); print('::error title=API container log (last 40 lines)::' + t)"
       - if: always()
         run: docker logs api || true
-      - name: Install Grype (pinned release, checksum verified)
-        run: scripts/install_grype.sh
-      - name: Known vulnerabilities in the image (fails on any with a released fix)
-        run: |
-          grype docker:caduceus-api:ci -o json --file grype-image.json
-          python3 scripts/vuln_report.py grype-image.json --label "Container image" --fail-on fixed
       - name: Keep the image scan
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
