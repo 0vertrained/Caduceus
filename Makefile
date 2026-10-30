@@ -17,6 +17,9 @@ SYN_ARGS = -s 20261029 -cs 20261029 -r 20261028 -e 20261029 -p 120 -a 55-89 \
 # in Denver or a CI runner in UTC, produces the same bytes. Mountain time suits a New Mexico health system.
 DATA_TZ   ?= America/Denver
 JAVA_PINS  = -Duser.timezone=$(DATA_TZ) -Duser.language=en -Duser.country=US -Dfile.encoding=UTF-8
+# Synthea bundles library versions with known flaws (README, "Known vulnerabilities"), so it runs with the
+# network switched off.
+OFFLINE    = $(abspath scripts/offline.sh)
 
 .PHONY: help setup data seed dev test lint evals e2e check approve-policy image up clean
 
@@ -32,7 +35,7 @@ data: ## Regenerate the synthetic dataset from Synthea (needs Java 17+); output 
 	test -f $(SYN_DIR)/synthea.jar || curl -fsSL -o $(SYN_DIR)/synthea.jar $(SYN_URL)
 	echo "$(SYN_SHA)  $(SYN_DIR)/synthea.jar" | sha256sum -c - || \
 	  { echo "This is not the Synthea build the dataset was made with; see SYN_SHA in the Makefile."; exit 1; }
-	rm -rf $(SYN_DIR)/out && cd $(SYN_DIR) && TZ=$(DATA_TZ) java $(JAVA_PINS) -jar synthea.jar $(SYN_ARGS) \
+	rm -rf $(SYN_DIR)/out && cd $(SYN_DIR) && TZ=$(DATA_TZ) $(OFFLINE) java $(JAVA_PINS) -jar synthea.jar $(SYN_ARGS) \
 	  --exporter.baseDirectory=$(abspath $(SYN_DIR))/out "New Mexico" "Santa Fe" > synthea.log
 	rm -rf $(DATA)/fhir $(DATA)/cases
 	TZ=$(DATA_TZ) $(PY) scripts/build_dataset.py --synthea $(SYN_DIR)/out/fhir --out $(DATA)
