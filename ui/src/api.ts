@@ -72,7 +72,7 @@ export class ApiError extends Error {
   }
 }
 
-export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function api<T>(path: string, init: RequestInit = {}, as: "json" | "blob" = "json"): Promise<T> {
   const headers = new Headers(init.headers);
   const user = currentUser();
   if (user) headers.set("X-Caduceus-User", user);
@@ -90,7 +90,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new ApiError(res.status, message);
   }
   if (init.method && init.method !== "GET") window.dispatchEvent(new Event(CHANGED));
-  return res.json() as Promise<T>;
+  return (as === "blob" ? res.blob() : res.json()) as Promise<T>;
 }
 
 /** Whether this is the public demo, and when its cases go back to the start. */
@@ -209,5 +209,15 @@ export interface AttestationView {
   answers?: Record<string, string>;
   note_request: { question: string | null; confirmed: { question: string; policy: string; at: string }[]; limit: number } | null;
 }
+
+export interface FaxField {
+  key: string; label: string; value: string; confidence: number;
+  box: [number, number, number, number] | null; problem: string | null;
+}
+export interface FaxRow {
+  id: string; status: "received" | "read" | "confirmed"; received: string; pages: number;
+  referral: string | null; patient: string | null; to_check: number; case_id: string | null;
+}
+export interface FaxView extends FaxRow { fields: FaxField[]; size: [number, number]; engine: string; image: string }
 
 export interface Me { id: string; name: string; role: "pa_specialist" | "clinician" | "admin" | "auditor" }

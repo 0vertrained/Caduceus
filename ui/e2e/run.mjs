@@ -69,6 +69,26 @@ await page.getByRole("link", { name: /^Caduceus/ }).click();
 await page.waitForFunction(() => document.querySelector("#find-patient")?.value === "", null, { timeout: 3000 })
   .catch(() => report.failures.push("search: box kept the term after leaving results"));
 
+// Faxed referrals: read inside the boundary; the degraded one sends its unsure fields to a person, who corrects
+// them against the page before the case exists.
+const faxes = JSON.parse(readFileSync(new URL("../../data/faxes/faxes.json", import.meta.url), "utf8"));
+await page.getByRole("region", { name: "Arrived by fax" }).waitFor({ timeout: 60_000 });
+await page.locator('a[href="/intake/FAX-0003"]').click();
+await page.getByRole("heading", { name: "Check the fax" }).waitFor();
+await page.locator(".crop").first().waitFor();
+await shot(page, "02c-fax-check");
+await axe(page, "02c-fax-check");
+const labels = { referral: "Referral number", patient_name: "Patient name", birth_date: "Date of birth",
+  member_id: "Member ID", payer: "Health plan", clinician: "Ordering clinician", service_code: "CPT/HCPCS code",
+  service: "Requested service", diagnosis: "Diagnosis" };
+for (const [key, label] of Object.entries(labels)) {
+  await page.getByLabel(label, { exact: true }).fill(faxes["FAX-0003"].expected[key]);
+}
+await page.getByRole("button", { name: "Create the case" }).click();
+await page.getByRole("heading", { name: "Coverage criteria" }).waitFor();
+if (!page.url().endsWith("/cases/2026-1029")) report.failures.push(`fax: expected case 2026-1029, got ${page.url()}`);
+await page.goto(base + "/");
+
 await page.getByRole("link", { name: /^Open case for/ }).first().click();
 await page.getByRole("heading", { name: "Coverage criteria" }).waitFor();
 await shot(page, "03-case");
