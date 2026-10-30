@@ -33,15 +33,22 @@ async function axe(page, name) {
 
 async function signIn(page, label) {
   await page.goto(base + "/");
-  await page.getByRole("button", { name: new RegExp(label) }).click();
+  await page.getByRole("main").getByRole("button", { name: new RegExp(label) }).click();
   await page.waitForLoadState("networkidle");
 }
 
+// The desk and the phone share one copy of the demo's cases, as a visitor does with the tour's phone link.
+const SANDBOX = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, "0")).join("");
+const share = (context) => context.addInitScript((id) => localStorage.setItem("caduceus.sandbox", id), SANDBOX);
+const tour = (page) => page.getByRole("region", { name: "Guided tour" });
+
 const browser = await chromium.launch();
 const desk = await browser.newContext({ viewport: { width: 1280, height: 900 }, bypassCSP: true });
+await share(desk);
 const page = await desk.newPage();
 
 await page.goto(base + "/");
+await tour(page).getByText("Tour, step 1 of 8").waitFor();
 await axe(page, "01-sign-in");
 await signIn(page, "Dolores Montoya");
 await page.getByRole("heading", { level: 1 }).waitFor();
@@ -86,6 +93,7 @@ const caseUrl = page.url();
 
 // The clinician, on a phone.
 const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, bypassCSP: true });
+await share(phone);
 const doc = await phone.newPage();
 await signIn(doc, "Dr. Ana Reyes");
 await doc.getByRole("link").filter({ hasText: /, \d+$/ }).first().click();
@@ -154,6 +162,7 @@ await axe(page, "16-case-note-ready");
 await page.getByRole("button", { name: /^Send the note to / }).click();
 await page.getByRole("status").filter({ hasText: "Sending the note" }).waitFor();
 await page.getByRole("status").filter({ hasText: /^Approved by / }).waitFor({ timeout: 60_000 });
+await tour(page).getByText("Tour complete").waitFor({ timeout: 10_000 });
 await shot(page, "17-case-approved");
 await axe(page, "17-case-approved");
 

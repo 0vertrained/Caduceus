@@ -35,6 +35,10 @@ export function App() {
     setCurrentUser(user);
     void load().then(() => navigate("/"));
   };
+  const switchTo = (user: string, path: string | null) => {
+    setCurrentUser(user);
+    void load().then(() => navigate(path ?? "/"));
+  };
   const signOut = () => {
     setCurrentUser(null);
     setMe(null);
@@ -44,7 +48,7 @@ export function App() {
   return (
     <div className="app">
       <a href="#main" className="skip-link">Skip to main content</a>
-      <DemoBanner me={me} />
+      <DemoBanner me={me} onSwitch={switchTo} />
       <Header me={me} onSignOut={signOut} />
       <main id="main" className="app__main" tabIndex={-1}>
         {!checked ? null : !me ? (
