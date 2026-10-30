@@ -85,6 +85,7 @@ jobs:
               CADUCEUS_EXTERNAL_TIMEOUT=300 /tmp/rec/bin/python scripts/record_completions.py \
               data/recorded/completions.json 2> /tmp/record.err; then
             echo "::notice title=Draft model::Recorded $(jq length data/recorded/completions.json) replies from $EXTERNAL_MODEL"
+            if [ -s /tmp/record.err ]; then echo "::warning title=Draft model::$(tail -c 600 /tmp/record.err | tr '\n' ' ')"; fi
             echo "recorded=true" >> "$GITHUB_OUTPUT"
           else
             echo "::warning title=Draft model::Recording failed: $(tail -c 600 /tmp/record.err | tr '\n' ' ')"
