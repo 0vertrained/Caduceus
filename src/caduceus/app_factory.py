@@ -151,10 +151,17 @@ def _catalog(data_dir: Path) -> dict[str, Any]:
     path = data_dir / "cases" / "cases.json"
     cases = json.loads(path.read_text()) if path.exists() else []
     clinicians = {c["ordering_clinician"]["name"]: c["ordering_clinician"] for c in cases}
+    # The health plan on file for each patient. The synthetic records hold no Coverage resource, so it comes from the
+    # scenario data, and only where that data names one plan for the patient.
+    plans: dict[str, set[tuple[str, str]]] = {}
+    for c in cases:
+        plans.setdefault(c["patient_id"], set()).add((c["payer"]["name"], c["payer"]["member_id_last4"]))
     return {"services": {c["service"]["code"]: c["service"] | {"criteria_set": c["criteria_set"]} for c in cases},
             "clinicians": clinicians,
             "clinics": {name: CLINICS[c["id"]] for name, c in clinicians.items() if c["id"] in CLINICS},
-            "payers": {c["payer"]["name"] for c in cases}}
+            "payers": {c["payer"]["name"] for c in cases},
+            "coverage": {pid: {"payer": p, "member_id_last4": last4}
+                         for pid, found in plans.items() if len(found) == 1 for p, last4 in found}}
 
 
 def _external_provider(s: Settings) -> Provider | None:

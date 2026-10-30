@@ -204,6 +204,12 @@ class ConfirmFaxBody(BaseModel):
     checked: list[Annotated[str, Field(max_length=40)]] = Field(default_factory=list, max_length=20)
 
 
+class MatchBody(BaseModel):
+    """A patient lookup. The name travels in the body, never the URL, so it stays out of access logs."""
+    name: str = Field(max_length=120)
+    birth_date: str = Field(max_length=10)
+    ref: str | None = Field(default=None, max_length=32)
+
 
 def create_app(services: Services | None = None, dispatch_interval: float | None = 5.0,
                fresh_demo: Callable[[], Services] | None = None) -> FastAPI:
@@ -503,6 +509,11 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
     def intake_image(fax_id: str, who: Principal = Depends(role(Role.PA_SPECIALIST, Role.ADMIN, Role.AUDITOR))):
         fax = load_fax(fax_id)
         return FileResponse(live.svc.workflow.fax_dir / fax.file, media_type="image/png")  # type: ignore[operator]
+
+    @app.post("/api/intake/{fax_id}/match")
+    def match_patient(fax_id: str, body: MatchBody, who: Principal = Depends(role(Role.PA_SPECIALIST))):
+        load_fax(fax_id)
+        return live.svc.workflow.match_patient(who, fax_id, body.name, body.birth_date, body.ref)
 
     @app.post("/api/intake/{fax_id}/confirm")
     def confirm_fax(fax_id: str, body: ConfirmFaxBody, who: Principal = Depends(principal)):

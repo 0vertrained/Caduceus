@@ -15,7 +15,7 @@ from caduceus.intake import check, read_fax
 from caduceus.seed import seed
 from caduceus.workflow import ActionRefused
 from tests.conftest import DATA
-from tests.test_workflow_api import DOLORES, T0, Clock, as_user
+from tests.test_workflow_api import DOLORES, REYES, T0, Clock, as_user
 
 pytestmark = pytest.mark.skipif(shutil.which("tesseract") is None, reason="Tesseract OCR is not installed")
 MANIFEST = json.loads((DATA / "faxes" / "faxes.json").read_text())
@@ -162,6 +162,44 @@ def test_the_service_is_chosen_by_its_code_and_named_from_the_catalog(inbox):
                        json={"values": values | {"service": "An MRI of the brain, with contrast"}})
     assert made.status_code == 200
     assert svc.cases.get("2026-1023").service["display"] == "CPAP device for sleep apnea"
+
+
+def test_the_patient_is_found_in_the_chart_or_the_closest_are_offered(inbox):
+    svc, client = inbox
+
+    def look(name: str, born: str, ref: str | None = None, who: dict = DOLORES):
+        return client.post("/api/intake/FAX-0003/match", headers=who,
+                           json={"name": name, "birth_date": born} | ({"ref": ref} if ref else {}))
+
+    assert look("Shelba Gulgowski", "03/09/1941").status_code == 409  # not read yet: nothing to check
+    client.get("/api/intake/FAX-0003", headers=DOLORES)
+    found = look("Shelba Gulgowski", "03/09/1941").json()
+    assert found["status"] == "matched" and found["candidates"] == []
+    assert found["patient"] | {"ref": None} == {"ref": None, "name": "Shelba Gulgowski", "born": "March 9, 1941",
+                                                "birth_date": "03/09/1941", "city": "Santa Fe"}
+    # The plan on file comes with the match, so the screen can compare it with the fax; only its last 4 digits.
+    assert found["on_file"] == {"payer": "UnitedHealthcare Medicare Advantage", "member_id_last4": "2654"}
+    patient_id = svc.cases.get("2026-1043").patient_id  # a record number never leaves: not this one, not hers
+    shelba = svc.store.find_patient("Shelba Gulgowski", "1941-03-09")
+    assert shelba not in look("Shelba Gulgowski", "03/09/1941").text and patient_id not in found["patient"]["ref"]
+
+    # The wrong date of birth: no exact match, so the closest records are offered, and one can be chosen.
+    near = look("Shelba Gulgowsky", "01/01/1941").json()
+    assert near["status"] == "candidates" and near["patient"] is None
+    assert [c["name"] for c in near["candidates"]] == ["Shelba Gulgowski"]
+    chosen = look("Shelba Gulgowsky", "01/01/1941", near["candidates"][0]["ref"]).json()
+    assert chosen["status"] == "chosen" and chosen["patient"]["birth_date"] == "03/09/1941"
+    assert look("Shelba Gulgowsky", "01/01/1941", "0" * 16).status_code == 409
+    nobody = look("Jon Smith", "01/01/1950").json()
+    assert nobody == {"status": "none", "patient": None, "on_file": None, "candidates": []}
+
+    # Only a PA specialist looks patients up; names travel in the body, bounded, and are not kept in the audit log.
+    assert look("Shelba Gulgowski", "03/09/1941", who=REYES).status_code == 403
+    assert look("Shelba Gulgowski", "03/09/1941", who=as_user("sam")).status_code == 403
+    assert look("x" * 121, "03/09/1941").status_code == 422
+    searches = [e for e in svc.audit.events("FAX-0003") if e.action == "fax.patient_searched"]
+    assert [e.detail["result"] for e in searches] == ["matched", "matched", "candidates", "chosen", "none"]
+    assert not any("Shelba" in str(e.detail) or "Gulgow" in str(e.detail) for e in searches)
 
 
 def test_the_clinics_match_the_ones_the_cover_sheets_are_drawn_with():

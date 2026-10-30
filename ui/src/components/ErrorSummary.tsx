@@ -1,8 +1,9 @@
 import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 
-/** One problem with a form: what to do, the control to take the person to, and a case to open instead, if any. */
-export interface FormError { key: string; message: string; target?: string; caseId?: string }
+/** One problem with a form: what to do, the control to take the person to, and a case to open instead, if any.
+ *  `server` marks a refusal from the server, which stays until the next attempt. */
+export interface FormError { key: string; message: string; target?: string; caseId?: string; server?: boolean }
 
 function goTo(target: string) {
   const el = document.getElementById(target);
@@ -11,14 +12,15 @@ function goTo(target: string) {
   el.focus({ preventScroll: true });
 }
 
-/** The GOV.UK error summary: at the top of the page, announced, focused, each problem a link to its field. */
-export function ErrorSummary({ errors }: { errors: FormError[] }) {
+/** The GOV.UK error summary: at the top of the page, announced, focused, each problem a link to its field. It takes
+ *  focus on each new attempt (`attempt`); problems fixed since drop out quietly. */
+export function ErrorSummary({ errors, attempt }: { errors: FormError[]; attempt: number }) {
   const box = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (!errors.length) return;
+    if (!attempt) return;
     box.current?.focus();
     box.current?.scrollIntoView({ block: "start" });
-  }, [errors]);
+  }, [attempt]);
   if (!errors.length) return null;
   return (
     <div className="error-summary" role="alert" tabIndex={-1} ref={box} aria-labelledby="error-summary-title">
