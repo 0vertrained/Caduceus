@@ -8,10 +8,15 @@ SYN_DIR ?= .synthea
 # The dataset was generated with this exact Synthea build; regeneration refuses any other jar.
 SYN_URL ?= https://github.com/synthetichealth/synthea/releases/download/master-branch-latest/synthea-with-dependencies.jar
 SYN_SHA ?= 20098ec70c24c715ea874b19140983634711cc4986196105b5b0a9ca72a4b644
-SYN_ARGS = -s 20261029 -cs 20261029 -r 20261028 -p 120 -a 55-89 \
+SYN_ARGS = -s 20261029 -cs 20261029 -r 20261028 -e 20261029 -p 120 -a 55-89 \
   --exporter.fhir.export=true --exporter.ccda.export=false --exporter.csv.export=false \
   --exporter.hospital.fhir.export=false --exporter.practitioner.fhir.export=false \
   --exporter.years_of_history=5 --generate.append_numbers_to_person_names=false
+# Two inputs Synthea would otherwise take from the machine: the simulation runs until today unless -e pins an end
+# date, and timestamps are written in the local zone. Both are pinned (with the locale) so every machine, a laptop
+# in Denver or a CI runner in UTC, produces the same bytes. Mountain time suits a New Mexico health system.
+DATA_TZ   ?= America/Denver
+JAVA_PINS  = -Duser.timezone=$(DATA_TZ) -Duser.language=en -Duser.country=US -Dfile.encoding=UTF-8
 
 .PHONY: help setup data seed dev test lint evals e2e check approve-policy image up clean
 
@@ -27,9 +32,10 @@ data: ## Regenerate the synthetic dataset from Synthea (needs Java 17+); output 
 	test -f $(SYN_DIR)/synthea.jar || curl -fsSL -o $(SYN_DIR)/synthea.jar $(SYN_URL)
 	echo "$(SYN_SHA)  $(SYN_DIR)/synthea.jar" | sha256sum -c - || \
 	  { echo "This is not the Synthea build the dataset was made with; see SYN_SHA in the Makefile."; exit 1; }
-	rm -rf $(SYN_DIR)/out && cd $(SYN_DIR) && java -jar synthea.jar $(SYN_ARGS) \
+	rm -rf $(SYN_DIR)/out && cd $(SYN_DIR) && TZ=$(DATA_TZ) java $(JAVA_PINS) -jar synthea.jar $(SYN_ARGS) \
 	  --exporter.baseDirectory=$(abspath $(SYN_DIR))/out "New Mexico" "Santa Fe" > synthea.log
-	$(PY) scripts/build_dataset.py --synthea $(SYN_DIR)/out/fhir --out $(DATA)
+	rm -rf $(DATA)/fhir $(DATA)/cases
+	TZ=$(DATA_TZ) $(PY) scripts/build_dataset.py --synthea $(SYN_DIR)/out/fhir --out $(DATA)
 
 seed: ## Reset the demo database (stop the server first)
 	CADUCEUS_AUTH_MODE=dev $(PY) -m caduceus.seed

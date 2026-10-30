@@ -344,11 +344,16 @@ def main() -> None:
     ap.add_argument("--out", type=Path, default=Path("data"))
     args = ap.parse_args()
 
-    candidates = []
-    for f in sorted(args.synthea.glob("*.json")):
+    # Order by the patient's id, which is in the data, not by file name: Synthea names files after patients, and
+    # an accented name ("González") is spelled differently on disk depending on the machine's locale.
+    loaded = []
+    for f in args.synthea.glob("*.json"):
         if f.name.startswith(("hospital", "practitioner")):
             continue
-        b = json.loads(f.read_text())
+        b = json.loads(f.read_text(encoding="utf-8"))
+        loaded.append((patient_of(b)["id"], f, b))
+    candidates = []
+    for _, f, b in sorted(loaded, key=lambda x: x[0]):
         p = patient_of(b)
         if "deceasedDateTime" in p or not 58 <= age(p) <= 86:
             continue
@@ -366,7 +371,7 @@ def main() -> None:
                     and all(c in codes for c in need.get("with", []))
                     and not any(c in codes for c in need.get("without", [])))
         used.add(pick)
-        bundle = json.loads(pick.read_text())
+        bundle = json.loads(pick.read_text(encoding="utf-8"))
         p = patient_of(bundle)
         build, own_code = builders[service]
         has_own = own_code in active_codes(bundle) or (service == "cpap" and "73430006" in active_codes(bundle))

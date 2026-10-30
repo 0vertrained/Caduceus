@@ -50,10 +50,12 @@ await view(page, "02-queue");
 await axe(page, "02-queue");
 
 // Patient search: results appear, and the name never enters the URL (it would reach server and proxy logs).
-await page.getByLabel("Find a patient").fill("Kohler");
+const firstLabel = await page.getByRole("link", { name: /^Open case for/ }).first().getAttribute("aria-label");
+const surname = firstLabel.replace(/^Open case for /, "").split(" ").pop();
+await page.getByLabel("Find a patient").fill(surname);
 await page.getByLabel("Find a patient").press("Enter");
 await page.getByRole("heading", { name: /^Results for/ }).waitFor();
-if (/kohler/i.test(page.url())) report.failures.push(`search: patient name in URL ${page.url()}`);
+if (page.url().toLowerCase().includes(surname.toLowerCase())) report.failures.push(`search: patient name in URL ${page.url()}`);
 await axe(page, "02b-search-results");
 await page.getByRole("link", { name: /^Caduceus/ }).click();
 await page.waitForFunction(() => document.querySelector("#find-patient")?.value === "", null, { timeout: 3000 })

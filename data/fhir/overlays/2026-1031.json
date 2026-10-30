@@ -20,7 +20,7 @@
      "text": "Referral form"
     },
     "subject": {
-     "reference": "Patient/ecee7670-05e1-a0b6-2e8e-1f8fa634a8e7"
+     "reference": "Patient/0bfd5642-c639-7865-1f84-d9d95ac52cec"
     },
     "date": "2026-10-26T09:00:00-06:00",
     "description": "Referral form",
@@ -57,7 +57,7 @@
      "text": "Sleep medicine evaluation"
     },
     "subject": {
-     "reference": "Patient/ecee7670-05e1-a0b6-2e8e-1f8fa634a8e7"
+     "reference": "Patient/0bfd5642-c639-7865-1f84-d9d95ac52cec"
     },
     "date": "2026-08-31T09:00:00-06:00",
     "description": "Sleep medicine evaluation",
@@ -84,7 +84,7 @@
     "id": "8897ecc8-3c05-5341-9387-e35684128067",
     "status": "final",
     "subject": {
-     "reference": "Patient/ecee7670-05e1-a0b6-2e8e-1f8fa634a8e7"
+     "reference": "Patient/0bfd5642-c639-7865-1f84-d9d95ac52cec"
     },
     "code": {
      "coding": [
@@ -127,6 +127,38 @@
    }
   },
   {
+   "fullUrl": "urn:uuid:66a02c1a-6a05-5b0f-9e1e-b0822a227d8b",
+   "resource": {
+    "resourceType": "Condition",
+    "id": "66a02c1a-6a05-5b0f-9e1e-b0822a227d8b",
+    "subject": {
+     "reference": "Patient/0bfd5642-c639-7865-1f84-d9d95ac52cec"
+    },
+    "clinicalStatus": {
+     "coding": [
+      {
+       "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+       "code": "active",
+       "display": "active"
+      }
+     ],
+     "text": "active"
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://hl7.org/fhir/sid/icd-10-cm",
+       "code": "G47.33",
+       "display": "Obstructive sleep apnea"
+      }
+     ],
+     "text": "Obstructive sleep apnea"
+    },
+    "onsetDateTime": "2026-09-28",
+    "recordedDate": "2026-09-28"
+   }
+  },
+  {
    "fullUrl": "urn:uuid:0301027a-042b-58cf-acd7-91fe4b5779a5",
    "resource": {
     "resourceType": "DocumentReference",
@@ -143,7 +175,7 @@
      "text": "Sleep study report"
     },
     "subject": {
-     "reference": "Patient/ecee7670-05e1-a0b6-2e8e-1f8fa634a8e7"
+     "reference": "Patient/0bfd5642-c639-7865-1f84-d9d95ac52cec"
     },
     "date": "2026-09-18T09:00:00-06:00",
     "description": "Sleep study report",
@@ -170,7 +202,7 @@
     "id": "06470edc-8f9a-5966-bca8-3cb89580183c",
     "status": "completed",
     "subject": {
-     "reference": "Patient/ecee7670-05e1-a0b6-2e8e-1f8fa634a8e7"
+     "reference": "Patient/0bfd5642-c639-7865-1f84-d9d95ac52cec"
     },
     "code": {
      "coding": [
@@ -209,7 +241,7 @@
     "id": "a1d1991d-5079-5d68-bdd5-205a58f1229d",
     "status": "final",
     "subject": {
-     "reference": "Patient/ecee7670-05e1-a0b6-2e8e-1f8fa634a8e7"
+     "reference": "Patient/0bfd5642-c639-7865-1f84-d9d95ac52cec"
     },
     "code": {
      "coding": [
