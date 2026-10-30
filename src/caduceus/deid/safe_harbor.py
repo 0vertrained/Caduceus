@@ -43,7 +43,7 @@ PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("RECORD_NUMBER", re.compile(
         r"\b(?:MRN|medical record(?: number)?|member(?: ID)?|account(?: number)?|policy(?: number)?|"
         r"subscriber(?: ID)?|license(?: number)?|serial(?: number)?)\s*(?:#|no\.?|number|ID)?\s*[:#]?\s*"
-        r"[A-Z0-9][A-Z0-9-]{3,}\b", re.I)),
+        r"(?=[A-Z0-9-]*\d)[A-Z0-9][A-Z0-9-]{3,}\b", re.I)),  # a record number has a digit; "policy sentence" is prose
     ("DATE", re.compile(rf"\b(?:{MONTHS})\.?\s+\d{{1,2}}(?:st|nd|rd|th)?(?:,?\s+\d{{4}})?\b")),
     ("DATE", re.compile(r"\b\d{4}-\d{2}-\d{2}(?:T[\d:.]+(?:Z|[+-]\d{2}:\d{2})?)?\b")),
     ("DATE", re.compile(r"\b\d{1,2}/\d{1,2}/\d{2,4}\b")),

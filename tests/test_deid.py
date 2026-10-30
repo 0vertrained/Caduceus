@@ -104,3 +104,12 @@ def test_stamp_covers_exact_text(deid):
     result = DeidResult("[NAME_1] has back pain.", {}, {})  # type: ignore[arg-type]
     stamped = deid.stamp(result)
     assert stamped.stamp.text_sha256 and stamped.stamp.policy == "safe-harbor/1"
+
+
+def test_a_labelled_record_number_needs_a_digit_so_prose_after_a_label_survives():
+    from caduceus.deid.safe_harbor import PatientContext, SafeHarborDeidentifier
+    deid = SafeHarborDeidentifier(b"k" * 32)
+    out = deid.deidentify("Coverage policy sentence: covered. Policy number: HX4471209. Member ID AB12345.",
+                          PatientContext(names=[]))
+    assert "policy sentence" in out.text and "HX4471209" not in out.text and "AB12345" not in out.text
+    assert out.removed["RECORD_NUMBER"] == 2
