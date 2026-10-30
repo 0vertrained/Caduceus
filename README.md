@@ -35,6 +35,12 @@ audited, and whether the people who use it every day can.
 The 1.00 agreement measures that the engine does what its criteria say on cases built to known labels. It is not
 a measure of clinical validity. That needs real policies, real charts and clinician reviewers.
 
+## Public demo
+
+The UI is served from Netlify and the API from Google Cloud Run, in a demo mode built for being public: synthetic
+patients only, a banner that says so, resets every 6 hours, per-visitor rate limits, no model keys, and an API
+that answers only requests Netlify has signed. See [docs/demo-deployment.md](docs/demo-deployment.md).
+
 ## Run it
 
 Needs Python 3.12+ and Node 22.
