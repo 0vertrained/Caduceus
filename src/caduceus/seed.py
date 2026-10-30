@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import sys
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -36,6 +37,13 @@ def seed(services: Services, now: datetime | None = None) -> list[str]:
         services.workflow.prepare(case.id)
         ids.append(case.id)
     return ids
+
+
+def fresh_demo_services(settings: Settings) -> Services:
+    """A new, seeded data set in memory, for the public demo's start and its scheduled resets."""
+    services = build_services(replace(settings, db_path=":memory:"))
+    seed(services)
+    return services
 
 
 def main(argv: list[str] | None = None) -> None:
