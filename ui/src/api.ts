@@ -20,6 +20,52 @@ export function setCurrentUser(user: string | null): void {
   }
 }
 
+// The public demo gives each browser its own copy of the cases, named by a random id kept in this browser. A link
+// carrying ?sandbox= (the tour's "link for your phone") joins the same copy from another device.
+const SANDBOX_KEY = "caduceus.sandbox";
+const SANDBOX_ID = /^[0-9a-f]{32}$/;
+let sandbox: string | null = null;
+
+function remember(id: string): string {
+  sandbox = id;
+  try {
+    localStorage.setItem(SANDBOX_KEY, id);
+  } catch {
+    /* storage unavailable: this tab keeps its copy until it is closed */
+  }
+  return id;
+}
+
+export function sandboxId(): string {
+  if (sandbox) return sandbox;
+  let stored: string | null = null;
+  try {
+    stored = localStorage.getItem(SANDBOX_KEY);
+  } catch {
+    /* fall through to a new id */
+  }
+  if (stored && SANDBOX_ID.test(stored)) return (sandbox = stored);
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return remember(Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join(""));
+}
+
+export function sandboxLink(): string {
+  return `${window.location.origin}/?sandbox=${sandboxId()}`;
+}
+
+(function joinFromLink() {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("sandbox");
+  if (!id) return;
+  if (SANDBOX_ID.test(id)) remember(id);
+  params.delete("sandbox");
+  const rest = params.toString();
+  window.history.replaceState(window.history.state, "", window.location.pathname + (rest ? `?${rest}` : "") + window.location.hash);
+})();
+
+/** Something changed on the server: the tour listens for this to move on. */
+export const CHANGED = "caduceus:changed";
+
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
@@ -30,6 +76,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   const user = currentUser();
   if (user) headers.set("X-Caduceus-User", user);
+  headers.set("X-Caduceus-Sandbox", sandboxId());
   if (init.body) headers.set("Content-Type", "application/json");
   const res = await fetch(path, { ...init, headers, cache: "no-store" });
   if (!res.ok) {
@@ -42,13 +89,20 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     }
     throw new ApiError(res.status, message);
   }
+  if (init.method && init.method !== "GET") window.dispatchEvent(new Event(CHANGED));
   return res.json() as Promise<T>;
 }
 
 /** Whether this is the public demo, and when its cases go back to the start. */
 export type DemoInfo =
   | { demo: false }
-  | { demo: true; reset_every_hours: number; last_reset_at: string; next_reset_at: string };
+  | { demo: true; reset_every_hours: number; last_reset_at: string; next_reset_at: string; tour: Tour | null };
+
+export interface Tour {
+  step: number; steps: number; case_id: string;
+  actor: string | null; actor_name: string | null; text: string; path: string | null;
+  waiting: boolean; ended: boolean; done: boolean;
+}
 
 export type StatusKey =
   | "ready" | "needs_clinician" | "not_met" | "preparing" | "waiting_clinician" | "returned"
