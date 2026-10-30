@@ -1,0 +1,171 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.13"
+  NODE_VERSION: "22"
+  PLAYWRIGHT_VERSION: "1.63.0"
+
+jobs:
+  python:
+    name: Lint, tests and eval gate
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: pip install -e '.[dev]'
+      - run: ruff check src tests scripts
+      - name: Unit and API tests (includes the rule that nothing outside the router talks to a model)
+        run: pytest
+      - name: Eval gate (criteria agreement, PHI leakage, red team)
+        run: python -m caduceus.evals.run
+      - name: Keep the eval report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-report
+          path: evals/reports/latest.json
+
+  ui:
+    name: UI type check and build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - run: npm ci --no-audit --no-fund
+        working-directory: ui
+      - run: npm run build
+        working-directory: ui
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ui-dist
+          path: ui/dist
+
+  e2e:
+    name: End-to-end walk with accessibility checks
+    needs: [python, ui]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - run: pip install -e .
+      - run: npm ci --no-audit --no-fund
+        working-directory: ui
+      - uses: actions/download-artifact@v4
+        with:
+          name: ui-dist
+          path: ui/dist
+      - name: Install Playwright and Chromium
+        run: |
+          npm install --global "playwright@${PLAYWRIGHT_VERSION}"
+          npx --yes "playwright@${PLAYWRIGHT_VERSION}" install --with-deps chromium
+      - name: Walk the screens (axe-core, WCAG 2.2 AA tags; reflow at 320 px)
+        run: NODE_PATH="$(npm root --global)" scripts/e2e.sh ui/test-results
+      - name: Keep screenshots and the accessibility report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: ui/test-results
+
+  image:
+    name: Container image builds and serves
+    needs: [ui]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - run: docker build -t caduceus-api:ci .
+      - name: Smoke test
+        run: |
+          docker run -d --name api -p 127.0.0.1:8000:8000 --read-only --tmpfs /tmp \
+            -v caduceus-state:/var/lib/caduceus -e CADUCEUS_AUTH_MODE=dev \
+            -e CADUCEUS_DEID_KEY="ci-only-signing-key-at-least-32-bytes-long" \
+            caduceus-api:ci sh -c "python -m caduceus.seed --if-missing && exec uvicorn caduceus.api:create_app --factory --host 0.0.0.0 --port 8000"
+          for _ in $(seq 1 30); do curl -fsS http://127.0.0.1:8000/api/health && break; sleep 1; done
+          curl -fsS -H "X-Caduceus-User: dolores" http://127.0.0.1:8000/api/queue | python3 -c "import json,sys; q=json.load(sys.stdin); assert sum(len(g['cases']) for g in q['groups']) > 0"
+          curl -fsS http://127.0.0.1:8000/ | grep -q '<div id="root">'
+      - name: Refuses to start without a de-identification key outside development
+        run: |
+          if docker run --rm caduceus-api:ci python -c "from caduceus.app_factory import build_services; build_services()"; then
+            echo "expected the default (OIDC) configuration to refuse to start without CADUCEUS_DEID_KEY"; exit 1
+          fi
+      - if: always()
+        run: docker logs api || true
+
+  infra:
+    name: Terraform format, validate and policy scan
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: infra/terraform
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform fmt -check -recursive -diff
+      - run: terraform init -backend=false -input=false
+      - run: terraform validate
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Checkov (every skip carries its reason in the code)
+        run: |
+          pip install checkov
+          checkov -d . --framework terraform --quiet --compact
+      - name: Compose file is valid
+        working-directory: .
+        run: CADUCEUS_DEID_KEY=ci-only-placeholder docker compose config --quiet
+
+  dataset:
+    name: Dataset regenerates byte-identically
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: pip install -e .
+      - run: make data PY=python
+      - name: No byte changed
+        run: git diff --exit-code --stat -- data/
