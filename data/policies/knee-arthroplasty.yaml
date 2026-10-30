@@ -1,0 +1,98 @@
+# Development criteria set. Paraphrased for development; NOT the text of any specific payer policy or LCD.
+id: dev-knee-arthroplasty
+version: "2026-09"
+title: Total knee arthroplasty
+service_codes:
+  - {system: cpt, code: "27447", display: "Total knee arthroplasty"}
+status: approved
+approved_by: Mesa Verde PA team lead (development reviewer)
+approved_at: 2026-10-01
+source:
+  kind: development-paraphrase
+  title: Total knee arthroplasty, development criteria
+  note: Paraphrase for development and evaluation only; replace with reviewed payer policy text in Phase 1.
+criteria:
+  - id: oa_diagnosis
+    text: Osteoarthritis of the knee is diagnosed
+    kind: diagnosis
+    policy_sentence: The patient has a diagnosis of osteoarthritis of the knee to be replaced.
+    rule:
+      type: condition
+      label: knee osteoarthritis diagnosis
+      codes:
+        - {system: icd10, code: M17.11, display: "Unilateral primary osteoarthritis, right knee"}
+        - {system: icd10, code: M17.12, display: "Unilateral primary osteoarthritis, left knee"}
+        - {system: icd10, code: M17.0, display: "Bilateral primary osteoarthritis of knee"}
+        - {system: snomed, code: "239873007", display: "Osteoarthritis of knee"}
+
+  - id: imaging_narrowing
+    text: X-ray shows joint-space narrowing
+    kind: observation
+    policy_sentence: Weight-bearing radiographs within the past year show joint-space narrowing.
+    rule:
+      type: all_of
+      rules:
+        - type: procedure
+          label: knee X-ray
+          within_days: 365
+          codes:
+            - {system: cpt, code: "73562", display: "X-ray knee, 3 views"}
+            - {system: cpt, code: "73564", display: "X-ray knee, 4 or more views"}
+        - type: observation
+          label: joint-space finding
+          within_days: 365
+          codes:
+            - {system: local, code: knee-joint-space, display: "Knee joint space on radiograph"}
+          value_code: {system: local, code: narrowed, display: "Narrowed"}
+
+  - id: conservative_12_weeks
+    text: Twelve weeks of conservative treatment
+    kind: prior_treatment
+    policy_sentence: >-
+      At least twelve weeks of non-surgical treatment (physical therapy, or a joint injection) failed to
+      give adequate relief.
+    attestation_question: "Has the patient had at least twelve weeks of non-surgical treatment without adequate relief?"
+    attestation_help: "For example: physical therapy, a supervised exercise program, or a joint injection."
+    rule:
+      type: any_of
+      rules:
+        - type: procedure
+          label: physical therapy
+          within_days: 730
+          min_span_days: 84
+          codes:
+            - {system: cpt, code: "97110", display: "Therapeutic exercise"}
+            - {system: snomed, code: "91251008", display: "Physical therapy procedure"}
+        - type: procedure
+          label: knee injection
+          within_days: 365
+          codes:
+            - {system: cpt, code: "20610", display: "Arthrocentesis or injection, major joint"}
+
+  - id: functional_limitation
+    text: Pain limits daily activities
+    kind: documentation
+    policy_sentence: The clinician documents pain or loss of function that limits activities of daily living.
+    attestation_question: "Does knee pain limit the patient's daily activities?"
+    attestation_help: "For example: walking, stairs, getting up from a chair, or self-care."
+    rule:
+      type: observation
+      label: functional assessment
+      within_days: 180
+      codes:
+        - {system: local, code: functional-limitation, display: "Functional limitation assessment"}
+      value_code: {system: local, code: present, display: "Present"}
+
+  - id: no_active_infection
+    text: No active infection in the joint
+    kind: exclusion
+    policy_sentence: There is no active infection of the knee joint.
+    when_absent: met
+    absent_rationale: An active joint infection is always charted as a diagnosis; its absence is accepted.
+    rule:
+      type: condition
+      label: joint infection diagnosis
+      codes:
+        - {system: icd10, code: M00.9, display: "Pyogenic arthritis, unspecified"}
+        - {system: icd10, code: M00.861, display: "Arthritis due to other bacteria, right knee"}
+        - {system: icd10, code: M00.862, display: "Arthritis due to other bacteria, left knee"}

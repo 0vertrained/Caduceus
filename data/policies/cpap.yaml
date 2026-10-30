@@ -1,0 +1,100 @@
+# Development criteria set. Paraphrased for development from the structure of Medicare's national
+# coverage determination for CPAP in obstructive sleep apnea; NOT its text. Phase 1 replaces it with the
+# mirrored NCD/LCD text, reviewed and approved the same way.
+id: dev-cpap-osa
+version: "2026-09"
+title: CPAP device for obstructive sleep apnea
+service_codes:
+  - {system: hcpcs, code: E0601, display: "Continuous positive airway pressure device"}
+status: approved
+approved_by: Mesa Verde PA team lead (development reviewer)
+approved_at: 2026-10-01
+source:
+  kind: development-paraphrase
+  title: CPAP for obstructive sleep apnea, development criteria
+  note: Paraphrase for development and evaluation only; replace with the mirrored NCD/LCD text in Phase 1.
+criteria:
+  - id: osa_diagnosis
+    text: Obstructive sleep apnea is diagnosed
+    kind: diagnosis
+    policy_sentence: The patient has a diagnosis of obstructive sleep apnea.
+    rule:
+      type: condition
+      label: sleep apnea diagnosis
+      codes:
+        - {system: icd10, code: G47.33, display: "Obstructive sleep apnea"}
+        - {system: snomed, code: "78275009", display: "Obstructive sleep apnea syndrome"}
+        - {system: snomed, code: "73430006", display: "Sleep apnea"}
+
+  - id: sleep_test
+    text: Sleep test within the last year
+    kind: time_window
+    policy_sentence: The diagnosis is based on an attended or home sleep test performed within the past year.
+    attestation_question: "Was a sleep test done in the last year?"
+    rule:
+      type: procedure
+      label: sleep test
+      within_days: 365
+      codes:
+        - {system: cpt, code: "95810", display: "Polysomnography, attended"}
+        - {system: cpt, code: "95806", display: "Home sleep test"}
+        - {system: hcpcs, code: G0399, display: "Home sleep test, type III"}
+
+  - id: severity_qualifies
+    text: Sleep apnea severity qualifies
+    kind: observation
+    policy_sentence: >-
+      The apnea-hypopnea index is 15 or more, or it is between 5 and 14 with documented excessive daytime
+      sleepiness, hypertension, ischemic heart disease, or a history of stroke.
+    attestation_question: "Does the patient have excessive daytime sleepiness, hypertension, ischemic heart disease, or a history of stroke?"
+    attestation_help: "This matters because the apnea-hypopnea index is between 5 and 14."
+    rule:
+      type: any_of
+      rules:
+        - type: observation
+          label: apnea-hypopnea index
+          within_days: 365
+          gte: 15
+          codes:
+            - {system: local, code: ahi, display: "Apnea-hypopnea index"}
+        - type: all_of
+          rules:
+            - type: observation
+              label: apnea-hypopnea index
+              within_days: 365
+              gte: 5
+              lt: 15
+              codes:
+                - {system: local, code: ahi, display: "Apnea-hypopnea index"}
+            - type: any_of
+              rules:
+                - type: observation
+                  label: daytime sleepiness assessment
+                  within_days: 365
+                  codes:
+                    - {system: local, code: excessive-daytime-sleepiness, display: "Excessive daytime sleepiness"}
+                  value_code: {system: local, code: present, display: "Present"}
+                - type: condition
+                  label: hypertension diagnosis
+                  codes:
+                    - {system: icd10, code: I10, display: "Essential hypertension"}
+                    - {system: snomed, code: "59621000", display: "Essential hypertension"}
+                    - {system: snomed, code: "38341003", display: "Hypertensive disorder"}
+                - type: condition
+                  label: ischemic heart disease diagnosis
+                  codes:
+                    - {system: icd10, code: I25.10, display: "Atherosclerotic heart disease"}
+                    - {system: snomed, code: "414545008", display: "Ischemic heart disease"}
+
+  - id: face_to_face
+    text: Face-to-face sleep evaluation before the test
+    kind: documentation
+    policy_sentence: A clinician evaluated the patient in person for sleep apnea before the sleep test.
+    attestation_question: "Did you evaluate the patient in person for sleep apnea before the sleep test?"
+    rule:
+      type: observation
+      label: sleep evaluation
+      within_days: 365
+      codes:
+        - {system: local, code: sleep-evaluation, display: "Face-to-face sleep evaluation"}
+      value_code: {system: local, code: completed, display: "Completed"}

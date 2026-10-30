@@ -1,0 +1,78 @@
+# Development criteria set. Paraphrased for development from the kind of criteria public Medicare
+# imaging policies use; it is NOT the text of any specific LCD. Phase 1 replaces it with criteria compiled
+# from the mirrored Medicare Coverage Database text, reviewed and approved the same way.
+id: dev-lumbar-mri
+version: "2026-09"
+title: MRI of the lumbar spine without contrast
+service_codes:
+  - {system: cpt, code: "72148", display: "MRI lumbar spine without contrast"}
+status: approved
+approved_by: Mesa Verde PA team lead (development reviewer)
+approved_at: 2026-10-01
+source:
+  kind: development-paraphrase
+  title: Lumbar spine MRI, development criteria
+  note: Paraphrase for development and evaluation only; replace with the mirrored LCD text in Phase 1.
+criteria:
+  - id: lbp_duration
+    text: Low back pain for at least six weeks
+    kind: diagnosis
+    policy_sentence: Low back pain or lumbar radiculopathy has persisted for at least six weeks.
+    attestation_question: "Has the patient had low back pain for at least six weeks?"
+    rule:
+      type: condition
+      label: low back pain diagnosis
+      min_duration_days: 42
+      codes:
+        - {system: icd10, code: M54.50, display: "Low back pain, unspecified"}
+        - {system: icd10, code: M54.59, display: "Other low back pain"}
+        - {system: icd10, code: M54.16, display: "Radiculopathy, lumbar region"}
+        - {system: icd10, code: M54.17, display: "Radiculopathy, lumbosacral region"}
+        - {system: snomed, code: "279039007", display: "Low back pain"}
+        - {system: snomed, code: "278860009", display: "Chronic low back pain"}
+
+  - id: conservative_care
+    text: Conservative treatment tried first
+    kind: prior_treatment
+    policy_sentence: At least six weeks of conservative care, such as physical therapy, preceded the request.
+    attestation_question: "Has the patient had at least six weeks of physical therapy or other conservative care?"
+    rule:
+      type: procedure
+      label: physical therapy
+      within_days: 365
+      min_span_days: 42
+      codes:
+        - {system: cpt, code: "97110", display: "Therapeutic exercise"}
+        - {system: cpt, code: "97140", display: "Manual therapy"}
+        - {system: cpt, code: "97161", display: "PT evaluation, low complexity"}
+        - {system: cpt, code: "97162", display: "PT evaluation, moderate complexity"}
+        - {system: snomed, code: "91251008", display: "Physical therapy procedure"}
+
+  - id: recent_xray
+    text: Plain X-ray within the last 90 days
+    kind: time_window
+    policy_sentence: Plain radiographs of the lumbar spine were obtained within 90 days before the request.
+    attestation_question: "Were lumbar spine X-rays taken in the last 90 days?"
+    rule:
+      type: procedure
+      label: lumbar spine X-ray
+      within_days: 90
+      codes:
+        - {system: cpt, code: "72100", display: "X-ray lumbosacral spine, 2 or 3 views"}
+        - {system: cpt, code: "72110", display: "X-ray lumbosacral spine, 4 or more views"}
+
+  - id: red_flags_excluded
+    text: Red-flag symptoms ruled out by the clinician
+    kind: documentation
+    policy_sentence: >-
+      The record documents that red-flag findings (suspected cauda equina syndrome, fracture, infection
+      or malignancy) were assessed and are absent.
+    attestation_question: "Have red-flag symptoms been ruled out?"
+    attestation_help: "For example: suspected fracture, infection, cancer, or nerve compression needing urgent care."
+    rule:
+      type: observation
+      label: red-flag assessment
+      within_days: 120
+      codes:
+        - {system: local, code: red-flag-screen, display: "Red-flag symptom screen"}
+      value_code: {system: local, code: negative, display: "Negative"}
