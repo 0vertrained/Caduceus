@@ -10,6 +10,12 @@ It is a portfolio project for forward-deployed engineering. Every patient is syn
 interesting parts are the ones a real deployment would be judged on: where PHI may go, how a decision can be
 audited, and whether the people who use it every day can.
 
+**[Try the live demo](https://caduceusdemo.netlify.app/)**. A guided tour follows one case from the referral to
+the payer's approval, through a clinician's attestation, the payer's question and the clinician's note, and says
+who to act as at each step. Your queue is your own copy, so nothing you do changes anyone else's. Then try the
+faxed referrals, the denied CPAP request and its appeal, "See what was sent" under any draft, the case history,
+and the outcomes page. [How it would roll out at a real health system](docs/rollout-plan.md).
+
 | Queue | Evidence for a criterion |
 |---|---|
 | ![The queue: cases due today, soonest first, each with a status in words](docs/screenshots/queue.png) | ![A case with the visit note open beside the criteria and the supporting sentence highlighted](docs/screenshots/case-evidence.png) |
@@ -26,9 +32,13 @@ audited, and whether the people who use it every day can.
 | **Policy as code** | Coverage criteria are reviewed data, locked by content hash. A deterministic engine returns met, not met or unknown, with the sentence that supports each. Missing evidence is never "met". | Agreement with labels on 47 criteria across 11 cases: 1.00. Unknown reported as met: 0. Property tests |
 | **Human in the loop** | Clinician attestation for unknowns; specialist approval required for submission; 30-second undo through an outbox; signing rewrites the draft but never overwrites a person's edit. When the payer pends a request and asks for documentation, the clinician writes and signs the note in their own words (or says they cannot), and the reply goes through the same approval and outbox. | API tests for every path; a payer tool sends only what is waiting in the outbox under the approval that put it there, and refuses a note changed after approval |
 | **MCP tool servers** | `ehr`, `documents`, `policies`, `tickets`, `payer`, with role checks and per-step allow-lists on the server side. | Red team: a note-borne injection, a tool called outside its step, a submit without approval, a forged stamp. 0 of 4 succeed |
-| **Append-only audit log** | Hash-chained; the database refuses UPDATE and DELETE. | Tamper tests |
-| **Review UI** | The "Attestation" design system: plain words, 18 px base text with a larger option, status always as icon plus word, red only when under two hours remain. | axe-core (WCAG 2.2 AA rules) on 16 screens with 0 violations; no sideways scroll at 320 px |
-| **Eval gate** | `make evals` fails the build if agreement falls below 0.97, or if any unknown is reported as met, any identifier leaks, or any attack succeeds. | CI |
+| **Payer rules (CMS-0057-F)** | A coverage-requirements check at intake (CRD-style) that blocks approval if the payer's published policy differs from the approved one; documentation answers in every request (DTR-style QuestionnaireResponse); the payer's 7-day decision clock, with Original Medicare correctly outside it; specific denial reasons, and an appeal drafted from the policy and the record that a person approves. | API tests for each; the appeal tool sends only the text a person approved |
+| **Fax intake (ADR 6)** | Faxed referrals read by OCR inside the container, never by an outside service. Every field has a confidence and its region on the page; unsure or invalid fields go to a person, who sees the crop beside the input. | Eval gate: no wrong field accepted without a person (0 of 27 across clean, typical and degraded faxes) |
+| **Visible model use** | Drafts and appeals by a model on Ollama Cloud, through the de-identified route only. Each draft keeps exactly what was sent, shown under the draft with every placeholder marked. Replies are recorded at deploy time and cached, so identical requests are answered once. | The demo refuses any metered key; tests on the provider, the cache and replay |
+| **Append-only audit log** | Hash-chained; the database refuses UPDATE and DELETE. Shown on each case in plain words; an auditor can verify the whole chain from the page. | Tamper tests; the walk verifies the chain as the auditor |
+| **Outcomes** | What the work adds up to, counted live from the audit log: agent work, human decisions, payer outcomes, where patient information went, fax fields routed. | Nothing estimated or stored |
+| **Review UI** | The "Attestation" design system: plain words, 18 px base text with a larger option, status always as icon plus word, red only when under two hours remain. | axe-core (WCAG 2.2 AA rules) on 23 screens with 0 violations; no sideways scroll at 320 px |
+| **Eval gate** | `make evals` fails the build if agreement falls below 0.97, or if any unknown is reported as met, any identifier leaks, any attack succeeds, or any wrong fax field is accepted without a person. | CI |
 | **Reproducible data** | 11 scenarios built from Synthea with labels known by construction. | `make data` regenerates the dataset byte for byte; CI checks with `git diff --exit-code` |
 | **Deployment** | Dockerfile, docker-compose (the model on an internal-only network), a Terraform skeleton for AWS. | Compose validated; Checkov 292 passed, 0 failed; Terraform not yet applied |
 
@@ -37,9 +47,15 @@ a measure of clinical validity. That needs real policies, real charts and clinic
 
 ## Public demo
 
-The UI is served from Netlify and the API from Google Cloud Run, in a demo mode built for being public: synthetic
-patients only, a banner that says so, resets every 6 hours, per-visitor rate limits, no model keys, and an API
-that answers only requests Netlify has signed. See [docs/demo-deployment.md](docs/demo-deployment.md).
+[caduceusdemo.netlify.app](https://caduceusdemo.netlify.app/). The UI is served from Netlify and the API from
+Google Cloud Run, in a demo mode built for being public:
+- synthetic patients only, and a banner that says so
+- each visitor gets their own copy of the cases, starting over after 6 hours
+- per-visitor rate limits
+- an API that answers only requests Netlify has signed
+- a model key only from a fixed-quota provider, never a metered one
+
+See [docs/demo-deployment.md](docs/demo-deployment.md).
 
 ## Run it
 
@@ -47,7 +63,7 @@ Needs Python 3.12+ and Node 22.
 
 ```
 make setup
-make seed          # 11 demo cases, due times relative to now
+make seed          # 8 demo cases and 3 faxed referrals, due times relative to now
 make dev           # API on :8000, UI on http://localhost:5173
 ```
 
@@ -60,7 +76,8 @@ model stand in for the in-VPC one, set `CADUCEUS_IN_VPC_URL=http://model:11434/v
 `docker compose --profile llm run --rm model-pull` and `docker compose --profile llm up --build`. Without a model
 configured, drafts come from a deterministic template and everything else works the same.
 
-`make check` runs what CI runs: lint, 83 tests, the eval gate, and the end-to-end walk with accessibility checks.
+`make check` runs what CI runs: lint, the tests, the eval gate, and the end-to-end walk with accessibility
+checks. Fax intake needs Tesseract (`apt install tesseract-ocr` or `brew install tesseract`).
 
 ## Layout
 
@@ -112,12 +129,12 @@ simulation. Synthea also runs with the network switched off (`scripts/offline.sh
 
 ## Not built yet
 
-Fax intake with a vision-language model, and confidence routing (ADR 6). Hybrid retrieval over long packets
-(ADR 5). The Postgres repository, then Temporal (ADR 4). OIDC sign-in in the UI: the API side is done and tested.
-HAPI FHIR and Keycloak in compose. An AWS apply. Judge-scored draft quality. The full red-team corpus. The mock
-payer does not deny yet, so there are no appeal drafts.
+An in-VPC vision-language model behind the fax tool, and per-tier thresholds fitted on real faxes (ADR 6).
+Hybrid retrieval over long packets (ADR 5). The Postgres repository, then Temporal (ADR 4). OIDC sign-in in the
+UI: the API side is done and tested. HAPI FHIR and Keycloak in compose. An AWS apply. Judge-scored draft quality.
+The full red-team corpus. Expedited (72-hour) requests.
 
 ## Decisions
 
 [docs/adr](docs/adr): PHI-aware routing; policy as code; MCP as the integration boundary; state machine first,
-Temporal later; hybrid retrieval (proposed); confidence routing (proposed).
+Temporal later; hybrid retrieval (proposed); confidence routing (built, with OCR).

@@ -11,6 +11,7 @@ real data.
 |---|---|---|
 | The patient record (FHIR resources), the referral packet, visit notes | Yes | The EHR (read through the `ehr` and `documents` tools); copies of relevant sentences in the case store |
 | Determinations, evidence sentences, draft request letters | Yes | Case store (SQLite today, Postgres on RDS in the target deployment), encrypted at rest with KMS |
+| Faxed referral pages | Yes | Read by OCR inside the container, with no network; the images stay in the intake folder, are shown only to signed-in staff, and are never sent to any model or service |
 | Notes a clinician writes when a payer asks for documentation | Yes | Case store, exactly as signed; sent only to that payer, after a person approves; the audit log keeps a hash |
 | The audit log | Treated as PHI: free-text reasons a person types (for example, why a case was returned) can contain it | Same database, append-only; archived to an object-locked S3 bucket |
 | Case numbers in URLs and server logs | An internal identifier, kept inside the boundary | API access logs (KMS-encrypted CloudWatch) |
