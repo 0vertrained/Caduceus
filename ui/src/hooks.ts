@@ -39,11 +39,22 @@ export function useSecondsLeft(until: string | null | undefined) {
   return left;
 }
 
-const NUMBER_WORDS = ["No", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven",
-  "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen", "Twenty"];
-
+/** A count for running text: "No" and "One" read as words, every other number as numerals, which scan faster
+ *  (GOV.UK style: "Write all other numbers in numerals (including 2 to 9)"). */
 export function countWords(n: number): string {
-  return NUMBER_WORDS[n] ?? String(n);
+  return n === 0 ? "No" : n === 1 ? "One" : String(n);
+}
+
+/** Keep pieces that belong together on one line: "4:01 pm", "Dr. Reyes", "page 2". */
+export function glue(text: string): string {
+  return text.replace(/(\d) (am|pm)\b/g, "$1 $2").replace(/\bDr\. /g, "Dr. ").replace(/\bpage (\d)/g, "page $1");
+}
+
+/** The browser tab's title. Never a patient's name: titles are kept in history and synced across devices. */
+export function useTitle(title: string | null) {
+  useEffect(() => {
+    document.title = title ? `${title} – Caduceus` : "Caduceus";
+  }, [title]);
 }
 
 /** Lower the first letter for use mid-sentence, leaving acronyms and names like MRI, CPAP or X-ray alone. */
