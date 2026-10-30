@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+import jwt
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -115,6 +116,21 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
 
     app = FastAPI(title="Caduceus", version="0.1.0", lifespan=lifespan, docs_url=None, redoc_url=None)
     app.state.live = live
+
+    signing_key = live.svc.settings.proxy_signing_key
+
+    @app.middleware("http")
+    async def require_proxy_signature(request: Request, call_next):
+        """Behind Netlify, answer only what Netlify proxied: it signs each request with the shared key (HS256 JWS
+        in x-nf-sign). Registered before the headers middleware, so refusals still get the security headers."""
+        if signing_key and request.url.path != "/api/health":
+            try:
+                jwt.decode(request.headers.get("x-nf-sign", ""), signing_key, algorithms=["HS256"],
+                           issuer="netlify", leeway=30, options={"require": ["exp", "iss"]})
+            except jwt.PyJWTError:
+                return JSONResponse({"message": "This API answers only through the Caduceus demo site."},
+                                    status_code=403)
+        return await call_next(request)
 
     @app.middleware("http")
     async def headers(request: Request, call_next):

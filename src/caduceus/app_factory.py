@@ -51,10 +51,14 @@ class Settings:
     external_model: str = _env("CADUCEUS_EXTERNAL_MODEL", "claude-sonnet-5-5")
     # demo: the public demo. Development sign-in, synthetic data seeded in memory, reset on a schedule.
     demo_reset_hours: str = _env("CADUCEUS_DEMO_RESET_HOURS", "6")
+    # Shared with Netlify: when set, only requests Netlify proxied and signed (x-nf-sign) are answered.
+    proxy_signing_key: str | None = _env("CADUCEUS_PROXY_SIGNING_KEY")
 
     def check(self) -> None:
         if self.auth_mode not in ("dev", "oidc", "demo"):
             raise InsecureConfiguration("CADUCEUS_AUTH_MODE must be dev, demo or oidc.")
+        if self.proxy_signing_key is not None and len(self.proxy_signing_key.encode()) < 32:
+            raise InsecureConfiguration("CADUCEUS_PROXY_SIGNING_KEY must be at least 32 bytes.")
         if self.auth_mode == "demo" and self.external_api_key:
             raise InsecureConfiguration("The public demo must not hold a model API key: anyone could spend it.")
         if self.auth_mode == "oidc":
