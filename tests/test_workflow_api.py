@@ -115,7 +115,7 @@ def test_harold_path_attest_approve_undo_dispatch(env):
     assert svc.workflow.dispatch_due() == ["2026-1043"]
     case = client.get("/api/cases/2026-1043", headers=DOLORES).json()
     assert case["status"]["key"] == "payer_question"  # this payer asks for the note behind an attestation
-    assert "red-flag" in case["summary"].lower()
+    assert "red-flag" in case["reply"]["question"].lower()  # answering it: tests/test_payer_reply.py
     late = client.post("/api/cases/2026-1043/undo", headers=DOLORES)
     assert late.status_code == 409
 

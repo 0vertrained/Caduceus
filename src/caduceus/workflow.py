@@ -3,6 +3,10 @@
 Agent steps (enrichment, determination, drafting) run as the agent-runtime identity through the tool gateway.
 Human steps (request attestation, sign, approve, return, undo) run as the signed-in person and are checked here.
 Approval puts the submission in an outbox for the 30-second undo window; only then does the agent send it.
+
+When the payer pends a request and asks for documentation, the same pattern repeats: the PA specialist asks the
+ordering clinician, the clinician writes and signs the note themselves (or says they cannot document it), the
+specialist approves the reply, and the agent sends it after the undo window.
 """
 
 from __future__ import annotations
@@ -19,12 +23,13 @@ from caduceus.criteria.dsl import CriteriaSet
 from caduceus.criteria.engine import Engine
 from caduceus.drafting import Drafter
 from caduceus.fhir.store import FhirStore
-from caduceus.payer import MockPayer, build_request_bundle
+from caduceus.payer import MockPayer, build_reply_bundle, build_request_bundle
 from caduceus.tools import ToolGateway, build_gateway
 
 UNDO_SECONDS = 30
+NOTE_LIMIT = 4000  # characters; a payer's question is answered in a paragraph or two
 SNAPSHOT_FIELDS = ("state", "attestation_requested", "attestation_requested_at", "attestation_requested_by",
-                   "attestations", "returned_reason", "submission", "payer_response", "draft")
+                   "attestations", "returned_reason", "submission", "payer_response", "draft", "reply")
 
 
 class ActionRefused(Exception):
@@ -39,7 +44,7 @@ class Workflow:
         self.engine, self.drafter, self.payer, self.now = engine, drafter, payer, clock
         self._dispatch_lock = threading.Lock()  # one dispatcher at a time: a request is never sent twice
         self.gateway: ToolGateway = build_gateway(audit, store, library, self._set_state, self._submit,
-                                                  self._payer_status)
+                                                  self._payer_status, self._respond)
 
     # Agent ---------------------------------------------------------------------------------------------
 
@@ -96,14 +101,17 @@ class Workflow:
             sub = case.submission or {}
             if case.state == State.SUBMITTED and not sub.get("sent") and \
                     datetime.fromisoformat(sub["send_after"]) <= self.now():
-                result = self.gateway.call(AGENT, case.id, "submission", "payer.submit", case_id=case.id,
+                tool = "payer.respond" if sub.get("kind") == "reply" else "payer.submit"
+                result = self.gateway.call(AGENT, case.id, "submission", tool, case_id=case.id,
                                            approval_seq=sub["approval_seq"])
                 decision = self.gateway.call(AGENT, case.id, "follow_up", "payer.status",
                                              submission_id=result["id"])
                 case = self._get(case.id)
                 case.payer_response = decision
-                case = self.cases.save(case)
                 new_state = State.APPROVED if decision["decision"]["code"] == "A1" else State.PENDED
+                if new_state == State.PENDED:
+                    case.reply = None  # a new question starts a new reply
+                case = self.cases.save(case)
                 self.gateway.call(AGENT, case.id, "follow_up", "tickets.set_state", case_id=case.id,
                                   state=new_state.value, reason=decision["decision"]["display"])
                 sent.append(case.id)
@@ -159,6 +167,66 @@ class Workflow:
                            "send_after": (self.now() + timedelta(seconds=UNDO_SECONDS)).isoformat()}
         return self.cases.save(case)
 
+    def request_note(self, who: Principal, case_id: str) -> Case:
+        """The payer pended the request and asked for documentation. Ask the ordering clinician to write it."""
+        self._require(who, Role.PA_SPECIALIST)
+        case = self._get(case_id)
+        if case.state != State.PENDED:
+            raise ActionRefused("The payer is not waiting for anything on this case.")
+        if (case.reply or {}).get("note"):
+            raise ActionRefused(f"{case.ordering_clinician['name']} already signed the note. Send it to the payer.")
+        self._remember(case, who, "note.requested")
+        case.state = State.AWAITING_NOTE
+        case.reply = {"question": (case.payer_response or {}).get("decision", {}).get("question"),
+                      "criteria": [a.criterion_id for a in case.attestations if a.answer == "yes"],
+                      "requested_by": who.name, "requested_at": self.now().isoformat()}
+        self.audit.append(who.id, who.role, "note.requested", case_id, {"clinician": case.ordering_clinician["id"]})
+        return self.cases.save(case)
+
+    def sign_note(self, who: Principal, case_id: str, text: str) -> Case:
+        """The clinician's own words, signed and dated now: an addendum to the chart, never backdated."""
+        case = self._clinician_note_case(who, case_id)
+        text = text.strip()
+        if not text:
+            raise ActionRefused("Write the note before you sign it.")
+        if len(text) > NOTE_LIMIT:
+            raise ActionRefused(f"Keep the note under {NOTE_LIMIT:,} characters.")
+        self._remember(case, who, "note.signed")
+        case.reply = (case.reply or {}) | {"note": {"text": text, "author": who.name, "clinician_id": who.clinician_id,
+                                                    "signed_at": self.now().isoformat()}}
+        case.state = State.PENDED
+        self.audit.append(who.id, who.role, "note.signed", case_id, {"text_sha256": sha256_of(text)})
+        return self.cases.save(case)
+
+    def decline_note(self, who: Principal, case_id: str) -> Case:
+        """The clinician cannot document what the payer asked for. Nothing is sent; the specialist decides next."""
+        case = self._clinician_note_case(who, case_id)
+        self._remember(case, who, "note.declined")
+        case.reply = (case.reply or {}) | {"declined_by": who.name, "declined_at": self.now().isoformat()}
+        case.state = State.PENDED
+        self.audit.append(who.id, who.role, "note.declined", case_id)
+        return self.cases.save(case)
+
+    def approve_reply(self, who: Principal, case_id: str) -> Case:
+        """Approve sending the signed note. Like a request, it waits in the outbox for the undo window."""
+        self._require(who, Role.PA_SPECIALIST)
+        case = self._get(case_id)
+        reply = case.reply or {}
+        if case.state != State.PENDED:
+            raise ActionRefused("The payer is not waiting for anything on this case.")
+        if not reply.get("note"):
+            raise ActionRefused(f"{case.ordering_clinician['name']} could not document this, so there is no note "
+                                "to send." if reply.get("declined_by")
+                                else f"Ask {case.ordering_clinician['name']} for the note first.")
+        event = self.audit.append(who.id, who.role, "reply.approved", case_id,
+                                  {"note_sha256": sha256_of(reply["note"]["text"])})
+        self._remember(case, who, "reply.approved")
+        case.state = State.SUBMITTED
+        case.submission = {"kind": "reply", "approval_seq": event.seq, "approved_by": who.name,
+                           "approved_by_id": who.id, "approved_at": self.now().isoformat(), "sent": False,
+                           "send_after": (self.now() + timedelta(seconds=UNDO_SECONDS)).isoformat()}
+        return self.cases.save(case)
+
     def edit_draft(self, who: Principal, case_id: str, text: str) -> Case:
         self._require(who, Role.PA_SPECIALIST)
         case = self._get(case_id)
@@ -190,8 +258,8 @@ class Workflow:
             raise ActionRefused("There is nothing of yours to undo on this case.")
         if self.now() > last.undo_until:
             raise ActionRefused("The 30 seconds to undo have passed. Use the case history to recall it.")
-        if case.submission and case.submission.get("sent"):
-            raise ActionRefused("This request has already reached the payer.")
+        if case.sent_since_last_action:
+            raise ActionRefused("This has already reached the payer.")
         restored = Case.model_validate(case.model_dump(mode="json") | last.prior | {"last_action": None})
         self.audit.append(who.id, who.role, "action.undone", case_id, {"undone": last.action})
         return self.cases.save(restored)
@@ -209,6 +277,15 @@ class Workflow:
         if who.role != role:
             raise ActionRefused("Your role cannot take this action.")
 
+    def _clinician_note_case(self, who: Principal, case_id: str) -> Case:
+        self._require(who, Role.CLINICIAN)
+        case = self._get(case_id)
+        if who.clinician_id != case.ordering_clinician["id"]:
+            raise ActionRefused("Only the ordering clinician can write this note.")
+        if case.state != State.AWAITING_NOTE:
+            raise ActionRefused("This request is not waiting for a note from you.")
+        return case
+
     def _remember(self, case: Case, who: Principal, action: str) -> None:
         prior = {f: case.model_dump(mode="json")[f] for f in SNAPSHOT_FIELDS}
         case.last_action = LastAction(action=action, actor=who.id, at=self.now(),
@@ -219,7 +296,7 @@ class Workflow:
         case.state = State(state)
         self.cases.save(case)
 
-    def _outbox(self, case_id: str, approval_seq: int, action: str) -> Case:
+    def _outbox(self, case_id: str, approval_seq: int, action: str, kind: str | None) -> tuple[Case, Any]:
         """What a payer tool may send: only what a person approved (recorded in the audit log), and only while that
         approval is the one waiting in the outbox. An approval that was undone cannot be replayed."""
         approvals = [e for e in self.audit.events(case_id)
@@ -228,15 +305,28 @@ class Workflow:
             raise ActionRefused("No human approval is recorded for this submission.")
         case = self._get(case_id)
         sub = case.submission or {}
-        if case.state != State.SUBMITTED or sub.get("sent") or sub.get("approval_seq") != approval_seq:
+        if case.state != State.SUBMITTED or sub.get("sent") or sub.get("approval_seq") != approval_seq \
+                or sub.get("kind") != kind:
             raise ActionRefused("Nothing approved is waiting to be sent for this case.")
-        return case
+        return case, approvals[0]
 
     def _submit(self, case_id: str, approval_seq: int) -> dict[str, Any]:
         """The payer.submit tool. Sends the request a person approved, and nothing else."""
-        case = self._outbox(case_id, approval_seq, "case.approved")
+        case, _ = self._outbox(case_id, approval_seq, "case.approved", None)
         bundle = build_request_bundle(case)
         result = self.payer.submit(bundle, case.payer["name"])
+        case.submission = (case.submission or {}) | {"sent": True, "sent_at": self.now().isoformat(),
+                                                     "submission_id": result["id"]}
+        self.cases.save(case)
+        return result
+
+    def _respond(self, case_id: str, approval_seq: int) -> dict[str, Any]:
+        """The payer.respond tool. Sends the note a person approved, exactly as it was when they approved it."""
+        case, approval = self._outbox(case_id, approval_seq, "reply.approved", "reply")
+        note = (case.reply or {}).get("note") or {}
+        if sha256_of(note.get("text", "")) != approval.detail.get("note_sha256"):
+            raise ActionRefused("The note changed after it was approved.")
+        result = self.payer.respond(build_reply_bundle(case), case.payer["name"], case.payer_response["id"])
         case.submission = (case.submission or {}) | {"sent": True, "sent_at": self.now().isoformat(),
                                                      "submission_id": result["id"]}
         self.cases.save(case)
@@ -250,6 +340,8 @@ def approve_blocked_reason(case: Case) -> str | None:
     c = case.effective_counts()
     if case.state == State.AWAITING_ATTESTATION:
         return f"Waiting for {case.ordering_clinician['name']} to sign."
+    if case.state == State.AWAITING_NOTE:
+        return f"Waiting for {case.ordering_clinician['name']} to write the note."
     if case.state != State.REVIEW:
         return "This case is not waiting for your review."
     if c["unmet"]:
