@@ -182,7 +182,11 @@ await page.getByRole("button", { name: "Back to the draft" }).click();
 
 await page.getByRole("button", { name: /to attest$/ }).click();
 await page.getByText(/This case comes back to you/).waitFor();
+// A nudge: how long it has waited, and a reminder (one every 10 minutes at most) that shows on the clinician's list.
+await page.getByRole("button", { name: "Remind Dr. Ana Reyes" }).click();
+await page.getByRole("status").filter({ hasText: /Reminded at .*You can send another reminder at/ }).waitFor();
 await shot(page, "05-case-sent-for-attestation");
+await axe(page, "05-case-sent-for-attestation");
 const caseUrl = page.url();
 
 // The clinician, on a phone.
@@ -190,6 +194,9 @@ const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, 
 await share(phone);
 const doc = await phone.newPage();
 await signIn(doc, "Dr. Ana Reyes");
+await doc.getByText(/^Dolores Montoya reminded you at/).waitFor();
+await shot(doc, "06a-attest-list");
+await axe(doc, "06a-attest-list");
 await doc.getByRole("link").filter({ hasText: /, \d+$/ }).first().click();
 await doc.getByLabel("Yes, I confirm this").waitFor();  // the question itself, not the header's Text size group
 await shot(doc, "06-attest-phone");

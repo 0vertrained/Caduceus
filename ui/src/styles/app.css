@@ -563,6 +563,10 @@ mark { background: var(--mark); color: var(--ink); padding: 0.05em 0.15em; margi
 .attest__card-title { font-size: var(--text-body); font-weight: 600; line-height: 1.4; }
 .attest__list { padding: 4px 18px; }
 .attest__link { font-weight: 600; min-height: 44px; display: inline-flex; align-items: center; }
+.attest__item { padding: 12px 0 14px; border-top: 1px solid var(--rule-soft); display: flex; flex-direction: column; gap: 2px; }
+.attest__item:first-child { border-top: 0; }
+.attest__due { font-weight: 600; }
+.attest__due--urgent { color: var(--urgent); font-weight: 700; }
 .attest__sign-note { text-align: center; }
 .btn--block { width: 100%; }
 .fieldset { margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 10px; }

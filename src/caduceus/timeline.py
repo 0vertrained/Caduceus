@@ -85,6 +85,8 @@ def sentence(e: AuditEvent, clinician: str) -> str:
             return f"Undid their last step ({d.get('undone', 'an action').replace('.', ' ')})."
         case "case.returned":
             return "Returned the case to the clinic for a correction."
+        case "clinician.reminded":
+            return f"Reminded {clinician} to {'write the note' if d.get('kind') == 'note' else 'sign'}."
         case "case.resubmitted":
             return "Marked that the clinic resubmitted it. Caduceus prepares it again from the start."
         case "note.requested":

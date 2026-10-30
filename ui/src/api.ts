@@ -163,7 +163,7 @@ export interface CaseView {
   actions: {
     can_approve: boolean; approve_blocked_reason: string | null; can_request_attestation: boolean; can_return: boolean;
     can_ask_for_note: boolean; can_send_note: boolean; can_send_appeal: boolean; can_edit_appeal: boolean;
-    can_recall: boolean; can_resubmit: boolean;
+    can_recall: boolean; can_resubmit: boolean; can_remind: boolean;
   };
   payer_clock: { applies: boolean; plan_type: string; decided?: boolean; within?: boolean; words: string } | null;
   requirements: { matches: boolean; plan_type: string; checked_at: string } | null;
@@ -172,6 +172,9 @@ export interface CaseView {
     draft: { text: string; route: string; model: string | null; edited_by?: string; sent?: SentToModel } | null;
   } | null;
   undo: { action: string; until: string; seconds: number } | null;
+  /** While the case waits on the ordering clinician: for how long, and the reminders sent, in words. */
+  waiting: { since: string; for: string; reminders: number; last_reminded: string | null;
+             next_reminder_at: string | null; words: string } | null;
   returned_reason: string | null;
   payer_response: { decision: { code: string; display: string; question?: string; authorization_number?: string } } | null;
   submission: { kind?: "reply" | "appeal"; sent?: boolean; send_after?: string; approved_by?: string; submission_id?: string } | null;
@@ -205,6 +208,12 @@ export interface PayerReply {
 export interface Page {
   id: string; title: string; page: number; pages: number; date: string | null; author: string | null; text: string;
   image: string | null;  // a faxed page keeps its image; its text is what OCR read
+}
+
+/** A request on the clinician's list: how soon it is due, and any reminders. */
+export interface AttestationRow {
+  case_id: string; patient: { name: string; age: number }; service: string; kind: "attestation" | "note";
+  due: Due; reminders: { count: number; by: string; last: string } | null;
 }
 
 export interface AttestationView {

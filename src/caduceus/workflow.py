@@ -44,6 +44,7 @@ NOTE_LIMIT = 4000  # characters; a payer's question is answered in a paragraph o
 SNAPSHOT_FIELDS = ("state", "attestation_requested", "attestation_requested_at", "attestation_requested_by",
                    "attestations", "returned_reason", "submission", "payer_response", "draft", "reply", "appeal")
 APPROVALS = ("case.approved", "reply.approved", "appeal.approved")  # what puts something in the outbox
+REMIND_EVERY = timedelta(minutes=10)  # the most often a clinician is reminded about one case
 
 
 class ActionRefused(Exception):
@@ -504,6 +505,27 @@ class Workflow:
         self._remember(case, who, "case.returned")
         case.state, case.returned_reason = State.RETURNED, reason.strip()
         self.audit.append(who.id, who.role, "case.returned", case_id, {"reason_sha256": sha256_of(reason)})
+        return self.cases.save(case)
+
+    def remind(self, who: Principal, case_id: str) -> Case:
+        """Nudge the ordering clinician about the signature or note the case waits on. At most once every 10 minutes
+        per case, whoever sends it, so a clinician is reminded, not pestered. The reminder shows on their list of
+        requests; this demo sends nothing beyond that."""
+        self._require(who, Role.PA_SPECIALIST)
+        case = self._get(case_id)
+        clin = case.ordering_clinician["name"]
+        if case.waiting_since() is None:
+            raise ActionRefused(f"This case is not waiting on {clin}.")
+        sent = case.reminders_since_asked()
+        if sent:
+            last = datetime.fromisoformat(sent[-1]["at"])
+            if self.now() - last < REMIND_EVERY:
+                raise ActionRefused(f"{clin} was reminded at {clock(last, self.tz)}. You can send another reminder at "
+                                    f"{clock(last + REMIND_EVERY, self.tz)}.")
+        case.reminders = [*case.reminders, {"by": who.name, "by_id": who.id, "at": self.now().isoformat()}]
+        self.audit.append(who.id, who.role, "clinician.reminded", case_id,
+                          {"clinician": case.ordering_clinician["id"], "count": len(sent) + 1,
+                           "kind": "note" if case.state == State.AWAITING_NOTE else "attestation"})
         return self.cases.save(case)
 
     def resubmit(self, who: Principal, case_id: str) -> Case:

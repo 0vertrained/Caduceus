@@ -73,7 +73,22 @@ class Case(BaseModel):
     # After a denial: the appeal the agent drafted, which a PA specialist reads (and may edit) before it is sent.
     appeal: dict[str, Any] | None = None
     last_action: LastAction | None = None
+    # Reminders a PA specialist sent the ordering clinician while the case waited on them: who and when.
+    reminders: list[dict[str, Any]] = Field(default_factory=list)
     version: int = 0
+
+    def waiting_since(self) -> datetime | None:
+        """When the ordering clinician was asked for what the case now waits on (a signature or a note), if it does."""
+        if self.state == State.AWAITING_ATTESTATION:
+            return self.attestation_requested_at
+        if self.state == State.AWAITING_NOTE and (self.reply or {}).get("requested_at"):
+            return datetime.fromisoformat(self.reply["requested_at"])  # type: ignore[index]
+        return None
+
+    def reminders_since_asked(self) -> list[dict[str, Any]]:
+        """The reminders about what the case waits on now; earlier requests' reminders do not count."""
+        since = self.waiting_since()
+        return [r for r in self.reminders if since and datetime.fromisoformat(r["at"]) >= since]
 
     def effective_results(self) -> list[dict[str, Any]]:
         """Engine results with clinician attestations applied on top. The engine's own output is unchanged."""

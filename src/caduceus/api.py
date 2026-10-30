@@ -27,7 +27,7 @@ from caduceus.cases import Case, Fax, StaleCase, State
 from caduceus.fhir.store import fax_image
 from caduceus.intake import FaxReadingUnavailable
 from caduceus.outcomes import outcomes
-from caduceus.presenter import Presenter, moment
+from caduceus.presenter import Presenter, clock, moment
 from caduceus.ratelimit import DemoLimits
 from caduceus.seed import clone_demo_services, fresh_demo_services
 from caduceus.timeline import timeline
@@ -470,6 +470,10 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
     def edit_draft(case_id: str, body: DraftBody, who: Principal = Depends(principal)):
         return view(live.svc.workflow.edit_draft(who, load(case_id).id, body.text), who)
 
+    @app.post("/api/cases/{case_id}/remind")
+    def remind(case_id: str, who: Principal = Depends(role(Role.PA_SPECIALIST))):
+        return view(live.svc.workflow.remind(who, load(case_id).id), who)
+
     @app.post("/api/cases/{case_id}/resubmitted")
     def resubmitted(case_id: str, who: Principal = Depends(role(Role.PA_SPECIALIST))):
         return view(live.svc.workflow.resubmit(who, load(case_id).id), who)
@@ -591,9 +595,15 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
     def my_attestations(who: Principal = Depends(role(Role.CLINICIAN))):
         mine = [c for c in live.svc.cases.all() if c.state in (State.AWAITING_ATTESTATION, State.AWAITING_NOTE)
                 and c.ordering_clinician["id"] == who.clinician_id]
-        return [{"case_id": c.id, "patient": live.presenter.row(c, now())["patient"], "service": c.service["short"],
-                 "kind": "note" if c.state == State.AWAITING_NOTE else "attestation"}
-                for c in sorted(mine, key=lambda c: c.due_at)]
+        out = []
+        for c in sorted(mine, key=lambda c: c.due_at):  # most urgent first: the request due soonest
+            row, sent = live.presenter.row(c, now()), c.reminders_since_asked()
+            out.append({"case_id": c.id, "patient": row["patient"], "service": c.service["short"],
+                        "kind": "note" if c.state == State.AWAITING_NOTE else "attestation", "due": row["due"],
+                        "reminders": {"count": len(sent), "by": sent[-1]["by"],
+                                      "last": clock(datetime.fromisoformat(sent[-1]["at"]), live.svc.tz)}
+                        if sent else None})
+        return out
 
     @app.get("/api/attestations/{case_id}")
     def attestation(case_id: str, who: Principal = Depends(role(Role.CLINICIAN))):
