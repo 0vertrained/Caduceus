@@ -1,8 +1,8 @@
 name: deploy-demo
 
 # Deploys the public demo's API to Cloud Run once CI has passed on main. Netlify serves the UI and proxies /api
-# to this service (netlify.toml). Nothing happens until the Google Cloud variables exist: see
-# docs/demo-deployment.md and infra/demo/setup-gcp.sh.
+# to this service (netlify.toml). The Google Cloud project was prepared by infra/demo/setup-gcp.sh; see
+# docs/demo-deployment.md.
 on:
   workflow_run:
     workflows: [ci]
@@ -21,17 +21,20 @@ jobs:
   cloud-run:
     name: Deploy the demo API to Cloud Run
     if: >-
-      vars.GCP_PROJECT_ID != '' &&
-      (github.event_name == 'workflow_dispatch' ||
-       (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'))
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     runs-on: ubuntu-24.04
     permissions:
       contents: read
       id-token: write  # GitHub's OIDC token, exchanged for short-lived Google credentials; no stored key
     env:
-      PROJECT: ${{ vars.GCP_PROJECT_ID }}
-      REGION: ${{ vars.GCP_REGION }}
-      RUNTIME_SA: ${{ vars.GCP_RUNTIME_SERVICE_ACCOUNT }}
+      # The demo's Google Cloud project, as infra/demo/setup-gcp.sh printed it. None of this is secret: Google
+      # accepts GitHub's token only from this repository (by its immutable id) running on main.
+      PROJECT: project-fc4eda29-999d-4812-a00
+      REGION: us-central1
+      WORKLOAD_IDENTITY_PROVIDER: projects/612996341673/locations/global/workloadIdentityPools/github/providers/caduceus
+      DEPLOY_SA: caduceus-deployer@project-fc4eda29-999d-4812-a00.iam.gserviceaccount.com
+      RUNTIME_SA: caduceus-demo-runtime@project-fc4eda29-999d-4812-a00.iam.gserviceaccount.com
       SERVICE: caduceus-demo
       COMMIT: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
@@ -41,8 +44,8 @@ jobs:
           persist-credentials: false
       - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
-          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SA }}
       - name: Build and push the image
         run: |
           image="${REGION}-docker.pkg.dev/${PROJECT}/caduceus/api:${COMMIT}"
