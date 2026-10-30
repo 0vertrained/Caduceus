@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
+import json
 import os
 import secrets
 import sqlite3
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 from zoneinfo import ZoneInfo
 
 from caduceus.audit.log import AuditLog
 from caduceus.auth import Authenticator
-from caduceus.cases import CaseRepository
+from caduceus.cases import CaseRepository, FaxRepository
 from caduceus.criteria.engine import Engine
 from caduceus.criteria.loader import load_library, load_lock
 from caduceus.deid.safe_harbor import SafeHarborDeidentifier
@@ -127,9 +129,19 @@ def build_services(settings: Settings | None = None, conn: sqlite3.Connection | 
     router = Router(in_vpc, external, deid) if (in_vpc or external) else None
 
     workflow = Workflow(cases, audit, store, library, engine, Drafter(router, deid),
-                        MockPayer(published=load_lock(policies)))
+                        MockPayer(published=load_lock(policies)), faxes=FaxRepository(conn),
+                        catalog=_catalog(s.data_dir), fax_dir=s.data_dir / "faxes")
     auth = Authenticator(s.auth_mode, s.oidc_jwks_url, s.oidc_issuer, s.oidc_audience)
     return Services(s, ZoneInfo(s.clinic_tz), audit, cases, store, workflow, auth, router, conn)
+
+
+def _catalog(data_dir: Path) -> dict[str, Any]:
+    """The services, payers and ordering clinicians a referral may name, from the scenario data."""
+    path = data_dir / "cases" / "cases.json"
+    cases = json.loads(path.read_text()) if path.exists() else []
+    return {"services": {c["service"]["code"]: c["service"] | {"criteria_set": c["criteria_set"]} for c in cases},
+            "clinicians": {c["ordering_clinician"]["name"]: c["ordering_clinician"] for c in cases},
+            "payers": {c["payer"]["name"] for c in cases}}
 
 
 def _external_provider(s: Settings) -> Provider | None:

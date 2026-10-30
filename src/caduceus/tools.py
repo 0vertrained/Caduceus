@@ -55,6 +55,7 @@ ALLOWLIST: dict[str, frozenset[str]] = {
                              "payer.coverage_requirements"}),
     "drafting": frozenset({"documents.list_packet", "documents.get_page"}),
     "review": frozenset({"tickets.set_state", "documents.get_page"}),
+    "intake": frozenset({"documents.read_fax"}),
     "submission": frozenset({"payer.submit", "payer.respond", "payer.appeal"}),
     "follow_up": frozenset({"payer.status", "tickets.set_state"}),
 }
@@ -97,7 +98,7 @@ def _ago(as_of: date, days: int | None) -> date | None:
 def build_gateway(audit: AuditLog, store: FhirStore, library: dict[str, CriteriaSet],
                   set_state: Callable[[str, str, str], None], submit: Callable[..., dict],
                   status: Callable[[str], dict], respond: Callable[..., dict], appeal: Callable[..., dict],
-                  requirements: Callable[..., dict]) -> ToolGateway:
+                  requirements: Callable[..., dict], read_fax: Callable[[str], dict]) -> ToolGateway:
     gw = ToolGateway(audit)
 
     # ehr: narrow, read-scoped views of the record. No generic FHIR search is exposed.
@@ -151,6 +152,8 @@ def build_gateway(audit: AuditLog, store: FhirStore, library: dict[str, Criteria
                 "author": (doc.get("author") or [{}])[0].get("display"), "text": document_text(doc)}
 
     gw.register(ToolSpec("documents.list_packet", "documents", READ, list_packet, "Pages of a referral packet."))
+    gw.register(ToolSpec("documents.read_fax", "documents", frozenset({Role.AGENT_RUNTIME}), read_fax,
+                         "Read a faxed referral cover sheet with OCR inside the boundary."))
     gw.register(ToolSpec("documents.get_page", "documents", READ, get_page, "Text of one packet page."))
 
     # policies: which approved criteria set governs a service.

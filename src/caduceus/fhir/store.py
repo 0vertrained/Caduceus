@@ -20,6 +20,7 @@ from caduceus.fhir.record import PatientRecord
 class FhirStore(Protocol):
     def record(self, patient_id: str, overlay_case: str | None = None) -> PatientRecord: ...
     def document(self, doc_id: str) -> dict | None: ...
+    def find_patient(self, name: str, birth_date: str) -> str | None: ...
 
 
 def document_text(doc: dict) -> str:
@@ -51,6 +52,17 @@ class LocalBundleStore:
     def document(self, doc_id: str) -> dict | None:
         return self._docs.get(doc_id)
 
+    def find_patient(self, name: str, birth_date: str) -> str | None:
+        """The one patient with this name and date of birth, or None. Used to match a faxed referral."""
+        matches = []
+        for f in sorted(self._patients.glob("*.json")):
+            bundle = json.loads(f.read_text())
+            p = next(e["resource"] for e in bundle["entry"] if e["resource"]["resourceType"] == "Patient")
+            names = {" ".join([*n.get("given", [])[:1], n.get("family", "")]).lower() for n in p.get("name", [])}
+            if name.strip().lower() in names and p.get("birthDate") == birth_date:
+                matches.append(p["id"])
+        return matches[0] if len(matches) == 1 else None
+
 
 class HapiFhirStore:
     def __init__(self, base_url: str, client: httpx.Client | None = None):
@@ -68,3 +80,9 @@ class HapiFhirStore:
     def document(self, doc_id: str) -> dict | None:
         r = self._client.get(f"{self._base}/DocumentReference/{doc_id}")
         return r.json() if r.status_code == 200 else None
+
+    def find_patient(self, name: str, birth_date: str) -> str | None:
+        r = self._client.get(f"{self._base}/Patient", params={"name": name, "birthdate": birth_date})
+        r.raise_for_status()
+        entries = r.json().get("entry", [])
+        return entries[0]["resource"]["id"] if len(entries) == 1 else None

@@ -75,7 +75,9 @@ def test_the_demo_starts_with_its_own_seeded_data(monkeypatch):
     monkeypatch.setenv("CADUCEUS_DB", "/nonexistent/should-not-be-used.sqlite3")
     client = TestClient(create_app(dispatch_interval=None))
     rows = [r for g in client.get("/api/queue", headers=DOLORES).json()["groups"] for r in g["cases"]]
-    assert len(rows) == 11
+    assert len(rows) == 8  # three more referrals wait in the fax inbox
+    assert [f["id"] for f in client.get("/api/intake", headers=DOLORES).json()["faxes"]] == ["FAX-0001", "FAX-0002",
+                                                                                             "FAX-0003"]
 
 
 # Behind Netlify ------------------------------------------------------------------------------------------------

@@ -24,7 +24,8 @@ RUN python3.13 -m venv --without-pip /opt/venv \
  && python3.13 -m pip --python /opt/venv/bin/python install --no-cache-dir .
 
 FROM cgr.dev/chainguard/wolfi-base:latest@sha256:88a20e2d017bd20cdc0cb3910de603e7bea9512a6c351a8dd3c9df212ab03d73
-RUN apk add --no-cache python-3.13 \
+# Tesseract reads faxed referrals inside the container: identifiable pages never go to an outside service.
+RUN apk add --no-cache python-3.13 tesseract tesseract-eng \
  && adduser -D -H -h /app -u 10001 caduceus \
  && mkdir -p /var/lib/caduceus && chown caduceus /var/lib/caduceus
 ENV PATH=/opt/venv/bin:$PATH PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \

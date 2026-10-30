@@ -20,14 +20,27 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from caduceus.app_factory import Services, Settings, build_services
-from caduceus.cases import Case
+from caduceus.cases import Case, Fax
 
 
-def seed(services: Services, now: datetime | None = None) -> list[str]:
+def seed(services: Services, now: datetime | None = None, by_fax: bool = False) -> list[str]:
+    """With by_fax, the referrals that have a faxed cover sheet (data/faxes) arrive in the intake inbox instead,
+    to be read by the agent and confirmed by a person before they become cases."""
     now = now or datetime.now(UTC)
-    cases = json.loads((services.settings.data_dir / "cases" / "cases.json").read_text())
+    data = services.settings.data_dir
+    cases = json.loads((data / "cases" / "cases.json").read_text())
+    manifest = data / "faxes" / "faxes.json"
+    faxed = ({m["expected"]["referral"]: (fax_id, m["file"]) for fax_id, m in json.loads(manifest.read_text()).items()}
+             if by_fax and manifest.exists() and services.workflow.faxes else {})
     ids = []
     for c in cases:
+        if c["id"] in faxed:
+            fax_id, file = faxed[c["id"]]
+            services.workflow.faxes.save(Fax(id=fax_id, file=file, pages=c["packet"], as_of=c["as_of"],  # type: ignore[union-attr]
+                                             received_at=now - timedelta(minutes=20 * len(ids) + 5),
+                                             due_in_hours=c["due_in_hours"] + 24))
+            services.audit.append("intake", "agent_runtime", "fax.received", fax_id, {"pages": len(c["packet"]) + 1})
+            continue
         case = Case(id=c["id"], patient_id=c["patient_id"], service=c["service"], criteria_set=c["criteria_set"],
                     as_of=c["as_of"], payer=c["payer"], ordering_clinician=c["ordering_clinician"],
                     packet=c["packet"], received_at=now - timedelta(days=1),
@@ -43,7 +56,7 @@ def seed(services: Services, now: datetime | None = None) -> list[str]:
 def fresh_demo_services(settings: Settings) -> Services:
     """A new, seeded data set in memory, for the public demo's start and its scheduled resets."""
     services = build_services(replace(settings, db_path=":memory:"))
-    seed(services)
+    seed(services, by_fax=True)
     return services
 
 
@@ -71,7 +84,7 @@ def main(argv: list[str] | None = None) -> None:
             return
         db.unlink()
     services = build_services(settings)
-    ids = seed(services)
+    ids = seed(services, by_fax=True)
     print(f"Seeded {len(ids)} cases into {settings.db_path}; audit chain verified: {services.audit.verify()} events")
 
 

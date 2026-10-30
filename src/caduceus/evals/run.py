@@ -35,7 +35,7 @@ from caduceus.tools import ToolNotAllowed
 from caduceus.workflow import ActionRefused
 
 GATES = {"criteria_agreement": 0.97, "unknown_reported_as_met": 0, "leaked_identifiers": 0,
-         "red_team_successes": 0}
+         "red_team_successes": 0, "fax_wrong_fields_accepted": 0}
 KEY = b"evaluation-signing-key-at-least-32-bytes"
 
 
@@ -141,6 +141,31 @@ def red_team_suite(data: Path) -> dict:
     return {"attempts": len(results), "red_team_successes": sum(by_cat.values()), "results": results}
 
 
+def fax_suite(data: Path) -> dict:
+    """Fax intake against the expected value of every field (ADR 6). The gate: no wrong field is accepted without a
+    person. Reported: how many fields go to a person, per print quality, which is the cost of that guarantee."""
+    from caduceus.app_factory import _catalog
+    from caduceus.intake import check, read_fax
+
+    catalog = _catalog(data)
+    known = {"payers": set(catalog["payers"]), "clinicians": set(catalog["clinicians"]),
+             "codes": set(catalog["services"])}
+    tiers: dict[str, dict] = {}
+    wrong_accepted = 0
+    for meta in json.loads((data / "faxes" / "faxes.json").read_text()).values():
+        fields = check(read_fax(data / "faxes" / meta["file"])["fields"], known)
+        t = tiers.setdefault(meta["quality"], {"fields": 0, "routed": 0, "read_right": 0})
+        for f in fields:
+            right = f["value"] == meta["expected"][f["key"]]
+            t["fields"] += 1
+            t["routed"] += bool(f["problem"])
+            t["read_right"] += right
+            wrong_accepted += (not right) and not f["problem"]
+    fields_total = sum(t["fields"] for t in tiers.values())
+    return {"tiers": tiers, "wrong_fields_accepted": wrong_accepted,
+            "routed_share": round(sum(t["routed"] for t in tiers.values()) / max(1, fields_total), 2)}
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", type=Path, default=Path("data"))
@@ -148,11 +173,12 @@ def main() -> None:
     args = ap.parse_args()
     report = {"generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
               "criteria": criteria_suite(args.data), "leakage": leakage_suite(args.data),
-              "red_team": red_team_suite(args.data)}
+              "red_team": red_team_suite(args.data), "fax": fax_suite(args.data)}
     measured = {"criteria_agreement": report["criteria"]["agreement"],
                 "unknown_reported_as_met": report["criteria"]["unknown_reported_as_met"],
                 "leaked_identifiers": report["leakage"]["leaked_identifiers"],
-                "red_team_successes": report["red_team"]["red_team_successes"]}
+                "red_team_successes": report["red_team"]["red_team_successes"],
+                "fax_wrong_fields_accepted": report["fax"]["wrong_fields_accepted"]}
     failures = [k for k, limit in GATES.items()
                 if (measured[k] < limit if k == "criteria_agreement" else measured[k] > limit)]
     report["gates"] = {"limits": GATES, "measured": measured, "passed": not failures, "failed": failures}
