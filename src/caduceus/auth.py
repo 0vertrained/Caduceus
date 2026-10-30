@@ -48,8 +48,8 @@ class AuthError(Exception):
 class Authenticator:
     def __init__(self, mode: str = "dev", jwks_url: str | None = None, issuer: str | None = None,
                  audience: str | None = None, role_claim: str = "caduceus_role"):
-        if mode not in ("dev", "oidc"):
-            raise ValueError("auth mode must be dev or oidc")
+        if mode not in ("dev", "demo", "oidc"):
+            raise ValueError("auth mode must be dev, demo or oidc")
         if mode == "oidc" and not (jwks_url and issuer and audience):
             raise ValueError("oidc mode needs jwks_url, issuer and audience")
         self.mode = mode
@@ -57,7 +57,7 @@ class Authenticator:
         self._issuer, self._audience, self._role_claim = issuer, audience, role_claim
 
     def authenticate(self, dev_user: str | None, authorization: str | None) -> Principal:
-        if self.mode == "dev":
+        if self.mode in ("dev", "demo"):
             principal = DEV_USERS.get(dev_user or "")
             if principal is None:
                 raise AuthError("unknown development user")

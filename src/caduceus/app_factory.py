@@ -33,8 +33,8 @@ class InsecureConfiguration(ValueError):
 
 @dataclass
 class Settings:
-    """Read from the environment when constructed. Secure by default: OIDC sign-in unless development
-    sign-in is asked for by name, and outside development a fixed de-identification key is required."""
+    """Read from the environment when constructed. Secure by default: OIDC sign-in unless development or demo
+    sign-in is asked for by name, and with OIDC a fixed de-identification key is required."""
 
     data_dir: Path = field(default_factory=lambda: Path(os.environ.get("CADUCEUS_DATA_DIR", "data")))
     db_path: str = _env("CADUCEUS_DB", "var/caduceus.sqlite3")
@@ -49,10 +49,14 @@ class Settings:
     in_vpc_model: str = _env("CADUCEUS_IN_VPC_MODEL", "llama3.1:8b")
     external_api_key: str | None = _env("CADUCEUS_EXTERNAL_API_KEY")
     external_model: str = _env("CADUCEUS_EXTERNAL_MODEL", "claude-sonnet-5-5")
+    # demo: the public demo. Development sign-in, synthetic data seeded in memory, reset on a schedule.
+    demo_reset_hours: str = _env("CADUCEUS_DEMO_RESET_HOURS", "6")
 
     def check(self) -> None:
-        if self.auth_mode not in ("dev", "oidc"):
-            raise InsecureConfiguration("CADUCEUS_AUTH_MODE must be dev or oidc.")
+        if self.auth_mode not in ("dev", "oidc", "demo"):
+            raise InsecureConfiguration("CADUCEUS_AUTH_MODE must be dev, demo or oidc.")
+        if self.auth_mode == "demo" and self.external_api_key:
+            raise InsecureConfiguration("The public demo must not hold a model API key: anyone could spend it.")
         if self.auth_mode == "oidc":
             if not self.deid_key or len(self.deid_key.encode()) < 32:
                 raise InsecureConfiguration("Set CADUCEUS_DEID_KEY (at least 32 bytes) outside development.")
