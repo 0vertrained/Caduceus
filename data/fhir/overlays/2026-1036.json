@@ -1,0 +1,322 @@
+{
+ "resourceType": "Bundle",
+ "id": "8df8bb49-4e35-5ba9-b0db-e83c13f47849",
+ "type": "collection",
+ "entry": [
+  {
+   "fullUrl": "urn:uuid:b4553f9a-075a-5386-9677-7963be7dfa71",
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "b4553f9a-075a-5386-9677-7963be7dfa71",
+    "status": "current",
+    "type": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "packet-page",
+       "display": "Referral form"
+      }
+     ],
+     "text": "Referral form"
+    },
+    "subject": {
+     "reference": "Patient/642effb8-711b-35ef-6f39-034230ca489b"
+    },
+    "date": "2026-10-26T09:00:00-06:00",
+    "description": "Referral form",
+    "author": [
+     {
+      "display": "Dr. Ana Reyes"
+     }
+    ],
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "title": "Referral form",
+       "data": "UmVxdWVzdGVkIHNlcnZpY2U6IE1SSSBvZiB0aGUgbHVtYmFyIHNwaW5lIHdpdGhvdXQgY29udHJhc3QgKENQVCA3MjE0OCkuIERpYWdub3NpczogTTU0LjUwLCBsb3cgYmFjayBwYWluLiBPcmRlcmluZyBjbGluaWNpYW46IERyLiBBbmEgUmV5ZXMsIE9ydGhvcGVkaWNzLiBQcmlvcml0eTogcm91dGluZS4="
+      }
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:b1d38ed8-148e-5a63-b882-5e727811050a",
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "b1d38ed8-148e-5a63-b882-5e727811050a",
+    "status": "current",
+    "type": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "packet-page",
+       "display": "Visit note"
+      }
+     ],
+     "text": "Visit note"
+    },
+    "subject": {
+     "reference": "Patient/642effb8-711b-35ef-6f39-034230ca489b"
+    },
+    "date": "2026-10-14T09:00:00-06:00",
+    "description": "Visit note",
+    "author": [
+     {
+      "display": "Dr. Ana Reyes"
+     }
+    ],
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "title": "Visit note",
+       "data": "T3J0aG9wZWRpYyBmb2xsb3ctdXAuIFBhdGllbnQgcmVwb3J0cyBsb3cgYmFjayBwYWluIHJhZGlhdGluZyB0byB0aGUgbGVmdCBidXR0b2NrLCBvbmdvaW5nIGZvciBhcHByb3hpbWF0ZWx5IDEyIHdlZWtzLiBQYWluIGlzIHdvcnNlIHdpdGggcHJvbG9uZ2VkIHNpdHRpbmcgYW5kIGVhc2VzIHdpdGggd2Fsa2luZy4gUGxhbjogTVJJIG9mIHRoZSBsdW1iYXIgc3BpbmUgd2l0aG91dCBjb250cmFzdCB0byBldmFsdWF0ZSBmb3IgZGlzYyBwYXRob2xvZ3ku"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:deaa07d0-c368-5a36-a5d8-a6635e36b6b8",
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "deaa07d0-c368-5a36-a5d8-a6635e36b6b8",
+    "status": "current",
+    "type": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "packet-page",
+       "display": "Therapy summary"
+      }
+     ],
+     "text": "Therapy summary"
+    },
+    "subject": {
+     "reference": "Patient/642effb8-711b-35ef-6f39-034230ca489b"
+    },
+    "date": "2026-08-17T09:00:00-06:00",
+    "description": "Therapy summary",
+    "author": [
+     {
+      "display": "Mesa Verde Physical Therapy"
+     }
+    ],
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "title": "Therapy summary",
+       "data": "UGh5c2ljYWwgdGhlcmFweSBkaXNjaGFyZ2Ugc3VtbWFyeS4gUGF0aWVudCBjb21wbGV0ZWQgOCB3ZWVrcyBvZiBwaHlzaWNhbCB0aGVyYXB5IHdpdGggbWluaW1hbCBpbXByb3ZlbWVudCBpbiBwYWluIG9yIGZ1bmN0aW9uLiBBIGhvbWUgZXhlcmNpc2UgcHJvZ3JhbSB3YXMgcHJvdmlkZWQu"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:2270265d-1893-5ee5-88bd-fdfdd020ecd8",
+   "resource": {
+    "resourceType": "Procedure",
+    "id": "2270265d-1893-5ee5-88bd-fdfdd020ecd8",
+    "status": "completed",
+    "subject": {
+     "reference": "Patient/642effb8-711b-35ef-6f39-034230ca489b"
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "97110",
+       "display": "Therapeutic exercise"
+      }
+     ],
+     "text": "Therapeutic exercise"
+    },
+    "performedPeriod": {
+     "start": "2026-06-20",
+     "end": "2026-08-17"
+    },
+    "extension": [
+     {
+      "url": "http://mesaverde.example/fhir/StructureDefinition/source-sentence",
+      "extension": [
+       {
+        "url": "document",
+        "valueReference": {
+         "reference": "DocumentReference/deaa07d0-c368-5a36-a5d8-a6635e36b6b8"
+        }
+       },
+       {
+        "url": "sentence",
+        "valueString": "Patient completed 8 weeks of physical therapy with minimal improvement in pain or function."
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:64d2c0bf-e561-59c3-8f89-45ec26809d89",
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "64d2c0bf-e561-59c3-8f89-45ec26809d89",
+    "status": "current",
+    "type": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "packet-page",
+       "display": "Radiology report"
+      }
+     ],
+     "text": "Radiology report"
+    },
+    "subject": {
+     "reference": "Patient/642effb8-711b-35ef-6f39-034230ca489b"
+    },
+    "date": "2026-09-28T09:00:00-06:00",
+    "description": "Radiology report",
+    "author": [
+     {
+      "display": "Mesa Verde Imaging"
+     }
+    ],
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "title": "Radiology report",
+       "data": "THVtYmFyIHNwaW5lIHJhZGlvZ3JhcGhzLCB0d28gdmlld3MuIEZpbmRpbmdzOiBEZWdlbmVyYXRpdmUgZGlzYyBkaXNlYXNlIGF0IEw0IHRvIEw1IHdpdGggbWlsZCBuYXJyb3dpbmcuIE5vIGFjdXRlIGZyYWN0dXJlIG9yIG1hbGFsaWdubWVudC4gSW1wcmVzc2lvbjogZGVnZW5lcmF0aXZlIGNoYW5nZXMsIG5vIGFjdXRlIGFibm9ybWFsaXR5Lg=="
+      }
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:0de0bf7c-5d4f-501a-adea-7f34566c00eb",
+   "resource": {
+    "resourceType": "Procedure",
+    "id": "0de0bf7c-5d4f-501a-adea-7f34566c00eb",
+    "status": "completed",
+    "subject": {
+     "reference": "Patient/642effb8-711b-35ef-6f39-034230ca489b"
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "72100",
+       "display": "X-ray lumbosacral spine, 2 or 3 views"
+      }
+     ],
+     "text": "X-ray lumbosacral spine, 2 or 3 views"
+    },
+    "performedDateTime": "2026-09-28T10:00:00-06:00",
+    "extension": [
+     {
+      "url": "http://mesaverde.example/fhir/StructureDefinition/source-sentence",
+      "extension": [
+       {
+        "url": "document",
+        "valueReference": {
+         "reference": "DocumentReference/64d2c0bf-e561-59c3-8f89-45ec26809d89"
+        }
+       },
+       {
+        "url": "sentence",
+        "valueString": "Degenerative disc disease at L4 to L5 with mild narrowing. No acute fracture or malalignment."
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:880b46ef-4da0-553d-917e-1756cad24fad",
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "880b46ef-4da0-553d-917e-1756cad24fad",
+    "status": "current",
+    "type": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "packet-page",
+       "display": "Red-flag screen"
+      }
+     ],
+     "text": "Red-flag screen"
+    },
+    "subject": {
+     "reference": "Patient/642effb8-711b-35ef-6f39-034230ca489b"
+    },
+    "date": "2026-10-20T09:00:00-06:00",
+    "description": "Red-flag screen",
+    "author": [
+     {
+      "display": "Dr. Ana Reyes"
+     }
+    ],
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "title": "Red-flag screen",
+       "data": "UmVkLWZsYWcgcmV2aWV3LiBObyBzYWRkbGUgYW5lc3RoZXNpYSwgYm93ZWwgb3IgYmxhZGRlciBjaGFuZ2UsIGZldmVyLCB3ZWlnaHQgbG9zcyBvciBoaXN0b3J5IG9mIGNhbmNlcjsgcmVkIGZsYWdzIG5lZ2F0aXZlLg=="
+      }
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:544febf3-2abd-5c30-900a-ed097892ad93",
+   "resource": {
+    "resourceType": "Observation",
+    "id": "544febf3-2abd-5c30-900a-ed097892ad93",
+    "status": "final",
+    "subject": {
+     "reference": "Patient/642effb8-711b-35ef-6f39-034230ca489b"
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "red-flag-screen",
+       "display": "Red-flag symptom screen"
+      }
+     ],
+     "text": "Red-flag symptom screen"
+    },
+    "effectiveDateTime": "2026-10-20T10:00:00-06:00",
+    "valueCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "negative",
+       "display": "Negative"
+      }
+     ],
+     "text": "Negative"
+    },
+    "extension": [
+     {
+      "url": "http://mesaverde.example/fhir/StructureDefinition/source-sentence",
+      "extension": [
+       {
+        "url": "document",
+        "valueReference": {
+         "reference": "DocumentReference/880b46ef-4da0-553d-917e-1756cad24fad"
+        }
+       },
+       {
+        "url": "sentence",
+        "valueString": "No saddle anesthesia, bowel or bladder change, fever, weight loss or history of cancer; red flags negative."
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ]
+}

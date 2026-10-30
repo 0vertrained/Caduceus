@@ -1,0 +1,466 @@
+{
+ "resourceType": "Bundle",
+ "id": "4b0002fc-660c-58b5-bfc7-6c74fbd6df35",
+ "type": "collection",
+ "entry": [
+  {
+   "fullUrl": "urn:uuid:85aa3642-c1e3-5678-a113-e26e6756eeab",
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "85aa3642-c1e3-5678-a113-e26e6756eeab",
+    "status": "current",
+    "type": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "packet-page",
+       "display": "Referral form"
+      }
+     ],
+     "text": "Referral form"
+    },
+    "subject": {
+     "reference": "Patient/add383c6-e8b8-dfc3-c9e5-3a961c640cef"
+    },
+    "date": "2026-10-26T09:00:00-06:00",
+    "description": "Referral form",
+    "author": [
+     {
+      "display": "Dr. Marcus Lee"
+     }
+    ],
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "title": "Referral form",
+       "data": "UmVxdWVzdGVkIHNlcnZpY2U6IFRvdGFsIGtuZWUgcmVwbGFjZW1lbnQgKENQVCAyNzQ0NykuIERpYWdub3NpczogTTE3LjExLCBwcmltYXJ5IG9zdGVvYXJ0aHJpdGlzIG9mIHRoZSByaWdodCBrbmVlLiBPcmRlcmluZyBjbGluaWNpYW46IERyLiBNYXJjdXMgTGVlLCBPcnRob3BlZGljcy4gUHJpb3JpdHk6IHJvdXRpbmUu"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:2620aba1-cf7d-5cf1-9fc8-9654e964274e",
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "2620aba1-cf7d-5cf1-9fc8-9654e964274e",
+    "status": "current",
+    "type": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "packet-page",
+       "display": "Visit note"
+      }
+     ],
+     "text": "Visit note"
+    },
+    "subject": {
+     "reference": "Patient/add383c6-e8b8-dfc3-c9e5-3a961c640cef"
+    },
+    "date": "2026-10-08T09:00:00-06:00",
+    "description": "Visit note",
+    "author": [
+     {
+      "display": "Dr. Marcus Lee"
+     }
+    ],
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "title": "Visit note",
+       "data": "T3J0aG9wZWRpYyBjb25zdWx0YXRpb24uIFJpZ2h0IGtuZWUgcGFpbiBmb3Igc2V2ZXJhbCB5ZWFycywgbm93IGxpbWl0aW5nIHdhbGtpbmcgdG8gb25lIGJsb2NrIGFuZCBtYWtpbmcgc3RhaXJzIGRpZmZpY3VsdC4gRXhhbSBzaG93cyBjcmVwaXR1cyBhbmQgcmVkdWNlZCByYW5nZSBvZiBtb3Rpb24u"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:18084daa-e4bb-57ad-9dcc-289823e7348e",
+   "resource": {
+    "resourceType": "Condition",
+    "id": "18084daa-e4bb-57ad-9dcc-289823e7348e",
+    "subject": {
+     "reference": "Patient/add383c6-e8b8-dfc3-c9e5-3a961c640cef"
+    },
+    "clinicalStatus": {
+     "coding": [
+      {
+       "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+       "code": "active",
+       "display": "active"
+      }
+     ],
+     "text": "active"
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://hl7.org/fhir/sid/icd-10-cm",
+       "code": "M17.11",
+       "display": "Unilateral primary osteoarthritis, right knee"
+      }
+     ],
+     "text": "Unilateral primary osteoarthritis, right knee"
+    },
+    "onsetDateTime": "2024-05-11",
+    "recordedDate": "2024-05-11",
+    "extension": [
+     {
+      "url": "http://mesaverde.example/fhir/StructureDefinition/source-sentence",
+      "extension": [
+       {
+        "url": "document",
+        "valueReference": {
+         "reference": "DocumentReference/2620aba1-cf7d-5cf1-9fc8-9654e964274e"
+        }
+       },
+       {
+        "url": "sentence",
+        "valueString": "Right knee pain for several years, now limiting walking to one block and making stairs difficult."
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:f8e0363d-b375-58bb-96ec-37770c750b25",
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "f8e0363d-b375-58bb-96ec-37770c750b25",
+    "status": "current",
+    "type": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "packet-page",
+       "display": "Radiology report"
+      }
+     ],
+     "text": "Radiology report"
+    },
+    "subject": {
+     "reference": "Patient/add383c6-e8b8-dfc3-c9e5-3a961c640cef"
+    },
+    "date": "2026-06-12T09:00:00-06:00",
+    "description": "Radiology report",
+    "author": [
+     {
+      "display": "Mesa Verde Imaging"
+     }
+    ],
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "title": "Radiology report",
+       "data": "UmlnaHQga25lZSByYWRpb2dyYXBocywgdGhyZWUgdmlld3MsIHdlaWdodC1iZWFyaW5nLiBNZWRpYWwgam9pbnQtc3BhY2UgbmFycm93aW5nIHdpdGggb3N0ZW9waHl0ZXMsIGNvbnNpc3RlbnQgd2l0aCBtb2RlcmF0ZSB0byBzZXZlcmUgb3N0ZW9hcnRocml0aXMu"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:2218d336-1be7-5ead-9c9d-d52e614dea98",
+   "resource": {
+    "resourceType": "Procedure",
+    "id": "2218d336-1be7-5ead-9c9d-d52e614dea98",
+    "status": "completed",
+    "subject": {
+     "reference": "Patient/add383c6-e8b8-dfc3-c9e5-3a961c640cef"
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "73562",
+       "display": "X-ray knee, 3 views"
+      }
+     ],
+     "text": "X-ray knee, 3 views"
+    },
+    "performedDateTime": "2026-06-12T10:00:00-06:00",
+    "extension": [
+     {
+      "url": "http://mesaverde.example/fhir/StructureDefinition/source-sentence",
+      "extension": [
+       {
+        "url": "document",
+        "valueReference": {
+         "reference": "DocumentReference/f8e0363d-b375-58bb-96ec-37770c750b25"
+        }
+       },
+       {
+        "url": "sentence",
+        "valueString": "Medial joint-space narrowing with osteophytes, consistent with moderate to severe osteoarthritis."
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:fbac6dca-e319-58e6-9854-8cb5aef7dd07",
+   "resource": {
+    "resourceType": "Observation",
+    "id": "fbac6dca-e319-58e6-9854-8cb5aef7dd07",
+    "status": "final",
+    "subject": {
+     "reference": "Patient/add383c6-e8b8-dfc3-c9e5-3a961c640cef"
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "knee-joint-space",
+       "display": "Knee joint space on radiograph"
+      }
+     ],
+     "text": "Knee joint space on radiograph"
+    },
+    "effectiveDateTime": "2026-06-12T10:00:00-06:00",
+    "valueCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "narrowed",
+       "display": "Narrowed"
+      }
+     ],
+     "text": "Narrowed"
+    },
+    "extension": [
+     {
+      "url": "http://mesaverde.example/fhir/StructureDefinition/source-sentence",
+      "extension": [
+       {
+        "url": "document",
+        "valueReference": {
+         "reference": "DocumentReference/f8e0363d-b375-58bb-96ec-37770c750b25"
+        }
+       },
+       {
+        "url": "sentence",
+        "valueString": "Medial joint-space narrowing with osteophytes, consistent with moderate to severe osteoarthritis."
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:d0b8f1d5-74c9-5832-b613-c6556aa04a75",
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "d0b8f1d5-74c9-5832-b613-c6556aa04a75",
+    "status": "current",
+    "type": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "packet-page",
+       "display": "Procedure note"
+      }
+     ],
+     "text": "Procedure note"
+    },
+    "subject": {
+     "reference": "Patient/add383c6-e8b8-dfc3-c9e5-3a961c640cef"
+    },
+    "date": "2026-07-15T09:00:00-06:00",
+    "description": "Procedure note",
+    "author": [
+     {
+      "display": "Dr. Marcus Lee"
+     }
+    ],
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "title": "Procedure note",
+       "data": "Q29ydGljb3N0ZXJvaWQgaW5qZWN0aW9uIHRvIHRoZSByaWdodCBrbmVlIHdpdGggdHdvIHdlZWtzIG9mIHJlbGllZi4="
+      }
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:0c8f6541-2215-5490-8779-3d49e8b26a9c",
+   "resource": {
+    "resourceType": "Procedure",
+    "id": "0c8f6541-2215-5490-8779-3d49e8b26a9c",
+    "status": "completed",
+    "subject": {
+     "reference": "Patient/add383c6-e8b8-dfc3-c9e5-3a961c640cef"
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "20610",
+       "display": "Arthrocentesis or injection, major joint"
+      }
+     ],
+     "text": "Arthrocentesis or injection, major joint"
+    },
+    "performedDateTime": "2026-07-15T10:00:00-06:00",
+    "extension": [
+     {
+      "url": "http://mesaverde.example/fhir/StructureDefinition/source-sentence",
+      "extension": [
+       {
+        "url": "document",
+        "valueReference": {
+         "reference": "DocumentReference/d0b8f1d5-74c9-5832-b613-c6556aa04a75"
+        }
+       },
+       {
+        "url": "sentence",
+        "valueString": "Corticosteroid injection to the right knee with two weeks of relief."
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:efe900c1-6649-52e1-bd88-07b6e3ff6d36",
+   "resource": {
+    "resourceType": "Observation",
+    "id": "efe900c1-6649-52e1-bd88-07b6e3ff6d36",
+    "status": "final",
+    "subject": {
+     "reference": "Patient/add383c6-e8b8-dfc3-c9e5-3a961c640cef"
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "functional-limitation",
+       "display": "Functional limitation assessment"
+      }
+     ],
+     "text": "Functional limitation assessment"
+    },
+    "effectiveDateTime": "2026-10-08T10:00:00-06:00",
+    "valueCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "present",
+       "display": "Present"
+      }
+     ],
+     "text": "Present"
+    },
+    "extension": [
+     {
+      "url": "http://mesaverde.example/fhir/StructureDefinition/source-sentence",
+      "extension": [
+       {
+        "url": "document",
+        "valueReference": {
+         "reference": "DocumentReference/2620aba1-cf7d-5cf1-9fc8-9654e964274e"
+        }
+       },
+       {
+        "url": "sentence",
+        "valueString": "Right knee pain for several years, now limiting walking to one block and making stairs difficult."
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:b44789b1-0610-5789-8f3e-26490cdc2fe7",
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "b44789b1-0610-5789-8f3e-26490cdc2fe7",
+    "status": "current",
+    "type": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "packet-page",
+       "display": "Infectious disease note"
+      }
+     ],
+     "text": "Infectious disease note"
+    },
+    "subject": {
+     "reference": "Patient/add383c6-e8b8-dfc3-c9e5-3a961c640cef"
+    },
+    "date": "2026-10-22T09:00:00-06:00",
+    "description": "Infectious disease note",
+    "author": [
+     {
+      "display": "Dr. Helen Ortiz"
+     }
+    ],
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "title": "Infectious disease note",
+       "data": "QXNwaXJhdGlvbiBvZiB0aGUgcmlnaHQga25lZSBncmV3IFN0YXBoeWxvY29jY3VzIGF1cmV1czsgc2VwdGljIGFydGhyaXRpcyBpcyBiZWluZyB0cmVhdGVkLg=="
+      }
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:f7b25e31-42b0-5328-b6d9-b64f18ab2fe0",
+   "resource": {
+    "resourceType": "Condition",
+    "id": "f7b25e31-42b0-5328-b6d9-b64f18ab2fe0",
+    "subject": {
+     "reference": "Patient/add383c6-e8b8-dfc3-c9e5-3a961c640cef"
+    },
+    "clinicalStatus": {
+     "coding": [
+      {
+       "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+       "code": "active",
+       "display": "active"
+      }
+     ],
+     "text": "active"
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://hl7.org/fhir/sid/icd-10-cm",
+       "code": "M00.861",
+       "display": "Arthritis due to other bacteria, right knee"
+      }
+     ],
+     "text": "Arthritis due to other bacteria, right knee"
+    },
+    "onsetDateTime": "2026-10-19",
+    "recordedDate": "2026-10-19",
+    "extension": [
+     {
+      "url": "http://mesaverde.example/fhir/StructureDefinition/source-sentence",
+      "extension": [
+       {
+        "url": "document",
+        "valueReference": {
+         "reference": "DocumentReference/b44789b1-0610-5789-8f3e-26490cdc2fe7"
+        }
+       },
+       {
+        "url": "sentence",
+        "valueString": "Aspiration of the right knee grew Staphylococcus aureus; septic arthritis is being treated."
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ]
+}

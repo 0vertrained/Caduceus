@@ -1,0 +1,283 @@
+{
+ "resourceType": "Bundle",
+ "id": "ec696ae9-895d-51ab-a079-d423cb130454",
+ "type": "collection",
+ "entry": [
+  {
+   "fullUrl": "urn:uuid:128b87e5-9f2a-5441-876c-43be6b088a95",
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "128b87e5-9f2a-5441-876c-43be6b088a95",
+    "status": "current",
+    "type": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "packet-page",
+       "display": "Referral form"
+      }
+     ],
+     "text": "Referral form"
+    },
+    "subject": {
+     "reference": "Patient/0d7ccf4c-93a3-e541-35ca-58427d71da36"
+    },
+    "date": "2026-10-26T09:00:00-06:00",
+    "description": "Referral form",
+    "author": [
+     {
+      "display": "Dr. Priya Patel"
+     }
+    ],
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "title": "Referral form",
+       "data": "UmVxdWVzdGVkIHNlcnZpY2U6IENQQVAgZGV2aWNlIGZvciBzbGVlcCBhcG5lYSAoSENQQ1MgRTA2MDEpLiBEaWFnbm9zaXM6IEc0Ny4zMywgb2JzdHJ1Y3RpdmUgc2xlZXAgYXBuZWEuIE9yZGVyaW5nIGNsaW5pY2lhbjogRHIuIFByaXlhIFBhdGVsLCBTbGVlcCBtZWRpY2luZS4gUHJpb3JpdHk6IHJvdXRpbmUu"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:5e276819-04fe-53dc-8e74-0121d2407161",
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "5e276819-04fe-53dc-8e74-0121d2407161",
+    "status": "current",
+    "type": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "packet-page",
+       "display": "Sleep medicine evaluation"
+      }
+     ],
+     "text": "Sleep medicine evaluation"
+    },
+    "subject": {
+     "reference": "Patient/0d7ccf4c-93a3-e541-35ca-58427d71da36"
+    },
+    "date": "2026-08-31T09:00:00-06:00",
+    "description": "Sleep medicine evaluation",
+    "author": [
+     {
+      "display": "Dr. Priya Patel"
+     }
+    ],
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "title": "Sleep medicine evaluation",
+       "data": "RmFjZS10by1mYWNlIHNsZWVwIGV2YWx1YXRpb24uIExvdWQgc25vcmluZyBhbmQgd2l0bmVzc2VkIHBhdXNlcyBpbiBicmVhdGhpbmcgcmVwb3J0ZWQgYnkgdGhlIHBhdGllbnQncyBzcG91c2UuIFBsYW46IHNsZWVwIHN0dWR5Lg=="
+      }
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:f4795cf2-7909-5e8e-834f-285447280ba8",
+   "resource": {
+    "resourceType": "Observation",
+    "id": "f4795cf2-7909-5e8e-834f-285447280ba8",
+    "status": "final",
+    "subject": {
+     "reference": "Patient/0d7ccf4c-93a3-e541-35ca-58427d71da36"
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "sleep-evaluation",
+       "display": "Face-to-face sleep evaluation"
+      }
+     ],
+     "text": "Face-to-face sleep evaluation"
+    },
+    "effectiveDateTime": "2026-08-31T10:00:00-06:00",
+    "valueCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "completed",
+       "display": "Completed"
+      }
+     ],
+     "text": "Completed"
+    },
+    "extension": [
+     {
+      "url": "http://mesaverde.example/fhir/StructureDefinition/source-sentence",
+      "extension": [
+       {
+        "url": "document",
+        "valueReference": {
+         "reference": "DocumentReference/5e276819-04fe-53dc-8e74-0121d2407161"
+        }
+       },
+       {
+        "url": "sentence",
+        "valueString": "Loud snoring and witnessed pauses in breathing reported by the patient's spouse."
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:ac796464-eb38-547c-951c-966b480c0b46",
+   "resource": {
+    "resourceType": "Condition",
+    "id": "ac796464-eb38-547c-951c-966b480c0b46",
+    "subject": {
+     "reference": "Patient/0d7ccf4c-93a3-e541-35ca-58427d71da36"
+    },
+    "clinicalStatus": {
+     "coding": [
+      {
+       "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+       "code": "active",
+       "display": "active"
+      }
+     ],
+     "text": "active"
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://hl7.org/fhir/sid/icd-10-cm",
+       "code": "G47.33",
+       "display": "Obstructive sleep apnea"
+      }
+     ],
+     "text": "Obstructive sleep apnea"
+    },
+    "onsetDateTime": "2026-09-28",
+    "recordedDate": "2026-09-28"
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:a0681a42-1f55-5dde-b3b2-bb9a6b095079",
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "a0681a42-1f55-5dde-b3b2-bb9a6b095079",
+    "status": "current",
+    "type": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "packet-page",
+       "display": "Sleep study report"
+      }
+     ],
+     "text": "Sleep study report"
+    },
+    "subject": {
+     "reference": "Patient/0d7ccf4c-93a3-e541-35ca-58427d71da36"
+    },
+    "date": "2026-09-18T09:00:00-06:00",
+    "description": "Sleep study report",
+    "author": [
+     {
+      "display": "Mesa Verde Sleep Center"
+     }
+    ],
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "title": "Sleep study report",
+       "data": "SG9tZSBzbGVlcCB0ZXN0LiBBcG5lYS1oeXBvcG5lYSBpbmRleCA5IGV2ZW50cyBwZXIgaG91cjsgbG93ZXN0IG94eWdlbiBzYXR1cmF0aW9uIDg2IHBlcmNlbnQu"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:fbcb4136-6f57-583c-9e11-3302c44626a6",
+   "resource": {
+    "resourceType": "Procedure",
+    "id": "fbcb4136-6f57-583c-9e11-3302c44626a6",
+    "status": "completed",
+    "subject": {
+     "reference": "Patient/0d7ccf4c-93a3-e541-35ca-58427d71da36"
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "95806",
+       "display": "Home sleep test"
+      }
+     ],
+     "text": "Home sleep test"
+    },
+    "performedDateTime": "2026-09-18T10:00:00-06:00",
+    "extension": [
+     {
+      "url": "http://mesaverde.example/fhir/StructureDefinition/source-sentence",
+      "extension": [
+       {
+        "url": "document",
+        "valueReference": {
+         "reference": "DocumentReference/a0681a42-1f55-5dde-b3b2-bb9a6b095079"
+        }
+       },
+       {
+        "url": "sentence",
+        "valueString": "Apnea-hypopnea index 9 events per hour; lowest oxygen saturation 86 percent."
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:eb26bff6-b0ea-5b31-bd1e-800ab7654865",
+   "resource": {
+    "resourceType": "Observation",
+    "id": "eb26bff6-b0ea-5b31-bd1e-800ab7654865",
+    "status": "final",
+    "subject": {
+     "reference": "Patient/0d7ccf4c-93a3-e541-35ca-58427d71da36"
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "ahi",
+       "display": "Apnea-hypopnea index"
+      }
+     ],
+     "text": "Apnea-hypopnea index"
+    },
+    "effectiveDateTime": "2026-09-18T10:00:00-06:00",
+    "valueQuantity": {
+     "value": 9,
+     "unit": "events/h",
+     "system": "http://unitsofmeasure.org",
+     "code": "/h"
+    },
+    "extension": [
+     {
+      "url": "http://mesaverde.example/fhir/StructureDefinition/source-sentence",
+      "extension": [
+       {
+        "url": "document",
+        "valueReference": {
+         "reference": "DocumentReference/a0681a42-1f55-5dde-b3b2-bb9a6b095079"
+        }
+       },
+       {
+        "url": "sentence",
+        "valueString": "Apnea-hypopnea index 9 events per hour; lowest oxygen saturation 86 percent."
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ]
+}
