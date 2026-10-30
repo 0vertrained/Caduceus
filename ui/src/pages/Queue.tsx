@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import type { FaxRow, Me, Queue as QueueData, QueueRow } from "../api";
-import { CheckCircle, Triangle } from "../components/Icons";
+import { CheckCircle, Clock, Triangle } from "../components/Icons";
 import { Seal } from "../components/Seal";
 import { searchTerm } from "../components/Header";
 import { StatusWord } from "../components/Status";
@@ -127,7 +127,14 @@ function FaxInbox() {
             {f.status === "read" && (f.to_check
               ? <span className="status status--caution"><Triangle size={20} /><span>{f.to_check} {f.to_check === 1 ? "field" : "fields"} to check</span></span>
               : <span className="status status--seal"><CheckCircle size={20} /><span>Read clearly</span></span>)}
-            <Link to={`/intake/${f.id}`} className="btn btn--secondary" aria-label={`Check the fax for ${f.patient || f.id}`}>Check the fax</Link>
+            {f.status === "waiting_on_clinic" && f.request && (
+              <span className="fax-inbox__waiting">
+                <span className="status status--ink"><Clock size={20} /><span>Waiting on {f.request.to ?? "the clinic"}</span></span>
+                <span className="support">Asked {glue(f.request.asked)}</span>
+              </span>
+            )}
+            <Link to={`/intake/${f.id}`} className="btn btn--secondary" aria-label={`${f.status === "waiting_on_clinic" ? "Open" : "Check"} the fax for ${f.patient || f.id}`}>
+              {f.status === "waiting_on_clinic" ? "Open the fax" : "Check the fax"}</Link>
           </li>
         ))}
       </ul>

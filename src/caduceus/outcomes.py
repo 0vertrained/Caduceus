@@ -15,7 +15,7 @@ from caduceus.cases import Case, Fax, State
 
 HUMAN_ACTIONS = {"attestation.requested", "attestation.signed", "case.approved", "case.returned", "draft.edited",
                  "note.requested", "note.signed", "note.declined", "reply.approved", "appeal.edited",
-                 "appeal.approved", "fax.confirmed", "action.undone"}
+                 "appeal.approved", "fax.confirmed", "action.undone", "fax.clinic_asked", "fax.clinic_replied"}
 
 
 def pct(n: int, d: int) -> str:
@@ -99,5 +99,7 @@ def outcomes(cases: list[Case], events: list[AuditEvent], faxes: list[Fax]) -> l
             ("Fields sent to a person", pct(sum(1 for x in fields if x.get("problem")), len(fields)),
              "Below 90% confidence, or not valid."),
             ("Fields people corrected", str(corrected), "Before any case was created from them."),
+            ("Faxes sent back to the clinic", str(sum(e.action == "fax.clinic_asked" for e in events)),
+             "Something was missing or unreadable, so a person asked the clinic instead of guessing."),
         ]},
     ]

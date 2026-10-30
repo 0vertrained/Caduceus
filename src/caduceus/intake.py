@@ -259,6 +259,32 @@ def form(reading: dict[str, Any], catalog: dict[str, Any]) -> dict[str, Any]:
                              for code, s in sorted(catalog["services"].items(), key=lambda kv: kv[1]["display"])]}}
 
 
+# What a request to the clinic calls each field it asks for.
+ASKED_FOR = {"referral": "the referral number", "patient_name": "the patient’s name",
+             "birth_date": "the patient’s date of birth", "member_id": "the member ID", "payer": "the health plan",
+             "clinician": "the ordering clinician", "service_code": "the requested service and its code",
+             "diagnosis": "the diagnosis and its ICD-10 code"}
+
+
+def listed(items: list[str]) -> str:
+    return items[0] if len(items) == 1 else f"{', '.join(items[:-1])} and {items[-1]}"
+
+
+def clinic_request(clinic: str | None, referral: str | None, received: str, missing: list[str], resend: bool) -> str:
+    """The request a person sends the clinic, in plain words: what arrived, what is missing, what to do. It names the
+    referral and the fields, never the patient, so it can go by fax or phone without more care than the referral."""
+    which = f"referral {referral}" if referral else "a prior authorization referral"
+    sent = f"We received {which} from you by fax on {received}"
+    if resend:
+        body = f"{sent}, but our copy is too poor to read. Please fax the whole referral again, with its notes."
+    else:
+        them = "it" if len(missing) == 1 else "them"
+        body = (f"{sent}, but the cover sheet does not clearly give {listed([ASKED_FOR[k] for k in missing])}. "
+                f"Please fax the cover sheet again with {them} filled in, or call us with {them}.")
+    return (f"To {clinic or 'the referring clinic'}:\n\n{body} We will start the request as soon as we have "
+            f"{'it' if resend else them}.\n\nThank you,\nPrior Authorization Team, Mesa Verde Health")
+
+
 def unchecked(fields: list[dict], values: dict[str, str], ticked: Iterable[str]) -> list[dict]:
     """Fields sent to a person that they neither ticked as matching the fax nor changed from where the form began."""
     ticked = set(ticked)

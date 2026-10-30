@@ -1,3 +1,4 @@
+import { Clock, Triangle } from "../components/Icons";
 import { StatusWord } from "../components/Status";
 import { useTitle } from "../hooks";
 
@@ -29,6 +30,17 @@ export function HelpPage() {
              ["denied", "Denied by the payer", "The payer said no and gave its reason. Caduceus drafts an appeal from the policy and the record; read it, then send it."]] as const).map(([k, w, d]) => (
             <li key={k} className="waiting__item"><StatusWord statusKey={k} word={w} /><span className="muted">{d}</span></li>
           ))}
+        </ul>
+      </section>
+      <section className="help__section" aria-labelledby="faxes">
+        <h2 id="faxes" className="section-title">Faxed referrals</h2>
+        <ul className="panel help__list">
+          <li className="waiting__item"><span className="status status--caution"><Triangle size={20} /><span>Fields to check</span></span>
+            <span className="muted">Caduceus was unsure of some fields. Tick each one that matches the fax, or correct it,
+              and confirm the patient in the chart. Then create the case.</span></li>
+          <li className="waiting__item"><span className="status status--ink"><Clock size={20} /><span>Waiting on the clinic</span></span>
+            <span className="muted">The fax does not give something, or is too poor to read, so you asked the clinic. Send
+              them the request Caduceus wrote. When they answer, choose “The clinic sent it” and finish checking.</span></li>
         </ul>
       </section>
       <section className="help__section" aria-labelledby="contact">

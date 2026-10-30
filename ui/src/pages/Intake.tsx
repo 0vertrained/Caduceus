@@ -2,9 +2,9 @@ import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError, type ChartCard, type FaxChoices, type FaxView, type FormField, type PatientMatch } from "../api";
 import { ErrorMessage, ErrorSummary, type FormError } from "../components/ErrorSummary";
-import { Crop, useAuthImage } from "../components/FaxImage";
+import { Crop, FaxViewer, useAuthImage, WholePage } from "../components/FaxImage";
 import { ChevronLeft, CheckCircle, Triangle } from "../components/Icons";
-import { useResource, useTitle } from "../hooks";
+import { glue, midSentence, useResource, useTitle } from "../hooks";
 
 type Parts = { month: string; day: string; year: string };
 const PARTS = [["month", "Month"], ["day", "Day"], ["year", "Year"]] as const;
@@ -14,6 +14,11 @@ const NAMED: Record<string, string> = {
   referral: "referral number", patient_name: "patient’s name", birth_date: "date of birth", member_id: "member ID",
   payer: "health plan", clinician: "ordering clinician", service_code: "requested service", diagnosis: "diagnosis",
 };
+
+/** "a", "a and b", "a, b and c" */
+function andList(items: string[]): string {
+  return items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+}
 
 function split(date: string): Parts {
   const [month = "", day = "", year = ""] = date ? date.split("/") : [];
@@ -205,8 +210,12 @@ function PatientCheck({ match, looking, failure, name, born, confirmed, onLook, 
 export function IntakePage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data, error } = useResource<FaxView>(`/api/intake/${id}`);
+  const { data, setData, error } = useResource<FaxView>(`/api/intake/${id}`);
   const image = useAuthImage(data?.image);
+  const [missing, setMissing] = useState<Set<string>>(new Set());
+  const [askFailure, setAskFailure] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+  const started = useRef<string | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
   const [dob, setDob] = useState<Parts>({ month: "", day: "", year: "" });
   const [ticked, setTicked] = useState<Set<string>>(new Set());
@@ -235,16 +244,25 @@ export function IntakePage() {
   };
 
   useEffect(() => {
-    if (!data?.form) return;
+    // The form starts once per fax; coming back from waiting on the clinic keeps what the person already did.
+    if (!data?.form || started.current === data.id) return;
+    started.current = data.id;
     const start = Object.fromEntries(data.form.map((f) => [f.key, f.initial]));
     setValues(start);
     setDob(split(start.birth_date ?? ""));
     setTicked(new Set());
-    // Look the patient up once, as the fax gives them, when it gives both a name and a whole date.
-    if (data.status === "read" && lookedUp.current !== data.id && start.patient_name && /^\d\d\/\d\d\/\d{4}$/.test(start.birth_date ?? "")) {
-      lookedUp.current = data.id;
-      void lookUp(start.patient_name, start.birth_date);
-    }
+  }, [data]);
+
+  useEffect(() => {
+    // Look the patient up once the fax can be checked (now, or when the clinic has answered), as the form has them,
+    // when there is both a name and a whole date.
+    if (!data?.form || data.status !== "read" || lookedUp.current === data.id) return;
+    const start = Object.fromEntries(data.form.map((f) => [f.key, f.initial]));
+    const name = values.patient_name ?? start.patient_name;
+    const born = values.patient_name === undefined ? start.birth_date ?? "" : joined(dob);
+    if (!name || !/^\d\d\/\d\d\/\d{4}$/.test(born)) return;
+    lookedUp.current = data.id;
+    void lookUp(name, born);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
@@ -263,7 +281,12 @@ export function IntakePage() {
 
   const validate = (): FormError[] => {
     const found: FormError[] = [];
+    if (missing.size) {
+      const them = missing.size === 1 ? "it" : "them";
+      found.push({ key: "missing", target: "ask-clinic", message: `You marked ${missing.size === 1 ? "a field" : `${missing.size} fields`} as not on the fax. Ask the clinic for ${them}, or say ${them === "it" ? "it is" : "they are"} on the fax` });
+    }
     for (const f of data.form) {
+      if (missing.has(f.key)) continue;
       const p = formatProblem(f, valueOf(f), dob);
       if (p) found.push({ key: f.key, message: p[0], target: p[1] });
       else if (f.problem && !isChecked(f)) {
@@ -308,6 +331,46 @@ export function IntakePage() {
     if (on) next.add(key); else next.delete(key);
     setTicked(next);
   };
+  const markMissing = (key: string, on: boolean) => {
+    const next = new Set(missing);
+    if (on) next.add(key); else next.delete(key);
+    setMissing(next);
+  };
+
+  // Ask the clinic that sent the fax for what it does not give clearly, or to send it all again. Caduceus writes the
+  // request and holds the fax; a person sends the request.
+  const askClinic = async (resend: boolean) => {
+    setAskFailure(null);
+    const referral = values.referral && /^\d{4}-\d{4}$/.test(values.referral) ? values.referral : undefined;
+    try {
+      const view = await api<FaxView>(`/api/intake/${data.id}/ask-clinic`, { method: "POST",
+        body: JSON.stringify({ missing: resend ? [] : data.form.filter((f) => missing.has(f.key)).map((f) => f.key), resend, referral }) });
+      setMissing(new Set());
+      setRaised([]);
+      setData(view);
+      window.scrollTo(0, 0);
+    } catch (e) {
+      setAskFailure((e as ApiError).message);
+    }
+  };
+  const clinicSent = async () => {
+    setAskFailure(null);
+    try {
+      setData(await api<FaxView>(`/api/intake/${data.id}/clinic-sent`, { method: "POST" }));
+    } catch (e) {
+      setAskFailure((e as ApiError).message);
+    }
+  };
+  const copy = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied("Copied. Paste it into a fax cover sheet or an email to the clinic.");
+    } catch {
+      setCopied("This browser would not copy it. Select the text and copy it instead.");
+    }
+  };
+  const asking = data.form.filter((f) => missing.has(f.key));
+  const request = data.status === "waiting_on_clinic" ? data.request : null;
 
   return (
     <div className="page intake">
@@ -315,14 +378,36 @@ export function IntakePage() {
       <ErrorSummary errors={errors} attempt={attempt} />
       <div className="intake__intro">
         <h1 className="page-title">Check the fax</h1>
-        <p className="lead">{data.status === "confirmed" ? "This fax is already a case." : flagged.length
+        <p className="lead">{data.status === "confirmed" ? "This fax is already a case." : request
+          ? "This fax is waiting on the clinic that sent it."
+          : flagged.length
           ? `${flagged.length === 1 ? "One field needs" : `${flagged.length} fields need`} your eyes. Each is shown beside the part of the page it came from. Tick each one that matches the fax, or correct it.`
           : "Every field was read clearly. Look them over, then create the case."}</p>
         <p className="support">{data.clinic ? `From ${data.clinic}, received ${data.received}. ` : `Received ${data.received}; the clinic that sent it could not be read. `}
           Read by {data.engine} inside Mesa Verde’s systems; the page never left. Fields below 90% confidence, or that
           do not look right, are sent to you.</p>
       </div>
-      {data.status === "confirmed" && data.case_id ? <Link to={`/cases/${data.case_id}`} className="btn btn--primary btn--start">Open the case</Link> : (
+      <FaxViewer src={image} alt={`The faxed cover sheet, page 1 of ${data.pages}`} />
+      {data.status === "confirmed" && data.case_id ? <Link to={`/cases/${data.case_id}`} className="btn btn--primary btn--start">Open the case</Link> : request ? (
+        <section className="panel callout asked" aria-labelledby="asked-title">
+          <h2 id="asked-title" className="section-title">Waiting on {request.to ?? "the clinic"}</h2>
+          <p>{request.asked_by} asked {glue(request.asked)} {request.kind === "resend"
+            ? "for the whole referral again, because the copy was too poor to read."
+            : `for ${andList(request.missing.map((m) => `the ${midSentence(m)}`))}.`}</p>
+          <figure className="asked__request">
+            <figcaption className="support">The request, ready to send by fax or phone. Caduceus has not sent it
+              anywhere; it is recorded in the fax’s history.</figcaption>
+            <div className="paper">{request.text}</div>
+          </figure>
+          <p>When the clinic answers, choose “The clinic sent it”, then finish checking the fax here.</p>
+          <div className="asked__actions">
+            <button type="button" className="btn btn--secondary" onClick={() => void copy(request.text)}>Copy the request</button>
+            <button type="button" className="btn btn--primary" onClick={() => void clinicSent()}>The clinic sent it</button>
+          </div>
+          {copied && <p role="status" className="support">{copied}</p>}
+          {askFailure && <p role="alert" className="alert">{askFailure}</p>}
+        </section>
+      ) : (
         <form className="panel intake__form" noValidate onSubmit={(e) => { e.preventDefault(); void create(); }}>
           {flagged.length > 0 && (
             <p className="intake__counter" role="status"><CheckCircle size={20} />{done} of {flagged.length} checked</p>
@@ -332,8 +417,11 @@ export function IntakePage() {
             const errId = `err-${f.key}`;
             const describedBy = [`why-${f.key}`, err && err.target !== `tick-${f.key}` ? errId : ""].filter(Boolean).join(" ");
             const invalid = Boolean(err && err.target !== `tick-${f.key}`);
-            const crop = <Crop src={image} size={data.size} box={f.box} label={NAMED[f.key]} />;
+            // The line it was read from, or the whole page when the line could not be found at all.
+            const crop = f.box ? <Crop src={image} size={data.size} box={f.box} label={NAMED[f.key]} />
+              : <WholePage src={image} label={NAMED[f.key]} />;
             const memberId = values.member_id ?? "";
+            const absent = missing.has(f.key);
             return (
               <Fragment key={f.key}>
               <div className={`intake__field${f.problem ? " intake__field--check" : ""}${err ? " intake__field--error" : ""}`}>
@@ -380,7 +468,11 @@ export function IntakePage() {
                   <div className="differs"><p><strong>The member ID differs.</strong> This one ends in {memberId.slice(-4)}; the
                     one on file for this patient ends in {onFile.member_id_last4}. Check it against the fax.</p></div>
                 )}
-                {f.problem && (
+                {f.problem && (absent ? (
+                  <p className="intake__absent"><Triangle size={18} /><span>Not on the fax. The clinic will be asked for
+                    it below. <button type="button" className="link-button" onClick={() => markMissing(f.key, false)}>It
+                    is on the fax<span className="visually-hidden">: the {NAMED[f.key]}</span></button></span></p>
+                ) : (
                   <div className="intake__tick">
                     <label className={`tick${ticked.has(f.key) ? " tick--on" : ""}`} htmlFor={`tick-${f.key}`}>
                       <input type="checkbox" id={`tick-${f.key}`} checked={ticked.has(f.key)}
@@ -388,9 +480,13 @@ export function IntakePage() {
                              onChange={(e) => toggle(f.key, e.target.checked)} />
                       <span>Matches the fax<span className="visually-hidden">: {NAMED[f.key]}</span></span>
                     </label>
-                    {changed(f) && !ticked.has(f.key) && <span className="support">You changed this, so it counts as checked.</span>}
+                    {changed(f) && !ticked.has(f.key) ? <span className="support">You changed this, so it counts as checked.</span>
+                      : !ticked.has(f.key) && (
+                        <button type="button" className="link-button" onClick={() => markMissing(f.key, true)}>
+                          Not on the fax: ask the clinic<span className="visually-hidden"> for the {NAMED[f.key]}</span></button>
+                      )}
                   </div>
-                )}
+                ))}
               </div>
               {f.key === "birth_date" && (
                 <PatientCheck match={match} looking={looking} failure={lookFailure} name={values.patient_name ?? ""}
@@ -403,11 +499,27 @@ export function IntakePage() {
               </Fragment>
             );
           })}
+          {asking.length > 0 && (
+            <section className="ask" id="ask-clinic" tabIndex={-1} aria-labelledby="ask-title">
+              <h2 id="ask-title" className="match__title">Ask {data.clinic ?? "the clinic that sent it"}</h2>
+              <p>The fax does not clearly give:</p>
+              <ul className="ask__list">{asking.map((f) => <li key={f.key}>{f.label}</li>)}</ul>
+              <p className="support">Caduceus writes the request, naming the referral and {asking.length === 1 ? "this field" : "these fields"} but
+                not the patient. You send it by fax or phone; nothing is sent for you. The fax waits here until the clinic answers.</p>
+              <button type="button" className="btn btn--primary btn--start" onClick={() => void askClinic(false)}>
+                Ask the clinic for {asking.length === 1 ? "it" : `these ${asking.length}`}</button>
+            </section>
+          )}
+          {askFailure && <p role="alert" className="alert">{askFailure}</p>}
           <div className="intake__actions">
-            <button type="submit" className="btn btn--primary btn--large" disabled={busy}>Create the case</button>
+            {/* One filled button per view: asking the clinic takes it while fields are marked as not on the fax. */}
+            <button type="submit" className={`btn ${asking.length ? "btn--secondary" : "btn--primary"} btn--large`} disabled={busy}>Create the case</button>
             <span className="support">{flagged.length ? `${done} of ${flagged.length} checked. ` : ""}Caduceus matches
               the patient in the record, then checks the case against the payer’s policy.</span>
           </div>
+          <p className="intake__resend">
+            <button type="button" className="btn--text" onClick={() => void askClinic(true)}>Too poor to read: ask the clinic to resend</button>
+          </p>
         </form>
       )}
     </div>

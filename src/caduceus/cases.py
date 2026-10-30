@@ -123,9 +123,13 @@ class Fax(BaseModel):
     received_at: datetime
     due_in_hours: float = 72
     as_of: str
-    status: str = "received"               # received, read, confirmed
+    status: str = "received"               # received, read, waiting_on_clinic, confirmed
     reading: dict[str, Any] | None = None  # OCR fields with confidence, region and any reason to check
     case_id: str | None = None
+    # What a person asked the sending clinic for, when the fax lacked something or was too poor to read: the fields,
+    # the request in words (shown for a person to send; Caduceus sends nothing), who asked and when, and when the
+    # clinic answered.
+    request: dict[str, Any] | None = None
 
 
 class FaxRepository:
