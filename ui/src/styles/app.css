@@ -239,6 +239,23 @@ ul, ol { padding: 0; list-style: none; }
 .sent-facts dd { margin: 0; }
 mark { background: var(--mark); color: var(--ink); padding: 1px 2px; border-radius: 2px; }
 
+/* Fax intake: the inbox on the queue, and checking a fax --------------------------------------- */
+.fax-inbox { padding: 24px 32px; display: flex; flex-direction: column; gap: var(--space-3); }
+.fax-inbox__item { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5);
+  padding: 14px 0; border-top: 1px solid var(--rule-soft); }
+.fax-inbox__item > div { flex: 1 1 320px; }
+.fax-inbox__name { font-family: var(--font-serif); font-size: 1.3rem; }
+.intake { max-width: 860px; }
+.intake__intro { display: flex; flex-direction: column; gap: var(--space-2); }
+.intake__form { padding: 28px 32px; display: flex; flex-direction: column; gap: var(--space-5); }
+.intake__field { display: flex; flex-direction: column; gap: var(--space-2); }
+.intake__field--check { background: var(--caution-tint); margin: 0 -16px; padding: 16px; border-radius: var(--radius-control); }
+.intake__why { display: flex; align-items: center; gap: 6px; font-size: var(--text-support); color: var(--caution); font-weight: 600; }
+.intake__why--ok { color: var(--seal); font-weight: 400; }
+.intake__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); }
+.crop { max-width: 100%; border: 1px solid var(--rule); border-radius: 4px; background-color: var(--paper);
+  background-repeat: no-repeat; }
+
 /* Case history: the audit trail in plain words ------------------------------------------------- */
 .history { padding: 24px 36px; display: flex; flex-direction: column; gap: var(--space-4); }
 .history__head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--space-3) var(--space-5); }
@@ -345,7 +362,7 @@ mark { background: var(--mark); color: var(--ink); padding: 1px 2px; border-radi
   .tour__inner { padding: var(--space-3) var(--space-4); }
   .page { padding: var(--space-4) var(--space-4) var(--space-7); }
   .helper__steps, .facts { grid-template-columns: minmax(0, 1fr); }
-  .row, .case-head, .criteria, .side, .payer-question, .history { padding-left: var(--space-4); padding-right: var(--space-4); }
+  .row, .case-head, .criteria, .side, .payer-question, .history, .fax-inbox, .intake__form { padding-left: var(--space-4); padding-right: var(--space-4); }
   .history__item { grid-template-columns: minmax(0, 1fr); }
   .page-title { font-size: 2rem; }
   .case-name { font-size: 2rem; }

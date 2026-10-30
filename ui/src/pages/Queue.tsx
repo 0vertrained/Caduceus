@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import type { Me, Queue as QueueData, QueueRow } from "../api";
+import type { FaxRow, Me, Queue as QueueData, QueueRow } from "../api";
+import { CheckCircle, Triangle } from "../components/Icons";
 import { Seal } from "../components/Seal";
 import { searchTerm } from "../components/Header";
 import { StatusWord } from "../components/Status";
@@ -103,6 +104,37 @@ function Waiting({ data }: { data: QueueData }) {
   );
 }
 
+/** Referrals that arrived by fax: Caduceus has read them; a person checks what it was unsure of. */
+function FaxInbox() {
+  const { data } = useResource<{ available: boolean; faxes: FaxRow[] }>("/api/intake", 30000);
+  const open = (data?.faxes ?? []).filter((f) => f.status !== "confirmed");
+  if (!data || !open.length) return null;
+  return (
+    <section className="panel fax-inbox" aria-labelledby="fax-title">
+      <div>
+        <h2 id="fax-title" className="section-title">Arrived by fax</h2>
+        <p className="muted">{data.available
+          ? "Caduceus read each cover sheet inside Mesa Verde’s systems. Check what it was unsure of, and the case is created."
+          : "Fax reading is not available right now. The faxes wait here; nothing is guessed."}</p>
+      </div>
+      <ul>
+        {open.map((f) => (
+          <li key={f.id} className="fax-inbox__item">
+            <div>
+              <span className="fax-inbox__name">{f.patient || "Patient not read yet"}</span>
+              <span className="muted"> Referral {f.referral || "unread"}, {f.pages} pages, received {f.received}</span>
+            </div>
+            {f.status === "read" && (f.to_check
+              ? <span className="status status--caution"><Triangle size={20} /><span>{f.to_check} {f.to_check === 1 ? "field" : "fields"} to check</span></span>
+              : <span className="status status--seal"><CheckCircle size={20} /><span>Read clearly</span></span>)}
+            <Link to={`/intake/${f.id}`} className="btn btn--secondary" aria-label={`Check the fax for ${f.patient || f.id}`}>Check the fax</Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export function QueuePage({ me }: { me: Me }) {
   const { data, error } = useResource<QueueData>("/api/queue", 15000);
   const [laterOpen, setLaterOpen] = useState(false);
@@ -135,6 +167,7 @@ export function QueuePage({ me }: { me: Me }) {
   return (
     <div className="page">
       <Helper me={me} />
+      <FaxInbox />
       <div className="queue-intro">
         <div className="queue-intro__text">
           <h1 className="page-title">{countWords(n)} {n === 1 ? "case is" : "cases are"} waiting for you.</h1>
