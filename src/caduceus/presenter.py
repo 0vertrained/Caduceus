@@ -19,7 +19,7 @@ from caduceus.intake import fields_in_words
 from caduceus.payer import RULE_PLANS, STANDARD_DECISION_DAYS
 from caduceus.timeline import who
 from caduceus.words import clock, long_date, moment, took
-from caduceus.workflow import NOTE_LIMIT, UNDO_SECONDS, approve_blocked_reason
+from caduceus.workflow import NOTE_LIMIT, REMIND_EVERY, UNDO_SECONDS, approve_blocked_reason
 
 __all__ = ["Presenter", "clock", "due", "long_date", "moment", "status", "summary_sentence", "took"]
 
@@ -175,6 +175,8 @@ class Presenter:
                    "can_recall": case.state == State.SUBMITTED and not (case.submission or {}).get("sent")
                    and undo is None,
                    "can_resubmit": case.state == State.RETURNED}
+        waiting = self.clinician_wait(case, now)
+        actions["can_remind"] = bool(waiting and waiting["next_reminder_at"] is None)
         return {
             "id": case.id, "version": case.version, "state": case.state.value, "status": status(case),
             "patient": {"name": patient_name(p), "birth_date": long_date(born),
@@ -189,6 +191,7 @@ class Presenter:
             "summary": summary_sentence(case, counts, total),
             "actions": actions,
             "undo": undo,
+            "waiting": waiting,
             "returned_reason": case.returned_reason,
             "payer_response": case.payer_response,
             "submission": case.submission,
@@ -202,6 +205,24 @@ class Presenter:
         } | ({"actions": {k: False if k.startswith("can_") else v for k, v in actions.items()},
               "summary": "Read only. Only a prior-authorization specialist can act on a case."}
              if read_only else {})
+
+    def clinician_wait(self, case: Case, now: datetime) -> dict[str, Any] | None:
+        """How long the case has waited on the ordering clinician, and the reminders sent, in words."""
+        since = case.waiting_since()
+        if since is None:
+            return None
+        sent = case.reminders_since_asked()
+        last = datetime.fromisoformat(sent[-1]["at"]) if sent else None
+        next_at = last + REMIND_EVERY if last and now - last < REMIND_EVERY else None
+        words = f"Waiting {took(now - since)} so far."
+        if last:
+            words += (f" Reminded at {clock(last, self.tz)}." if len(sent) == 1
+                      else f" Reminded {len(sent)} times, last at {clock(last, self.tz)}.")
+        if next_at:
+            words += f" You can send another reminder at {clock(next_at, self.tz)}."
+        return {"since": moment(since, now, self.tz), "for": took(now - since), "reminders": len(sent),
+                "last_reminded": clock(last, self.tz) if last else None,
+                "next_reminder_at": clock(next_at, self.tz) if next_at else None, "words": words}
 
     def appeal(self, case: Case) -> dict[str, Any] | None:
         """A denial with its specific reason, the policy and record behind the criterion, and the drafted appeal."""

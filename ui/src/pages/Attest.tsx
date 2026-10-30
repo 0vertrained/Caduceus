@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { api, ApiError, type AttestationView } from "../api";
+import { api, ApiError, type AttestationRow, type AttestationView } from "../api";
 import { Check } from "../components/Icons";
 import { countWords, glue, useResource, useSecondsLeft, useTitle } from "../hooks";
 
 export function AttestListPage() {
-  const { data, error } = useResource<{ case_id: string; patient: { name: string; age: number }; service: string;
-    kind: "attestation" | "note" }[]>("/api/attestations", 15000);
+  const { data, error } = useResource<AttestationRow[]>("/api/attestations", 15000);
   useTitle("Requests to sign");
   if (error) return <div className="attest"><p role="alert" className="alert">{error.message}</p></div>;
   if (!data) return <div className="attest"><p role="status" className="muted">Loading.</p></div>;
@@ -14,13 +13,19 @@ export function AttestListPage() {
     <div className="attest">
       <h1 className="attest__name">{data.length ? `${countWords(data.length)} ${data.length === 1 ? "request needs" : "requests need"} your signature.`
         : "Nothing needs your signature."}</h1>
+      {data.length > 1 && <p className="muted">The one due soonest is first.</p>}
       <ul className="panel attest__list">
         {data.map((a) => (
-          <li key={a.case_id} className="waiting__item">
+          <li key={a.case_id} className="attest__item">
             <Link to={`/attest/${a.case_id}`} className="attest__link">
               {a.patient.name}, {a.patient.age}
             </Link>
             <span className="muted">{a.kind === "note" ? `${a.service}: the payer asked for a note` : a.service}</span>
+            <span className={`attest__due${a.due.urgent ? " attest__due--urgent" : ""}`}>{glue(`${a.due.words}, ${a.due.sub}`)}</span>
+            {a.reminders && (
+              <span className="support">{a.reminders.count === 1 ? `${a.reminders.by} reminded you at ${glue(a.reminders.last)}.`
+                : `${a.reminders.by} reminded you ${a.reminders.count} times, last at ${glue(a.reminders.last)}.`}</span>
+            )}
           </li>
         ))}
       </ul>

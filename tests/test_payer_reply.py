@@ -47,8 +47,9 @@ def test_the_payers_question_is_answered_with_the_clinicians_note(env):  # noqa:
     q = client.get("/api/queue", headers=DOLORES).json()
     assert q["counts"]["with_clinicians"] == 1 and any(w["id"] == HAROLD for w in q["waiting"])
 
-    assert client.get("/api/attestations", headers=REYES).json()[0] | {"patient": None} == {
-        "case_id": HAROLD, "patient": None, "service": "MRI of the lumbar spine", "kind": "note"}
+    assert client.get("/api/attestations", headers=REYES).json()[0] | {"patient": None, "due": None} == {
+        "case_id": HAROLD, "patient": None, "service": "MRI of the lumbar spine", "kind": "note", "due": None,
+        "reminders": None}
     ask = client.get(f"/api/attestations/{HAROLD}", headers=REYES).json()
     assert ask["state"] == "awaiting_note" and ask["requested_by"] == "Dolores Montoya"
     assert ask["note_request"]["confirmed"][0]["question"] == "Have red-flag symptoms been ruled out?"

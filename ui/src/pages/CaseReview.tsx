@@ -548,6 +548,11 @@ function DecisionBar({ c, setCase, reload }: { c: CaseView; setCase: (c: CaseVie
     </button>
   ) : null;
 
+  // While the case waits on the clinician: a nudge, at most every 10 minutes (the summary says when the next can go).
+  const remind = c.actions.can_remind ? (
+    <button type="button" className="btn btn--secondary btn--large" disabled={busy} onClick={() => act("remind")}>
+      Remind {c.ordering_clinician.name}</button>
+  ) : null;
   let summary: ReactNode = glue(c.summary);
   let actions: ReactNode = null;
   if (c.read_only) {
@@ -572,8 +577,9 @@ function DecisionBar({ c, setCase, reload }: { c: CaseView; setCase: (c: CaseVie
       </>
     );
   } else if (c.state === "awaiting_attestation") {
-    summary = <><CheckCircle size={26} /><span><strong>Sent to {c.ordering_clinician.name}.</strong> This case comes back to you when they sign.</span></>;
-    actions = <>{undo}<Link to="/" className="btn btn--primary btn--large">Next case</Link></>;
+    summary = <><CheckCircle size={26} /><span><strong>Sent to {c.ordering_clinician.name}.</strong> This case comes
+      back to you when they sign. {glue(c.waiting?.words ?? "")}</span></>;
+    actions = <>{undo}{remind}<Link to="/" className="btn btn--primary btn--large">Next case</Link></>;
   } else if (c.state === "pended") {
     const returnButton = (primary: boolean) => (
       <button type="button" className={primary ? "btn btn--primary btn--large" : "btn--text"}
@@ -609,8 +615,8 @@ function DecisionBar({ c, setCase, reload }: { c: CaseView; setCase: (c: CaseVie
     );
   } else if (c.state === "awaiting_note") {
     summary = <><CheckCircle size={26} /><span><strong>Asked {c.ordering_clinician.name} for the note.</strong> This
-      case comes back to you when they sign it.</span></>;
-    actions = <>{undo}<Link to="/" className="btn btn--primary btn--large">Next case</Link></>;
+      case comes back to you when they sign it. {glue(c.waiting?.words ?? "")}</span></>;
+    actions = <>{undo}{remind}<Link to="/" className="btn btn--primary btn--large">Next case</Link></>;
   } else if (c.state === "submitted" && !c.submission?.sent) {
     // The countdown is for the eye; a screen reader hears one steady sentence instead of a number every second.
     const what = c.submission?.kind === "reply" ? "note" : c.submission?.kind === "appeal" ? "appeal" : "request";

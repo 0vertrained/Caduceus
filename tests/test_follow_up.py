@@ -1,4 +1,5 @@
-"""After a person acts: recalling an approval that has not been sent, and a returned case the clinic resubmits."""
+"""After a person acts: recalling an approval that has not been sent, a returned case the clinic resubmits, and
+reminding a clinician a case waits on."""
 
 from __future__ import annotations
 
@@ -116,3 +117,45 @@ def test_a_returned_case_the_clinic_resubmits_is_prepared_again(env):  # noqa: F
     said = [e["what"] for e in client.get("/api/cases/2026-1043/timeline", headers=DOLORES).json()["entries"]]
     assert "Marked that the clinic resubmitted it. Caduceus prepares it again from the start." in said
     assert client.post("/api/cases/2026-1043/resubmitted", headers=DOLORES).status_code == 409
+
+
+def test_a_clinician_is_reminded_at_most_every_ten_minutes_and_sees_it(env):  # noqa: F811
+    svc, client, clock = env
+    for case_id in ("2026-1029", "2026-1043"):  # due in 5 days, and in 90 minutes
+        client.post(f"/api/cases/{case_id}/request-attestation", headers=DOLORES)
+    assert client.post("/api/cases/2026-1041/remind", headers=DOLORES).json()["message"] == \
+        "This case is not waiting on Dr. Marcus Lee."
+    assert client.post("/api/cases/2026-1043/remind", headers=REYES).status_code == 403
+    assert client.post("/api/cases/2026-1043/remind", headers=as_user("sam")).status_code == 403
+
+    clock.advance(minutes=25)
+    case = client.get("/api/cases/2026-1043", headers=DOLORES).json()
+    assert case["waiting"]["words"] == "Waiting 25 minutes so far." and case["actions"]["can_remind"]
+    case = client.post("/api/cases/2026-1043/remind", headers=DOLORES).json()
+    assert case["waiting"]["reminders"] == 1 and not case["actions"]["can_remind"]
+    assert case["waiting"]["words"] == ("Waiting 25 minutes so far. Reminded at 1:25 pm. You can send another "
+                                        "reminder at 1:35 pm.")
+    clock.advance(minutes=9)
+    too_soon = client.post("/api/cases/2026-1043/remind", headers=DOLORES)
+    assert too_soon.status_code == 409 and too_soon.json()["message"] == (
+        "Dr. Ana Reyes was reminded at 1:25 pm. You can send another reminder at 1:35 pm.")
+    clock.advance(minutes=1)
+    case = client.post("/api/cases/2026-1043/remind", headers=DOLORES).json()
+    assert case["waiting"]["words"] == "Waiting 35 minutes so far. Reminded 2 times, last at 1:35 pm. You can send " \
+                                       "another reminder at 1:45 pm."
+    assert [e.detail["count"] for e in svc.audit.events("2026-1043") if e.action == "clinician.reminded"] == [1, 2]
+    said = [e["what"] for e in client.get("/api/cases/2026-1043/timeline", headers=DOLORES).json()["entries"]]
+    assert said.count("Reminded Dr. Ana Reyes to sign.") == 2
+
+    # The clinician's list: the most urgent first, how soon each is due, and the reminders.
+    mine = client.get("/api/attestations", headers=REYES).json()
+    assert [m["case_id"] for m in mine] == ["2026-1043", "2026-1029"]
+    assert mine[0]["due"]["urgent"] and mine[0]["due"]["words"] == "In 55 minutes"
+    assert mine[0]["reminders"] == {"count": 2, "by": "Dolores Montoya", "last": "1:35 pm"}
+    assert mine[1]["reminders"] is None and not mine[1]["due"]["urgent"]
+
+    # Once signed, it no longer waits, and a later request starts its own count.
+    client.post("/api/attestations/2026-1043", headers=REYES, json={"answers": {"red_flags_excluded": "yes"}})
+    assert client.post("/api/cases/2026-1043/remind", headers=DOLORES).status_code == 409
+    assert [m["case_id"] for m in client.get("/api/attestations", headers=REYES).json()] == ["2026-1029"]
+    assert svc.cases.get("2026-1043").reminders_since_asked() == []
