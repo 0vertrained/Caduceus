@@ -12,7 +12,7 @@ trap 'kill "${server:-0}" 2>/dev/null || true; rm -rf "$work"' EXIT
 
 export CADUCEUS_DB="$work/e2e.sqlite3"
 export CADUCEUS_DEID_KEY="${CADUCEUS_DEID_KEY:-e2e-only-signing-key-at-least-32-bytes-long}"
-export CADUCEUS_AUTH_MODE=dev
+export CADUCEUS_AUTH_MODE=demo  # as deployed: the demo banner is on every screen the walk checks
 
 python -m caduceus.seed
 uvicorn caduceus.api:create_app --factory --host 127.0.0.1 --port "$port" --log-level warning &

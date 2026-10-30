@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { api, currentUser, setCurrentUser, type Me } from "./api";
+import { DemoBanner } from "./components/DemoBanner";
 import { Header } from "./components/Header";
 import { AttestListPage, AttestPage } from "./pages/Attest";
 import { CaseReviewPage } from "./pages/CaseReview";
@@ -43,6 +44,7 @@ export function App() {
   return (
     <div className="app">
       <a href="#main" className="skip-link">Skip to main content</a>
+      <DemoBanner me={me} />
       <Header me={me} onSignOut={signOut} />
       <main id="main" className="app__main" tabIndex={-1}>
         {!checked ? null : !me ? (
