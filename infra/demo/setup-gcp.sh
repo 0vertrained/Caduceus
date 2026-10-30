@@ -12,7 +12,7 @@
 #     repository, and nothing else, can deploy without a stored credential
 #
 # Safe to run again: anything that already exists is left as it is. Deploys happen from GitHub Actions
-# (.github/workflows/deploy-demo.yml) once the variables printed at the end are set.
+# (.github/workflows/deploy-demo.yml), whose env block holds the values printed at the end.
 set -euo pipefail
 
 PROJECT="${1:?usage: $0 PROJECT_ID [REGION]}"
@@ -91,12 +91,12 @@ cat <<EOF
 
 Done. Two more places to fill in (docs/demo-deployment.md walks through both).
 
-GitHub, ${REPO}: Settings > Secrets and variables > Actions > Variables
-  GCP_PROJECT_ID                  ${PROJECT}
-  GCP_REGION                      ${REGION}
-  GCP_WORKLOAD_IDENTITY_PROVIDER  projects/${NUMBER}/locations/global/workloadIdentityPools/github/providers/caduceus
-  GCP_DEPLOY_SERVICE_ACCOUNT      ${DEPLOYER}
-  GCP_RUNTIME_SERVICE_ACCOUNT     ${RUNTIME}
+GitHub, ${REPO}: the env block of .github/workflows/deploy-demo.yml (none of these is a secret)
+  PROJECT                         ${PROJECT}
+  REGION                          ${REGION}
+  WORKLOAD_IDENTITY_PROVIDER      projects/${NUMBER}/locations/global/workloadIdentityPools/github/providers/caduceus
+  DEPLOY_SA                       ${DEPLOYER}
+  RUNTIME_SA                      ${RUNTIME}
 
 Netlify: Site configuration > Environment variables
   CADUCEUS_API_ORIGIN             https://${SERVICE}-${NUMBER}.${REGION}.run.app
