@@ -59,3 +59,12 @@ def test_job_summary_lists_every_finding(report, tmp_path, monkeypatch):
                       "--label", "Image", "--fail-on", "none"])
     text = summary.read_text()
     assert "| libfoo | 1.0 | deb |" in text and "| libbar | 1.0 | deb |" in text and "none released" in text
+
+
+def test_every_finding_is_listed_in_one_annotation_and_escaped(report, capsys):
+    findings = [match(f"lib{i}", "Low", "not-fixed") for i in range(15)]
+    findings.append(match("evil%0A::error::injected", "Low", "not-fixed"))
+    vuln_report.main([report(*findings), "--label", "Image", "--fail-on", "none"])
+    every = [line for line in capsys.readouterr().out.splitlines() if "every finding::" in line][0]
+    assert every.count("%0A") == 15  # 16 findings, one line each
+    assert "evil%250A::error::injected" in every  # a crafted name cannot start a new workflow command
