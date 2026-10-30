@@ -35,9 +35,10 @@ export function App() {
     setCurrentUser(user);
     void load().then(() => navigate("/"));
   };
+  // A new identity starts from a clean page, so nothing loaded as the previous person stays on screen.
   const switchTo = (user: string, path: string | null) => {
     setCurrentUser(user);
-    void load().then(() => navigate(path ?? "/"));
+    window.location.assign(path ?? "/");
   };
   const signOut = () => {
     setCurrentUser(null);

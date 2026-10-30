@@ -175,6 +175,18 @@ await tour(page).getByText("Tour complete").waitFor({ timeout: 10_000 });
 await shot(page, "17-case-approved");
 await axe(page, "17-case-approved");
 
+// The case history, then the tour's last step: the auditor checks that none of it was changed.
+await page.getByRole("button", { name: "Show the history" }).click();
+await page.getByText("Asked Dr. Ana Reyes for the note the payer wants.").waitFor();
+await shot(page, "18-case-history");
+await axe(page, "18-case-history");
+await tour(page).getByRole("button", { name: "Switch to Sam Whitlock" }).click();
+await page.getByRole("status").filter({ hasText: /^Read only\./ }).waitFor();
+await page.getByRole("button", { name: "Show the history" }).click();
+await page.getByRole("button", { name: "Check that nothing was changed" }).click();
+await page.getByText(/^Intact\. All [\d,]+ events/).waitFor();
+await axe(page, "19-auditor-verifies");
+
 await browser.close();
 console.log(JSON.stringify(report, null, 2));
 process.exit(report.failures.length ? 1 : 0);

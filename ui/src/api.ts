@@ -135,6 +135,7 @@ export interface CriterionResult {
 
 export interface CaseView {
   id: string;
+  version?: number;
   state: string;
   status: Status;
   patient: { name: string; birth_date: string; age: number };
@@ -162,7 +163,14 @@ export interface CaseView {
   payer_response: { decision: { code: string; display: string; question?: string; authorization_number?: string } } | null;
   submission: { kind?: "reply"; sent?: boolean; send_after?: string; approved_by?: string; submission_id?: string } | null;
   reply: PayerReply | null;
+  read_only: boolean;
 }
+
+export interface TimelineEntry {
+  first_seq: number; last_seq: number; hash: string; who: string; role: string; what: string;
+  kind: "agent" | "person" | "view" | "refused"; tools: string[]; at: string; count: number;
+}
+export interface Timeline { events: number; can_verify: boolean; entries: TimelineEntry[] }
 
 // Exactly what the draft's model saw: de-identified by construction, so it can be kept and shown.
 export interface SentToModel {

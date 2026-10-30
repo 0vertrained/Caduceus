@@ -26,6 +26,7 @@ from caduceus.cases import Case, StaleCase, State
 from caduceus.presenter import Presenter
 from caduceus.ratelimit import DemoLimits
 from caduceus.seed import clone_demo_services, fresh_demo_services
+from caduceus.timeline import timeline
 from caduceus.tools import ToolForbidden, ToolNotAllowed
 from caduceus.tour import tour
 from caduceus.workflow import ActionRefused
@@ -328,7 +329,7 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
 
     def view(case: Case, who: Principal) -> dict:
         live.svc.audit.append(who.id, who.role, "case.viewed", case.id)
-        return live.presenter.case(load(case.id), now(), who.id)
+        return live.presenter.case(load(case.id), now(), who.id, read_only=who.role != Role.PA_SPECIALIST)
 
     @app.get("/api/health")
     def health() -> dict:
@@ -365,7 +366,7 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
         return {"id": who.id, "name": who.name, "role": who.role.value}
 
     @app.get("/api/queue")
-    def queue(who: Principal = Depends(role(Role.PA_SPECIALIST, Role.ADMIN))) -> dict:
+    def queue(who: Principal = Depends(role(Role.PA_SPECIALIST, Role.ADMIN, Role.AUDITOR))) -> dict:
         safe_dispatch()
         svc = live.svc
         local_today = now().astimezone(svc.tz).date()
@@ -425,6 +426,13 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
         load(case_id)
         return [{"seq": e.seq, "at": e.ts, "actor": e.actor, "role": e.role, "action": e.action, "detail": e.detail}
                 for e in live.svc.audit.events(case_id)]
+
+    @app.get("/api/cases/{case_id}/timeline")
+    def case_timeline(case_id: str, who: Principal = Depends(role(Role.PA_SPECIALIST, Role.ADMIN, Role.AUDITOR))):
+        case = load(case_id)
+        events = live.svc.audit.events(case_id)
+        return {"events": len(events), "can_verify": who.role in (Role.AUDITOR, Role.ADMIN),
+                "entries": timeline(events, case.ordering_clinician["name"], live.svc.tz, now())}
 
     @app.get("/api/attestations")
     def my_attestations(who: Principal = Depends(role(Role.CLINICIAN))):

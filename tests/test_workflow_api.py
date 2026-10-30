@@ -354,3 +354,40 @@ def test_starts_on_a_system_without_a_time_zone_database(tmp_path):
                          capture_output=True, text=True, cwd=DATA.parent)
     assert out.returncode == 0, out.stderr
     assert out.stdout.strip() == "America/Denver"
+
+
+SAM = as_user("sam")
+
+
+def test_the_case_history_reads_in_plain_words_and_only_an_auditor_verifies_it(env):
+    svc, client, _ = env
+    _sign_harold(client)
+    client.get("/api/cases/2026-1043", headers=DOLORES)
+    client.get("/api/cases/2026-1043", headers=DOLORES)
+    with pytest.raises(ToolNotAllowed):
+        svc.workflow.gateway.call(AGENT, "2026-1043", "drafting", "payer.submit", case_id="2026-1043", approval_seq=1)
+
+    mine = client.get("/api/cases/2026-1043/timeline", headers=DOLORES).json()
+    whats = [e["what"] for e in mine["entries"]]
+    assert mine["can_verify"] is False and mine["events"] == len(svc.audit.events("2026-1043"))
+    assert "Received the referral, 4 pages." in whats
+    assert "Used 5 tools to read the patient's record and the referral packet." in whats
+    assert "Asked Dr. Ana Reyes to confirm 1 item." in whats and "Signed, answering yes." in whats
+    assert any(w == "Opened the case (2 times)." for w in whats)  # repeated views collapse into one line
+    refused = [e for e in mine["entries"] if e["kind"] == "refused"]
+    assert refused and "not allowed during drafting" in refused[0]["what"] and refused[0]["who"] == "Caduceus"
+    signed = next(e for e in mine["entries"] if e["what"].startswith("Signed"))
+    assert signed["who"] == "Dr. Ana Reyes" and signed["role"] == "ordering clinician" and len(signed["hash"]) == 12
+
+    assert client.get("/api/cases/2026-1043/timeline", headers=SAM).json()["can_verify"] is True
+    assert client.get("/api/cases/2026-1043/timeline", headers=REYES).status_code == 403
+
+
+def test_an_auditor_reads_the_queue_and_cases_but_cannot_act(env):
+    _, client, _ = env
+    assert client.get("/api/queue", headers=SAM).status_code == 200
+    case = client.get("/api/cases/2026-1041", headers=SAM).json()
+    assert case["read_only"] is True and not any(v for k, v in case["actions"].items() if k.startswith("can_"))
+    assert case["summary"].startswith("Read only.")
+    assert client.post("/api/cases/2026-1041/approve", headers=SAM).status_code == 409
+    assert client.get("/api/cases/2026-1041", headers=DOLORES).json()["read_only"] is False

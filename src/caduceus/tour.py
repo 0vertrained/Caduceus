@@ -65,6 +65,7 @@ def tour(svc: Services, presenter: Presenter) -> dict[str, Any] | None:
     if case.state == State.SUBMITTED:
         return step(8, "dolores", f"The note waits 30 seconds, then goes to {payer}.", case_path, waiting=True)
     if case.state == State.APPROVED:
-        return step(STEPS, None, f"{payer} approved it. Open the case history to see every step, who took it, and "
-                                 "the check that nothing was changed afterward.", case_path, done=True)
+        return step(STEPS, "sam", f"{payer} approved it. Open the case history at the foot of the case to see every "
+                                  "step and who took it. As Sam Whitlock, the auditor, you can check that none of it "
+                                  "was changed afterward.", case_path, done=True)
     return step(1, None, "This case left the tour's path. Start over to try again.", ended=True)
