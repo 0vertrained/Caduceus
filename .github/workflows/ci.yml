@@ -148,7 +148,7 @@ jobs:
       - run: docker build -t caduceus-api:ci .
       - name: Record the base images this build used
         run: |
-          for ref in $(awk '/^FROM/ {print $2}' Dockerfile | sort -u); do
+          awk '/^FROM/ {print $2}' Dockerfile | sort -u | while read -r ref; do
             docker pull -q "$ref" > /dev/null
             echo "::notice title=Base image::$ref resolved to $(docker image inspect --format '{{index .RepoDigests 0}}' "$ref")"
           done
