@@ -1,6 +1,6 @@
-import "@fontsource/newsreader/400.css";
-import "@fontsource/newsreader/500.css";
-import "@fontsource/newsreader/400-italic.css";
+// Newsreader with its optical-size axis: display cuts for headings, text cuts for drafts, picked by size.
+import "@fontsource-variable/newsreader/opsz.css";
+import "@fontsource-variable/newsreader/wght-italic.css";
 import "@fontsource/source-sans-3/400.css";
 import "@fontsource/source-sans-3/600.css";
 import "@fontsource/source-sans-3/700.css";

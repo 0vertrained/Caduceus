@@ -285,9 +285,10 @@ class Presenter:
 
 
 def summary_sentence(case: Case, counts: dict[str, int], total: int) -> str:
-    words = {1: "One", 2: "Two", 3: "Three", 4: "Four", 5: "Five"}
-    met = words.get(counts["met"], str(counts["met"]))
-    lead = f"{met} of {words.get(total, str(total)).lower()} criteria are met."
+    # Numerals from 2 up, as the screens write them (GOV.UK style): "3 of 4 criteria are met."
+    met = {0: "No", 1: "One"}.get(counts["met"], str(counts["met"]))
+    all_met = counts["met"] == total and total > 1
+    lead = f"All {total} criteria are met." if all_met else f"{met} of {total} criteria are met."
     clin, payer = case.ordering_clinician["name"], case.payer["name"]
     if case.state == State.AWAITING_ATTESTATION:
         return f"{lead} Waiting for {clin} to sign."

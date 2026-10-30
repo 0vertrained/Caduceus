@@ -81,7 +81,7 @@ def test_queue_groups_by_due_time_in_words(env):
 def test_harold_path_attest_approve_undo_dispatch(env):
     svc, client, clock = env
     case = client.get("/api/cases/2026-1043", headers=DOLORES).json()
-    assert case["summary"] == ("Three of four criteria are met. Dr. Ana Reyes needs to confirm the last one "
+    assert case["summary"] == ("3 of 4 criteria are met. Dr. Ana Reyes needs to confirm the last one "
                                "before you can approve.")
     assert case["actions"]["can_approve"] is False and case["actions"]["can_request_attestation"] is True
     blocked = client.post("/api/cases/2026-1043/approve", headers=DOLORES)
