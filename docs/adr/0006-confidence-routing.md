@@ -33,6 +33,21 @@ region on the page. A field goes to a person when it is below 90%, fails validat
 a known payer, clinician or service code, an ICD-10 diagnosis), or is missing. Confirming requires every field to
 be valid and the patient to match exactly one record by name and date of birth.
 
+How a person checks it, so that checking is deliberate rather than a glance:
+
+* The fields are in the order the cover sheet gives them. The health plan, the clinician and the service are chosen
+  from the ones on file, starting on the closest to what was read; clinicians are narrowed to the clinic named on the
+  "From:" line. A starting choice is only a suggestion: every field sent to a person needs a "Matches the fax" tick,
+  or a change from where the form started, and the server refuses the case otherwise.
+* The patient is looked up in the chart and confirmed by a person, or chosen from the closest records. Where the fax
+  and the record disagree on something the record holds (the name, the date of birth, the plan on file), both are
+  shown.
+* A field the fax does not give clearly is not guessed: the person asks the sending clinic, in a request Caduceus
+  writes (naming the referral and the fields, never the patient) and the person sends. The fax waits until the
+  clinic answers. A line not found at all is shown on the whole page instead of a crop.
+* The cover sheet becomes page 1 of the case's packet, and the case says who checked the fax, when, and what they
+  corrected.
+
 The eval gate measures it against the expected value of every field on three faxes (clean, typical, degraded): no
 wrong field may be accepted without a person. Today 0 of 27 are; the clean and typical faxes send no field to a
 person, and the degraded one sends 8 of 9.
