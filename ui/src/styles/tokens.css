@@ -1,0 +1,57 @@
+/* Design system: Attestation. Names match the Design system tab of the Caduceus doc.
+   Contrast ratios (on paper / mist): ink 15.8/13.9, ink-2 7.6/6.7, seal 7.9/7.0, urgent 7.4/6.6,
+   caution 6.7 on caution-tint, field-border 4.2/3.7 (non-text), disabled 4.8. */
+:root {
+  --ink: #1a2330;
+  --ink-2: #4a5560;
+  --seal: #0f5c4a;
+  --seal-strong: #0a4034;
+  --urgent: #9e2b25;
+  --caution: #7a4e00;
+  --caution-tint: #fbf6ea;
+  --mark: #ffe9a8;
+  --field-border: #737d8a;
+  --disabled-text: #5c6670;
+  --disabled-bg: #e6eaee;
+  --paper: #ffffff;
+  --mist: #eef1f3;
+  --rule: #d6dbe0;
+  --rule-soft: #e6eaee;
+
+  --font-serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-sans: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  --radius-control: 6px;
+  --radius-panel: 8px;
+  --content-width: 1200px;
+  --bar-height: 96px;
+
+  --text-page-title: 2.5rem;
+  --text-case-name: 2.4rem;
+  --text-section: 1.65rem;
+  --text-group: 1.5rem;
+  --text-row-name: 1.45rem;
+  --text-draft: 1.06rem;
+  --text-body: 1rem;
+  --text-support: 0.89rem;
+
+  --focus-ring: 3px solid var(--ink);
+}
+
+html {
+  font-size: 18px;
+  scroll-padding-bottom: calc(var(--bar-height) + var(--space-4));
+}
+
+html[data-text-size="larger"] {
+  font-size: 21px;
+}

@@ -1,0 +1,37 @@
+import { StatusWord } from "../components/Status";
+
+export function HelpPage() {
+  return (
+    <div className="page help">
+      <h1 className="page-title">Help</h1>
+      <section className="help__section" aria-labelledby="flow">
+        <h2 id="flow" className="section-title">How a case moves</h2>
+        <ol className="helper__steps" style={{ gridTemplateColumns: "minmax(0, 1fr)" }}>
+          {["Caduceus reads the referral and checks the record against the payer’s coverage policy.",
+            "You review each criterion. Every “Met” shows the page and sentence it came from.",
+            "If the record does not answer a criterion, the ordering clinician confirms it from their phone.",
+            "You approve. For 30 seconds you can undo; then the request goes to the payer."].map((s, i) => (
+            <li key={s} className="helper__step"><span className="step-number" aria-hidden="true">{i + 1}</span>{s}</li>
+          ))}
+        </ol>
+      </section>
+      <section className="help__section" aria-labelledby="words">
+        <h2 id="words" className="section-title">What the statuses mean</h2>
+        <ul className="panel" style={{ padding: "8px 24px" }}>
+          {([["ready", "Ready to approve", "Every criterion is met. You can approve and send."],
+             ["needs_clinician", "Needs a clinician", "The record does not answer one or more criteria. Ask the ordering clinician."],
+             ["not_met", "Criteria not met", "The record shows a criterion is not met. Return it to the clinic with a reason."],
+             ["waiting_clinician", "Waiting on a clinician", "You asked for a signature. The case returns when they sign."],
+             ["payer_question", "The payer asked a question", "The payer needs more before deciding."]] as const).map(([k, w, d]) => (
+            <li key={k} className="waiting__item"><StatusWord statusKey={k} word={w} /><span className="muted">{d}</span></li>
+          ))}
+        </ul>
+      </section>
+      <section className="help__section" aria-labelledby="contact">
+        <h2 id="contact" className="section-title">Still stuck?</h2>
+        <p>Call the Caduceus support desk at extension 4100, weekdays 7:00 am to 6:00 pm. Have the case number ready;
+          it is under “More details” on every case.</p>
+      </section>
+    </div>
+  );
+}
