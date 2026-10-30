@@ -22,7 +22,7 @@ audited, and whether the people who use it every day can.
 
 | | | Checked by |
 |---|---|---|
-| **PHI-aware model router** | Identifiable work runs only on the in-VPC model, with no fallback. The external model accepts only HMAC-stamped, de-identified text, re-scanned before it leaves. | Tests for no-fallback, unstamped, forged and still-identifiable input; a leakage suite of 182 planted identifiers with 0 reaching the external wire |
+| **PHI-aware model router** | Identifiable work runs only on the in-VPC model, with no fallback. The external model accepts only HMAC-stamped, de-identified text, re-scanned before it leaves. | Tests for no-fallback, unstamped, forged and still-identifiable input; a leakage suite of 181 planted identifiers with 0 reaching the external wire |
 | **Policy as code** | Coverage criteria are reviewed data, locked by content hash. A deterministic engine returns met, not met or unknown, with the sentence that supports each. Missing evidence is never "met". | Agreement with labels on 47 criteria across 11 cases: 1.00. Unknown reported as met: 0. Property tests |
 | **Human in the loop** | Clinician attestation for unknowns; specialist approval required for submission; 30-second undo through an outbox; signing rewrites the draft but never overwrites a person's edit. | API tests for every path; submission without a recorded approval is refused |
 | **MCP tool servers** | `ehr`, `documents`, `policies`, `tickets`, `payer`, with role checks and per-step allow-lists on the server side. | Red team: a note-borne injection, a tool called outside its step, a submit without approval, a forged stamp. 0 of 4 succeed |
