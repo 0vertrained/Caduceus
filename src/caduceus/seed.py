@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 import sqlite3
 import sys
+from contextlib import nullcontext
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -54,9 +55,11 @@ def seed(services: Services, now: datetime | None = None, by_fax: bool = False) 
 
 
 def fresh_demo_services(settings: Settings) -> Services:
-    """A new, seeded data set in memory, for the public demo's start and its scheduled resets."""
+    """A new, seeded data set in memory, for the public demo's start and its scheduled resets. Seeding uses only
+    recorded model replies (anything else falls back to the template): a cold start must never wait on a model."""
     services = build_services(replace(settings, db_path=":memory:"))
-    seed(services, by_fax=True)
+    with services.router.recorded_only() if services.router else nullcontext():
+        seed(services, by_fax=True)
     return services
 
 

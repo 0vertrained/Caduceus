@@ -158,7 +158,8 @@ class Drafter:
         try:
             out = self._router.complete_deid(task, system, [stamped], case.id, ctx)
         except (InVpcUnavailable, ProviderUnavailable, UnstampedPayload) as e:
-            return {"text": template, "route": "template", "model": None, "fallback_reason": type(e).__name__}
+            return {"text": template, "route": "template", "model": None,
+                    "fallback_reason": f"{type(e).__name__}: {e}"[:200]}
         reply = out.completion.text.strip()
         text = reidentify(reply, result.token_map)
         # What left Caduceus, for the reviewer: it is de-identified by construction, so it may be kept and shown.

@@ -92,3 +92,25 @@ def test_the_demo_replays_recorded_drafts_and_shows_what_was_sent(tmp_path, monk
     assert family in draft["text"]  # filled back in, inside Caduceus
     assert draft["sent"]["tokens_filled_in"] >= 1 and draft["deid_removed"]["NAME"] >= 1
     CachingProvider._replies.clear()
+
+
+def test_a_cold_start_never_waits_on_the_model(monkeypatch):
+    CachingProvider._replies.clear()
+
+    def must_not_be_called(*_a, **_k):
+        raise AssertionError("the demo called the model while starting")
+
+    monkeypatch.setattr(OllamaChatProvider, "complete", must_not_be_called)
+    svc = fresh_demo_services(Settings(data_dir=DATA, db_path=":memory:", auth_mode="demo",
+                                       external_provider="ollama", external_api_key="ok-test"))
+    drafts = [c.draft for c in svc.cases.all()]
+    assert drafts and all(d["route"] == "template" for d in drafts)  # nothing recorded here, so the template
+    assert svc.router._external.live is True  # after startup, new requests may call the model again
+
+
+def test_a_refusal_or_a_thinking_model_out_of_tokens_says_why():
+    with pytest.raises(ProviderUnavailable, match="HTTPStatusError 429"):
+        ollama(lambda _r: httpx.Response(429, json={"error": "limit"})).complete("s", "u")
+    thinking = httpx.Response(200, json={"message": {"content": "", "thinking": "Let me consider..."}})
+    with pytest.raises(ProviderUnavailable, match="after thinking, out of tokens"):
+        ollama(lambda _r: thinking).complete("s", "u")

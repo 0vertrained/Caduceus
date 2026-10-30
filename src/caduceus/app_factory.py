@@ -66,6 +66,9 @@ class Settings:
     external_base_url: str | None = _env("CADUCEUS_EXTERNAL_BASE_URL")
     external_api_key: str | None = _env("CADUCEUS_EXTERNAL_API_KEY")
     external_model: str | None = _env("CADUCEUS_EXTERNAL_MODEL")
+    # Seconds to wait for the external model. The demo keeps it under Netlify's 26-second proxy limit, so a slow
+    # model makes a draft fall back to the template instead of making a person wait; recording allows longer.
+    external_timeout: str = _env("CADUCEUS_EXTERNAL_TIMEOUT", "60")
     # Recorded external replies (scripts/record_completions.py). The demo uses data/recorded/completions.json.
     model_recordings: str | None = _env("CADUCEUS_MODEL_RECORDINGS")
     # demo: the public demo. Development sign-in, synthetic data seeded in memory, reset on a schedule.
@@ -151,7 +154,8 @@ def _external_provider(s: Settings) -> Provider | None:
     if not s.external_api_key:
         return None
     if s.external_provider == "ollama":
-        return OllamaChatProvider(s.external_api_key, model, base_url=s.external_base_url or "https://ollama.com")
+        return OllamaChatProvider(s.external_api_key, model, base_url=s.external_base_url or "https://ollama.com",
+                                  timeout=float(s.external_timeout))
     return AnthropicMessagesProvider(s.external_api_key, model,
                                      base_url=s.external_base_url or "https://api.anthropic.com")
 
