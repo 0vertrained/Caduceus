@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 
 from caduceus.api import create_app
 from caduceus.app_factory import InsecureConfiguration, Settings, build_services
+from caduceus.ratelimit import DemoLimits, Window
 from caduceus.seed import seed
 from tests.conftest import DATA
 from tests.test_workflow_api import DOLORES, T0, Clock
@@ -124,3 +125,45 @@ def test_health_answers_without_a_signature(behind_netlify):
 def test_a_short_signing_key_is_refused():
     with pytest.raises(InsecureConfiguration, match="at least 32 bytes"):
         demo_settings(proxy_signing_key="short").check()
+
+
+# Request limits ------------------------------------------------------------------------------------------------
+
+def tight_limits(clock) -> DemoLimits:
+    return DemoLimits(per_visitor=Window(5, 60, clock), writes_per_visitor=Window(2, 60, clock),
+                      everyone=Window(8, 60, clock))
+
+
+def test_a_visitor_is_slowed_down_and_then_let_back_in(demo):
+    client, _ = demo
+    t = [0.0]
+    client.app.state.demo_limits = tight_limits(lambda: t[0])
+    ip = {"x-forwarded-for": "203.0.113.7"}
+    assert [client.get("/api/me", headers=DOLORES | ip).status_code for _ in range(6)] == [200] * 5 + [429]
+    r = client.get("/api/me", headers=DOLORES | ip)
+    assert r.status_code == 429 and int(r.headers["Retry-After"]) == 60 and "Too many requests" in r.json()["message"]
+    t[0] = 61
+    assert client.get("/api/me", headers=DOLORES | ip).status_code == 200
+
+
+def test_writes_have_a_tighter_limit_and_visitors_are_counted_apart(demo):
+    client, _ = demo
+    client.app.state.demo_limits = tight_limits(lambda: 0.0)
+    a, b = {"x-forwarded-for": "203.0.113.7"}, {"x-forwarded-for": "198.51.100.9"}
+    writes = [client.post("/api/cases/2026-1041/undo", headers=DOLORES | a).status_code for _ in range(3)]
+    assert writes[:2] != [429, 429] and writes[2] == 429
+    assert client.get("/api/me", headers=DOLORES | b).status_code == 200
+
+
+def test_a_ceiling_holds_however_many_addresses_a_caller_uses(demo):
+    client, _ = demo
+    client.app.state.demo_limits = tight_limits(lambda: 0.0)
+    codes = [client.get("/api/me", headers=DOLORES | {"x-forwarded-for": f"192.0.2.{i}"}).status_code
+             for i in range(10)]
+    assert codes == [200] * 8 + [429] * 2
+
+
+def test_health_is_never_limited(demo):
+    client, _ = demo
+    client.app.state.demo_limits = tight_limits(lambda: 0.0)
+    assert all(client.get("/api/health").status_code == 200 for _ in range(20))
