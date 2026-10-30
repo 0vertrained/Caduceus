@@ -1,24 +1,41 @@
 /* Design system: Attestation. Names match the Design system tab of the Caduceus doc.
    Contrast ratios (on paper / mist): ink 15.8/13.9, ink-2 7.6/6.7, seal 7.9/7.0, urgent 7.4/6.6,
-   caution 6.7 on caution-tint, field-border 4.2/3.7 (non-text), disabled 4.8. */
+   caution 6.7 on caution-tint, seal 6.7 on seal-tint, field-border 4.2/3.7 (non-text), disabled 4.8.
+   Hairlines and shadows are decoration only: nothing depends on seeing them. */
 :root {
+  color-scheme: light;
+
   --ink: #1a2330;
+  --ink-strong: #0d131b;   /* primary hover: more contrast than rest, never less */
   --ink-2: #4a5560;
   --seal: #0f5c4a;
   --seal-strong: #0a4034;
+  --seal-tint: #e4efe9;
+  --seal-wash: #f3f8f5;
   --urgent: #9e2b25;
   --caution: #7a4e00;
   --caution-tint: #fbf6ea;
   --mark: #ffe9a8;
+  --selection: #cfe3d9;
   --field-border: #737d8a;
   --disabled-text: #5c6670;
   --disabled-bg: #e6eaee;
   --paper: #ffffff;
+  --paper-warm: #fcfcfa;
+  --paper-ghost: rgb(255 255 255 / 0.12);
   --mist: #eef1f3;
   --rule: #d6dbe0;
   --rule-soft: #e6eaee;
+  --hairline: rgb(26 35 48 / 0.12);
+  --hairline-strong: rgb(26 35 48 / 0.2);
 
-  --font-serif: "Newsreader", Georgia, "Times New Roman", serif;
+  /* Two layers each, ambient and direct, tinted toward ink */
+  --shadow-1: 0 1px 1px rgb(26 35 48 / 0.04), 0 2px 6px -2px rgb(26 35 48 / 0.08);
+  --shadow-sheet: 0 1px 1px rgb(26 35 48 / 0.05), 0 8px 18px -10px rgb(26 35 48 / 0.22);
+  --shadow-button: 0 1px 2px rgb(13 19 27 / 0.2);
+  --shadow-bar: 0 -1px 0 rgb(26 35 48 / 0.04), 0 -12px 28px -16px rgb(26 35 48 / 0.24);
+
+  --font-serif: "Newsreader Variable", Georgia, "Times New Roman", serif;
   --font-sans: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
 
   --space-1: 4px;
@@ -30,20 +47,24 @@
   --space-7: 48px;
   --space-8: 64px;
 
+  --radius-sheet: 4px;
   --radius-control: 6px;
   --radius-panel: 8px;
   --content-width: 1200px;
   --bar-height: 96px;
 
-  --text-page-title: 2.5rem;
-  --text-case-name: 2.4rem;
-  --text-section: 1.65rem;
-  --text-group: 1.5rem;
-  --text-row-name: 1.45rem;
-  --text-draft: 1.06rem;
-  --text-body: 1rem;
-  --text-support: 0.89rem;
+  /* Seven sizes, nothing below 16px. Headings are Newsreader at its display optical size; drafts at its text size. */
+  --text-small: 0.889rem;      /* 16px */
+  --text-body: 1rem;           /* 18px */
+  --text-lead: 1.167rem;       /* 21px: leads, drafts, the payer's words */
+  --text-title-s: 1.333rem;    /* 24px: rows, groups, legends */
+  --text-title-m: 1.556rem;    /* 28px: sections */
+  --text-title-l: 2.333rem;    /* 42px: page title, patient name */
+  --text-title-l-compact: 1.778rem; /* 32px: the same on a phone */
+  --text-display: 2.889rem;    /* 52px: the clear desk */
+  --text-draft: var(--text-lead);
 
+  --quick: 120ms;
   --focus-ring: 3px solid var(--ink);
 }
 
@@ -52,6 +73,15 @@ html {
   scroll-padding-bottom: calc(var(--bar-space, var(--bar-height)) + var(--space-4));  /* --bar-space: measured */
 }
 
+/* Larger text is typeset, not zoomed: reading text grows by a sixth, headings by about 7%, so the page keeps its
+   proportions instead of every heading swelling with it. */
 html[data-text-size="larger"] {
   font-size: 21px;
+  --text-small: 0.857rem;      /* 18px */
+  --text-lead: 1.143rem;       /* 24px */
+  --text-title-s: 1.238rem;    /* 26px */
+  --text-title-m: 1.429rem;    /* 30px */
+  --text-title-l: 2.143rem;    /* 45px */
+  --text-title-l-compact: 1.619rem; /* 34px */
+  --text-display: 2.667rem;    /* 56px */
 }
