@@ -5,9 +5,9 @@ SHELL := /bin/bash
 PY      ?= .venv/bin/python
 DATA    ?= data
 SYN_DIR ?= .synthea
-# The dataset was generated with this exact Synthea build; regeneration refuses any other jar.
-SYN_URL ?= https://github.com/synthetichealth/synthea/releases/download/master-branch-latest/synthea-with-dependencies.jar
-SYN_SHA ?= 20098ec70c24c715ea874b19140983634711cc4986196105b5b0a9ca72a4b644
+# Synthea is built from source at a pinned commit with its libraries upgraded (tools/synthea), not downloaded:
+# upstream's jar bundles library versions with known vulnerabilities.
+SYN_JAR  = $(SYN_DIR)/synthea.jar
 SYN_ARGS = -s 20261029 -cs 20261029 -r 20261028 -e 20261029 -p 120 -a 55-89 \
   --exporter.fhir.export=true --exporter.ccda.export=false --exporter.csv.export=false \
   --exporter.hospital.fhir.export=false --exporter.practitioner.fhir.export=false \
@@ -21,7 +21,7 @@ JAVA_PINS  = -Duser.timezone=$(DATA_TZ) -Duser.language=en -Duser.country=US -Df
 # network switched off.
 OFFLINE    = $(abspath scripts/offline.sh)
 
-.PHONY: help setup data seed dev test lint evals e2e check approve-policy image up clean
+.PHONY: help setup data synthea seed dev test lint evals e2e check approve-policy image up clean
 
 help: ## List the commands
 	@grep -hE '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  make %-15s %s\n", $$1, $$2}'
@@ -30,15 +30,17 @@ setup: ## Create the virtualenv and install the API and UI dependencies
 	python3 -m venv .venv && $(PY) -m pip install -q -e '.[dev]'
 	cd ui && npm ci --no-audit --no-fund
 
-data: ## Regenerate the synthetic dataset from Synthea (needs Java 17+); output is deterministic
-	mkdir -p $(SYN_DIR)
-	test -f $(SYN_DIR)/synthea.jar || curl -fsSL -o $(SYN_DIR)/synthea.jar $(SYN_URL)
-	echo "$(SYN_SHA)  $(SYN_DIR)/synthea.jar" | sha256sum -c - || \
-	  { echo "This is not the Synthea build the dataset was made with; see SYN_SHA in the Makefile."; exit 1; }
+data: $(SYN_JAR) ## Regenerate the synthetic dataset from Synthea (needs Java 17+); output is deterministic
 	rm -rf $(SYN_DIR)/out && cd $(SYN_DIR) && TZ=$(DATA_TZ) $(OFFLINE) java $(JAVA_PINS) -jar synthea.jar $(SYN_ARGS) \
 	  --exporter.baseDirectory=$(abspath $(SYN_DIR))/out "New Mexico" "Santa Fe" > synthea.log
 	rm -rf $(DATA)/fhir $(DATA)/cases
 	TZ=$(DATA_TZ) $(PY) scripts/build_dataset.py --synthea $(SYN_DIR)/out/fhir --out $(DATA)
+
+$(SYN_JAR): tools/synthea/build.sh tools/synthea/synthea.patch
+	mkdir -p $(SYN_DIR)
+	tools/synthea/build.sh $@
+
+synthea: $(SYN_JAR) ## Build Synthea from source with its libraries upgraded (needs Java 17+ and network)
 
 seed: ## Reset the demo database (stop the server first)
 	CADUCEUS_AUTH_MODE=dev $(PY) -m caduceus.seed

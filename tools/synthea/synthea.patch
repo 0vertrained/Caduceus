@@ -1,0 +1,142 @@
+diff --git a/build.gradle b/build.gradle
+index 35e5e18..504d4c0 100644
+--- a/build.gradle
++++ b/build.gradle
+@@ -70,21 +70,21 @@ dependencies {
+   // This dependency is found on compile classpath of this component and consumers.
+   implementation 'com.google.code.gson:gson:2.9.0'
+   implementation 'com.jayway.jsonpath:json-path:2.7.0'
+-  implementation 'ca.uhn.hapi.fhir:hapi-fhir-base:6.1.0'
+-  implementation 'ca.uhn.hapi.fhir:hapi-fhir-structures-dstu3:6.1.0'
+-  implementation 'ca.uhn.hapi.fhir:hapi-fhir-structures-dstu2:6.1.0'
+-  implementation 'ca.uhn.hapi.fhir:hapi-fhir-structures-r4:6.1.0'
+-  implementation 'ca.uhn.hapi.fhir:hapi-fhir-client:6.1.0'
+-
+-  implementation 'ca.uhn.hapi.fhir:hapi-fhir-validation:6.1.0'
+-  implementation 'ca.uhn.hapi.fhir:hapi-fhir-validation-resources-r4:6.1.0'
+-  implementation 'ca.uhn.hapi.fhir:hapi-fhir-validation-resources-dstu3:6.1.0'
+-  implementation 'ca.uhn.hapi.fhir:hapi-fhir-validation-resources-dstu2:6.1.0'
++  implementation 'ca.uhn.hapi.fhir:hapi-fhir-base:8.12.1'
++  implementation 'ca.uhn.hapi.fhir:hapi-fhir-structures-dstu3:8.12.1'
++  implementation 'ca.uhn.hapi.fhir:hapi-fhir-structures-dstu2:8.12.1'
++  implementation 'ca.uhn.hapi.fhir:hapi-fhir-structures-r4:8.12.1'
++  implementation 'ca.uhn.hapi.fhir:hapi-fhir-client:8.12.1'
++
++  implementation 'ca.uhn.hapi.fhir:hapi-fhir-validation:8.12.1'
++  implementation 'ca.uhn.hapi.fhir:hapi-fhir-validation-resources-r4:8.12.1'
++  implementation 'ca.uhn.hapi.fhir:hapi-fhir-validation-resources-dstu3:8.12.1'
++  implementation 'ca.uhn.hapi.fhir:hapi-fhir-validation-resources-dstu2:8.12.1'
+   // C-CDA export uses Apache FreeMarker templates
+   implementation 'org.freemarker:freemarker:2.3.31'
+ 
+   // google guava for some data structures
+-  implementation 'com.google.guava:guava:31.1-jre'
++  implementation 'com.google.guava:guava:33.7.2-jre'
+   implementation 'guru.nidi:graphviz-java:0.18.1'
+   // JavaScript engine included for graphviz. It gets used
+   // if someone does not have graphviz installed in their environment
+@@ -94,10 +94,12 @@ dependencies {
+ 
+   // CSV Stuff
+   implementation 'org.apache.commons:commons-csv:1.9.0'
+-  implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv:2.13.4'
+-  implementation 'org.yaml:snakeyaml:1.33'
++  implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-csv'
++  // Caduceus: one Jackson version for every module, direct or transitive
++  implementation enforcedPlatform('com.fasterxml.jackson:jackson-bom:2.22.4')
++  implementation 'org.yaml:snakeyaml:2.5'
+   implementation 'org.apache.commons:commons-math3:3.6.1'
+-  implementation 'org.apache.commons:commons-text:1.9'
++  implementation 'org.apache.commons:commons-text:1.15.0'
+   implementation 'commons-validator:commons-validator:1.7'
+ 
+   implementation 'org.opencds.cqf.cql:engine.jackson:2.0.0'
+@@ -125,10 +127,24 @@ dependencies {
+   // ensure transitive dependencies do not use vulnerable log4j
+   implementation "org.apache.logging.log4j:log4j-core", {
+         version {
+-            strictly '2.17.0'
++            strictly '2.26.1'
+         }
+     }
+ 
++  // Caduceus: transitive dependencies raised to releases without known vulnerabilities (Grype, 2026-10-30)
++  constraints {
++    implementation 'org.apache.commons:commons-compress:1.28.0'
++    implementation 'commons-io:commons-io:2.22.0'
++    implementation 'org.apache.commons:commons-lang3:3.21.0'
++    implementation 'commons-beanutils:commons-beanutils:1.11.0'
++    implementation 'net.minidev:json-smart:2.5.2'
++    implementation 'org.apache.logging.log4j:log4j-api:2.26.1'
++    implementation 'ognl:ognl:3.4.16'
++    implementation 'org.fhir:ucum:1.0.10'
++    implementation 'com.fasterxml.woodstox:woodstox-core:7.3.0'
++    implementation 'com.thoughtworks.xstream:xstream:1.4.21'
++  }
++
+   // Physiology simulation dependencies
+   implementation files('lib/sbscl/SimulationCoreLibrary_v1.5_slim.jar')
+   implementation 'org.sbml.jsbml:jsbml:1.6.1', {
+diff --git a/src/main/java/org/mitre/synthea/engine/PhysiologySimulator.java b/src/main/java/org/mitre/synthea/engine/PhysiologySimulator.java
+index ea05bdd..358e997 100755
+--- a/src/main/java/org/mitre/synthea/engine/PhysiologySimulator.java
++++ b/src/main/java/org/mitre/synthea/engine/PhysiologySimulator.java
+@@ -42,6 +42,7 @@ import org.simulator.math.odes.RosenbrockSolver;
+ import org.simulator.math.odes.RungeKutta_EventSolver;
+ import org.simulator.sbml.SBMLinterpreter;
+ import org.yaml.snakeyaml.TypeDescription;
++import org.yaml.snakeyaml.LoaderOptions;
+ import org.yaml.snakeyaml.Yaml;
+ import org.yaml.snakeyaml.constructor.Constructor;
+ 
+@@ -435,7 +436,7 @@ public class PhysiologySimulator {
+     }
+ 
+     // Add type descriptions so Yaml knows how to instantiate our Lists
+-    Constructor constructor = new Constructor(SimConfig.class);
++    Constructor constructor = new Constructor(SimConfig.class, new LoaderOptions());
+     TypeDescription simConfigDescription = new TypeDescription(SimConfig.class);
+     simConfigDescription.addPropertyParameters("charts", MultiTableChartConfig.class);
+     constructor.addTypeDescription(simConfigDescription);
+diff --git a/src/main/java/org/mitre/synthea/export/flexporter/Mapping.java b/src/main/java/org/mitre/synthea/export/flexporter/Mapping.java
+index 76f90a9..dcc8d59 100644
+--- a/src/main/java/org/mitre/synthea/export/flexporter/Mapping.java
++++ b/src/main/java/org/mitre/synthea/export/flexporter/Mapping.java
+@@ -13,6 +13,7 @@ import java.util.Map;
+ import org.hl7.fhir.r4.model.ValueSet;
+ import org.mitre.synthea.helpers.RandomCodeGenerator;
+ import org.mitre.synthea.helpers.Utilities;
++import org.yaml.snakeyaml.LoaderOptions;
+ import org.yaml.snakeyaml.Yaml;
+ import org.yaml.snakeyaml.constructor.Constructor;
+ 
+@@ -39,7 +40,7 @@ public class Mapping {
+   public static Mapping parseMapping(File mappingFile)
+       throws FileNotFoundException, IOException {
+     try (InputStream selectorInputSteam = new FileInputStream(mappingFile)) {
+-      Yaml yaml = new Yaml(new Constructor(Mapping.class));
++      Yaml yaml = new Yaml(new Constructor(Mapping.class, new LoaderOptions()));
+       return yaml.loadAs(selectorInputSteam, Mapping.class);
+     }
+   }
+diff --git a/src/main/java/org/mitre/synthea/helpers/PhysiologyValueGenerator.java b/src/main/java/org/mitre/synthea/helpers/PhysiologyValueGenerator.java
+index 2c67b48..286c5bd 100755
+--- a/src/main/java/org/mitre/synthea/helpers/PhysiologyValueGenerator.java
++++ b/src/main/java/org/mitre/synthea/helpers/PhysiologyValueGenerator.java
+@@ -22,6 +22,7 @@ import org.mitre.synthea.helpers.physiology.SimRunner;
+ import org.mitre.synthea.world.agents.Person;
+ import org.mitre.synthea.world.concepts.VitalSign;
+ import org.yaml.snakeyaml.TypeDescription;
++import org.yaml.snakeyaml.LoaderOptions;
+ import org.yaml.snakeyaml.Yaml;
+ import org.yaml.snakeyaml.constructor.Constructor;
+ 
+@@ -233,7 +234,7 @@ public class PhysiologyValueGenerator extends ValueGenerator {
+     }
+ 
+     // Add type descriptions so Yaml knows how to instantiate our Lists
+-    Constructor constructor = new Constructor(PhysiologyGeneratorConfig.class);
++    Constructor constructor = new Constructor(PhysiologyGeneratorConfig.class, new LoaderOptions());
+     TypeDescription configDescription = new TypeDescription(PhysiologyGeneratorConfig.class);
+     configDescription.addPropertyParameters("inputs", IoMapper.class);
+     configDescription.addPropertyParameters("outputs", IoMapper.class);
