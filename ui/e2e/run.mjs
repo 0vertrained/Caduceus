@@ -126,7 +126,7 @@ await share(phone);
 const doc = await phone.newPage();
 await signIn(doc, "Dr. Ana Reyes");
 await doc.getByRole("link").filter({ hasText: /, \d+$/ }).first().click();
-await doc.getByRole("group").last().waitFor();
+await doc.getByLabel("Yes, I confirm this").waitFor();  // the question itself, not the header's Text size group
 await shot(doc, "06-attest-phone");
 await axe(doc, "06-attest-phone");
 await doc.getByLabel("Yes, I confirm this").check();

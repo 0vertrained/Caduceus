@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api, ApiError, type CaseView, type CriterionResult, type Page, type PayerReply, type Timeline } from "../api";
-import { ChevronLeft, CheckCircle, Triangle } from "../components/Icons";
+import { ChevronLeft, ChevronRight, CheckCircle, Triangle } from "../components/Icons";
+import { SealMark } from "../components/Seal";
 import { CriterionIcon, StatusWord, criterionWord } from "../components/Status";
-import { countWords, midSentence, useResource, useSecondsLeft } from "../hooks";
+import { countWords, glue, midSentence, useResource, useSecondsLeft, useTitle } from "../hooks";
 
 type Panel = { kind: "draft" } | { kind: "edit" } | { kind: "sent" }
   | { kind: "page"; docId: string; sentence: string | null; supports: string | null };
@@ -45,7 +46,7 @@ function SentPanel({ c, back, heading }: { c: CaseView; back: () => void; headin
   const d = c.draft!, sent = d.sent!;
   return (
     <aside className="panel side" aria-labelledby="panel-title">
-      <button type="button" className="link-button" style={{ display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none" }}
+      <button type="button" className="link-button link-button--plain"
               onClick={back}><ChevronLeft size={20} />Back to the draft</button>
       <h2 id="panel-title" ref={heading} tabIndex={-1} className="section-title">What was sent to the model</h2>
       <p>{d.model} on {sent.vendor} saw only the text below. Caduceus took the patient’s identifiers out first, and put
@@ -103,14 +104,14 @@ function CaseHeader({ c }: { c: CaseView }) {
           <div className="facts__item"><dt className="facts__term">Date of birth</dt>
             <dd className="facts__value">{c.patient.birth_date} (age {c.patient.age})</dd></div>
           <div className="facts__item"><dt className="facts__term">Due</dt>
-            <dd className={`facts__value${c.due.urgent ? " facts__value--urgent" : ""}`}>{c.due.words}, {c.due.sub}</dd></div>
+            <dd className={`facts__value${c.due.urgent ? " facts__value--urgent" : ""}`}>{glue(`${c.due.words}, ${c.due.sub}`)}</dd></div>
           <div className="facts__item"><dt className="facts__term">Requested</dt>
             <dd className="facts__value">{c.service.display}</dd></div>
           <div className="facts__item"><dt className="facts__term">Ordered by</dt>
-            <dd className="facts__value">{c.ordering_clinician.name}, {c.ordering_clinician.specialty}</dd></div>
+            <dd className="facts__value">{glue(c.ordering_clinician.name)}, {c.ordering_clinician.specialty}</dd></div>
           {c.payer_clock && (
             <div className="facts__item facts__item--wide"><dt className="facts__term">The payer’s decision</dt>
-              <dd className="facts__value">{c.payer_clock.words}</dd></div>
+              <dd className="facts__value">{glue(c.payer_clock.words)}</dd></div>
           )}
         </dl>
         <details className="details">
@@ -129,24 +130,28 @@ function CaseHeader({ c }: { c: CaseView }) {
   );
 }
 
-function Criteria({ c, open }: { c: CaseView; open: (p: Panel) => void }) {
+function Criteria({ c, open, showing }: { c: CaseView; open: (p: Panel) => void; showing: string | null }) {
   const { met, unknown } = c.criteria.counts;
-  const lead = `${countWords(met)} of ${countWords(c.criteria.total).toLowerCase()} are met.` +
+  const total = c.criteria.total;
+  const lead = (met === 0 ? `None of ${total} are met.` : met === total ? `All ${total} are met.`
+    : `${countWords(met)} of ${total} ${met === 1 ? "is" : "are"} met.`) +
     (unknown ? ` ${unknown === 1 ? "One needs" : `${countWords(unknown)} need`} ${c.ordering_clinician.name}.` : "");
   const pageTitle = (id: string | null) => c.packet.find((p) => p.id === id)?.title ? midSentence(c.packet.find((p) => p.id === id)!.title) : "page";
   return (
     <section className="panel criteria" aria-labelledby="criteria-title">
       <div>
         <h2 id="criteria-title" className="section-title">Coverage criteria</h2>
-        <p className="criteria__lead">{lead}</p>
+        <p className="criteria__lead">{glue(lead)}</p>
       </div>
       <ul>
         {c.criteria.results.map((r: CriterionResult) => {
           const w = criterionWord(r.status);
           const linked = r.evidence.filter((e) => e.document_id);
+          const shown = showing === r.text;
           return (
-            <li key={r.id} className={`criterion${r.status === "unknown" ? " criterion--attention" : ""}`}>
-              <CriterionIcon status={r.status} />
+            <li key={r.id} aria-current={shown ? "true" : undefined}
+                className={`criterion${r.status === "unknown" ? " criterion--attention" : ""}${shown ? " criterion--showing" : ""}`}>
+              <CriterionIcon status={r.status} signed={Boolean(r.attested_by)} />
               <div className="criterion__body">
                 <span className="criterion__title">{r.text}
                   <span className={`criterion__word status--${w.tone}`}>{r.attested_by ? (r.status === "met" ? "Met, signed" : "Not met, signed") : w.word}</span>
@@ -157,10 +162,13 @@ function Criteria({ c, open }: { c: CaseView; open: (p: Panel) => void }) {
                     r.status === "unknown" ? "No note says this either way, so nothing was assumed." : r.explanation}
                 </span>
                 {linked.slice(0, 1).map((e) => (
-                  <button key={e.document_id} type="button" className="link-button" style={{ alignSelf: "flex-start" }}
-                          onClick={() => open({ kind: "page", docId: e.document_id!, sentence: e.sentence, supports: r.text })}>
-                    Show the {pageTitle(e.document_id)}, page {e.page}
-                  </button>
+                  <span key={e.document_id} className="criterion__evidence">
+                    <button type="button" className="link-button"
+                            onClick={() => open({ kind: "page", docId: e.document_id!, sentence: e.sentence, supports: r.text })}>
+                      Show the {pageTitle(e.document_id)}, page {e.page}
+                    </button>
+                    {shown && <span className="tag tag--seal">Showing</span>}
+                  </span>
                 ))}
               </div>
             </li>
@@ -220,27 +228,32 @@ function SidePanel({ c, panel, setPanel, onSaved }: {
   }, [panel, page]);
 
   const pending = c.criteria.results.filter((r) => r.status === "unknown");
-  const signedBy = c.criteria.results.find((r) => r.attested_by)?.attested_by;
+  const signed = c.criteria.results.filter((r) => r.attested_by);
+  const signedBy = signed[0]?.attested_by;
+  const signedAt = c.reply?.attested.find((a) => a.by === signedBy)?.at;
 
   if (panel.kind === "sent" && c.draft?.sent) return <SentPanel c={c} back={() => setPanel({ kind: "draft" })} heading={heading} />;
 
   if (panel.kind === "page") {
     return (
       <aside className="panel side" aria-labelledby="panel-title" aria-live="polite">
-        <button type="button" className="link-button" style={{ display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none" }}
+        <button type="button" className="link-button link-button--plain"
                 onClick={() => setPanel({ kind: "draft" })}><ChevronLeft size={20} />Back to the draft</button>
         {!page ? <p role="status" className="muted">{error ?? "Opening the page."}</p> : (
           <>
-            <div>
-              <h2 id="panel-title" ref={heading} tabIndex={-1} className="section-title" style={{ fontSize: "1.5rem" }}>{page.title}</h2>
-              <p className="support">Page {page.page} of {page.pages}{page.date ? `, ${page.date}` : ""}{page.author ? `, ${page.author}` : ""}</p>
-            </div>
+            <h2 id="panel-title" ref={heading} tabIndex={-1} className="section-title">{page.title}</h2>
             {panel.sentence && page.text.includes(panel.sentence) && (
-              <p className="support" style={{ color: "var(--ink)" }}>
+              <p className="support side__note">
                 <mark>Highlighted</mark> is the sentence that supports: {panel.supports}.
               </p>
             )}
-            <div className="paper"><Highlighted text={page.text} sentence={panel.sentence} /></div>
+            <div className="paper">
+              <p className="paper__head">
+                <span>Page {page.page} of {page.pages}</span>
+                {(page.date || page.author) && <span>{[page.date, page.author].filter(Boolean).join(" · ")}</span>}
+              </p>
+              <Highlighted text={page.text} sentence={panel.sentence} />
+            </div>
           </>
         )}
       </aside>
@@ -283,24 +296,52 @@ function SidePanel({ c, panel, setPanel, onSaved }: {
       <p className="draft">{c.draft?.text}</p>
       {c.draft?.edited_by ? <p className="support">Edited by {c.draft.edited_by}.</p>
         : <DraftOrigin c={c} onOpen={() => setPanel({ kind: "sent" })} />}
-      <div className="signature">
-        {signedBy ? <span className="signature__line signature__line--signed">Signed by {signedBy}</span>
-          : pending.length ? <span className="signature__line">awaiting signature</span>
-          : <span className="signature__line signature__line--signed">No clinician signature needed</span>}
-        {pending.length > 0 && <span className="support">Clinician attestation, {c.ordering_clinician.name}</span>}
-      </div>
+      {signedBy ? (
+        <div className="signature">
+          <div className="signature__text">
+            <span className="signature__label">Clinician attestation, signed by</span>
+            <span className="signature__name">{glue(signedBy)}</span>
+            <span className="signature__meta">
+              {signedAt ? `Signed ${signedAt}. ` : ""}{signed.length === 1 ? `Confirmed: ${midSentence(signed[0].text)}.`
+                : `Confirmed ${signed.length} criteria.`}
+            </span>
+          </div>
+          <SealMark size={48} />
+        </div>
+      ) : pending.length ? (
+        <div className="signature">
+          <div className="signature__text">
+            <span className="signature__label">Clinician attestation</span>
+            <span className="signature__name signature__name--awaiting">awaiting signature</span>
+            <span className="signature__meta">To be signed by {glue(c.ordering_clinician.name)}.</span>
+          </div>
+          <SealMark size={48} empty />
+        </div>
+      ) : (
+        <div className="signature">
+          <div className="signature__text">
+            <span className="signature__label">Clinician attestation</span>
+            <span className="signature__name signature__name--awaiting">No clinician signature needed</span>
+          </div>
+        </div>
+      )}
       {c.state === "review" && (
-        <button type="button" className="btn btn--secondary" style={{ alignSelf: "flex-start" }}
+        <button type="button" className="btn btn--secondary btn--start"
                 onClick={() => { setDraftText(c.draft?.text ?? ""); setPanel({ kind: "edit" }); }}>Edit the draft</button>
       )}
       <div className="packet">
-        <span style={{ fontWeight: 700 }}>Referral packet</span>
-        {c.packet.map((p) => (
-          <button key={p.id} type="button" className="packet__item"
-                  onClick={() => setPanel({ kind: "page", docId: p.id, sentence: null, supports: null })}>
-            <span>{p.title}</span><span className="support">page {p.page}</span>
-          </button>
-        ))}
+        <h3 className="packet__title" id="packet-title">Referral packet</h3>
+        <ul aria-labelledby="packet-title">
+          {c.packet.map((p) => (
+            <li key={p.id}>
+              <button type="button" className="packet__item"
+                      onClick={() => setPanel({ kind: "page", docId: p.id, sentence: null, supports: null })}>
+                <span className="packet__name">{p.title}</span><span className="support">page&nbsp;{p.page}</span>
+                <ChevronRight size={18} />
+              </button>
+            </li>
+          ))}
+        </ul>
       </div>
     </aside>
   );
@@ -309,20 +350,20 @@ function SidePanel({ c, panel, setPanel, onSaved }: {
 function PayerQuestion({ c, reply }: { c: CaseView; reply: PayerReply }) {
   const attested = reply.attested[0];
   return (
-    <section className="panel payer-question" aria-labelledby="payer-question-title">
+    <section className="panel payer-question callout" aria-labelledby="payer-question-title">
       <h2 id="payer-question-title" className="section-title">{c.payer.name} asked a question</h2>
       {reply.question && <p className="payer-question__ask">{reply.question}</p>}
       {attested && !reply.note && (
-        <p>No page in the referral packet documents this. {attested.by} attested to it {attested.at}, so the payer
-          wants it written in the chart.</p>
+        <p>No page in the referral packet documents this. {glue(attested.by)} attested to it {glue(attested.at)}, so
+          the payer wants it written in the chart.</p>
       )}
       {reply.note ? (
         <figure className="payer-question__note">
-          <figcaption className="support">Addendum by {reply.note.author}, signed {reply.note.signed_at}</figcaption>
+          <figcaption className="support">Addendum by {glue(reply.note.author)}, signed {glue(reply.note.signed_at)}</figcaption>
           <div className="paper">{reply.note.text}</div>
         </figure>
       ) : reply.declined ? (
-        <p><strong>{reply.declined.by} cannot document this.</strong> They said so {reply.declined.at}. Nothing was
+        <p><strong>{reply.declined.by} cannot document this.</strong> They said so {glue(reply.declined.at)}. Nothing was
           sent to {c.payer.name}.</p>
       ) : null}
     </section>
@@ -344,7 +385,7 @@ function Denial({ c, onSaved }: { c: CaseView; onSaved: (c: CaseView) => void })
   };
   const how = a.draft?.route === "external" ? `by ${a.draft.model} from de-identified facts` : "from the template";
   return (
-    <section className="panel payer-question" aria-labelledby="denial-title">
+    <section className="panel payer-question callout callout--ink" aria-labelledby="denial-title">
       <h2 id="denial-title" className="section-title">{c.payer.name} denied it</h2>
       {a.reason && <p className="payer-question__ask">{a.reason}</p>}
       {a.policy_sentence && (
@@ -370,7 +411,7 @@ function Denial({ c, onSaved }: { c: CaseView; onSaved: (c: CaseView) => void })
             <>
               <div className="paper">{a.draft.text}</div>
               {c.actions.can_edit_appeal && (
-                <button type="button" className="btn btn--secondary" style={{ alignSelf: "flex-start" }}
+                <button type="button" className="btn btn--secondary btn--start"
                         onClick={() => { setText(a.draft?.text ?? ""); setEditing(true); }}>Edit the appeal</button>
               )}
             </>
@@ -482,11 +523,11 @@ function DecisionBar({ c, setCase, reload }: { c: CaseView; setCase: (c: CaseVie
 
   const undo = c.undo && undoLeft > 0 ? (
     <button type="button" className="btn btn--secondary btn--large" disabled={busy} onClick={() => act("undo")}>
-      Undo <span className="muted" style={{ fontWeight: 400 }} aria-hidden="true">({undoLeft} seconds)</span>
+      Undo <span className="countdown" aria-hidden="true">({undoLeft} seconds)</span>
     </button>
   ) : null;
 
-  let summary: ReactNode = c.summary;
+  let summary: ReactNode = glue(c.summary);
   let actions: ReactNode = null;
   if (c.read_only) {
     actions = <Link to="/" className="btn btn--primary btn--large">Back to the queue</Link>;
@@ -498,13 +539,11 @@ function DecisionBar({ c, setCase, reload }: { c: CaseView; setCase: (c: CaseVie
             Return for correction
           </button>
         )}
+        {/* No disabled "Approve and send" beside it: the summary already says why it cannot be approved yet. */}
         {c.actions.can_request_attestation ? (
-          <>
-            <button type="button" className="btn btn--large" disabled aria-describedby="bar-summary">Approve and send</button>
-            <button type="button" className="btn btn--primary btn--large" disabled={busy} onClick={() => act("request-attestation")}>
-              Send to {c.ordering_clinician.name} to attest
-            </button>
-          </>
+          <button type="button" className="btn btn--primary btn--large" disabled={busy} onClick={() => act("request-attestation")}>
+            Send to {c.ordering_clinician.name} to attest
+          </button>
         ) : (
           <button type="button" className="btn btn--primary btn--large" disabled={busy || !c.actions.can_approve}
                   aria-describedby="bar-summary" onClick={() => act("approve")}>Approve and send</button>
@@ -575,7 +614,7 @@ function DecisionBar({ c, setCase, reload }: { c: CaseView; setCase: (c: CaseVie
         {returning && (
           <form className="decision-bar__form" onSubmit={(e) => { e.preventDefault(); void act("return", { reason }); }}>
             <label className="field-label" htmlFor="return-reason">What needs correcting? The clinic will see this.</label>
-            <textarea id="return-reason" className="input textarea" style={{ minHeight: 80 }} value={reason}
+            <textarea id="return-reason" className="input textarea textarea--short" value={reason}
                       onChange={(e) => setReason(e.target.value)} />
             <div className="decision-bar__actions">
               <button type="submit" className="btn btn--primary" disabled={busy}>Return to {c.ordering_clinician.name}</button>
@@ -583,7 +622,7 @@ function DecisionBar({ c, setCase, reload }: { c: CaseView; setCase: (c: CaseVie
             </div>
           </form>
         )}
-        {error && <p role="alert" className="alert" style={{ flexBasis: "100%" }}>{error}</p>}
+        {error && <p role="alert" className="alert decision-bar__error">{error}</p>}
       </div>
     </div>
   );
@@ -593,6 +632,7 @@ export function CaseReviewPage() {
   const { id } = useParams();
   const { data: c, setData, error, reload } = useResource<CaseView>(`/api/cases/${id}`);
   const [panel, setPanel] = useState<Panel>({ kind: "draft" });
+  useTitle("Case review");
 
   useEffect(() => {
     if (c?.state !== "submitted" || c.submission?.sent) return;
@@ -613,7 +653,7 @@ export function CaseReviewPage() {
           <Denial key={c.appeal.draft?.text} c={c} onSaved={setData} />
         )}
         <div className="case-body">
-          <Criteria c={c} open={setPanel} />
+          <Criteria c={c} open={setPanel} showing={panel.kind === "page" ? panel.supports : null} />
           <SidePanel key={`${c.id}-${c.draft?.text?.length}`} c={c} panel={panel} setPanel={setPanel} onSaved={setData} />
         </div>
         <CaseHistory c={c} />

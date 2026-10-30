@@ -2,21 +2,22 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api, ApiError, type AttestationView } from "../api";
 import { Check } from "../components/Icons";
-import { countWords, useResource, useSecondsLeft } from "../hooks";
+import { countWords, glue, useResource, useSecondsLeft, useTitle } from "../hooks";
 
 export function AttestListPage() {
   const { data, error } = useResource<{ case_id: string; patient: { name: string; age: number }; service: string;
     kind: "attestation" | "note" }[]>("/api/attestations", 15000);
+  useTitle("Requests to sign");
   if (error) return <div className="attest"><p role="alert" className="alert">{error.message}</p></div>;
   if (!data) return <div className="attest"><p role="status" className="muted">Loading.</p></div>;
   return (
     <div className="attest">
       <h1 className="attest__name">{data.length ? `${countWords(data.length)} ${data.length === 1 ? "request needs" : "requests need"} your signature.`
         : "Nothing needs your signature."}</h1>
-      <ul className="panel" style={{ padding: "4px 18px" }}>
+      <ul className="panel attest__list">
         {data.map((a) => (
           <li key={a.case_id} className="waiting__item">
-            <Link to={`/attest/${a.case_id}`} style={{ fontWeight: 700, minHeight: 44, display: "inline-flex", alignItems: "center" }}>
+            <Link to={`/attest/${a.case_id}`} className="attest__link">
               {a.patient.name}, {a.patient.age}
             </Link>
             <span className="muted">{a.kind === "note" ? `${a.service}: the payer asked for a note` : a.service}</span>
@@ -34,6 +35,7 @@ export function AttestPage() {
   const [failure, setFailure] = useState<string | null>(null);
   const [signed, setSigned] = useState<AttestationView | null>(null);
   const undoLeft = useSecondsLeft(signed?.undo_until);
+  useTitle(data?.state === "awaiting_note" ? "Write a note" : "Sign a request");
 
   if (error) return <div className="attest"><p role="alert" className="alert">{error.message}</p></div>;
   if (!data) return <div className="attest"><p role="status" className="muted">Loading the request.</p></div>;
@@ -42,13 +44,13 @@ export function AttestPage() {
     const yes = Object.values(signed.answers ?? {}).every((a) => a === "yes");
     return (
       <div className="attest attest__done" role="status">
-        <div className="seal seal--full" aria-hidden="true" style={{ background: "var(--paper)", color: "var(--seal)" }}><Check /></div>
+        <div className="seal seal--full seal--mark" aria-hidden="true"><Check size={64} /></div>
         <h1 className="attest__name">Signed. Thank you.</h1>
         <p>{yes ? `${data.requested_by.split(" ")[0]} can now send the request to ${data.payer}.`
           : `${data.requested_by.split(" ")[0]} will see that this needs more review before the request can go.`}</p>
         <p className="muted">Your answer, your name and the time are now part of {data.patient.name}’s case history.</p>
         {undoLeft > 0 && (
-          <button type="button" className="btn btn--secondary btn--large" style={{ width: "100%" }}
+          <button type="button" className="btn btn--secondary btn--large btn--block"
                   onClick={async () => {
                     try {
                       setData(await api<AttestationView>(`/api/cases/${data.case_id}/undo`, { method: "POST" }));
@@ -57,10 +59,10 @@ export function AttestPage() {
                       setFailure((e as ApiError).message);
                     }
                   }}>
-            Undo my signature <span className="muted" style={{ fontWeight: 400 }} aria-hidden="true">({undoLeft} seconds)</span>
+            Undo my signature <span className="countdown" aria-hidden="true">({undoLeft} seconds)</span>
           </button>
         )}
-        <Link to="/" className="btn btn--primary btn--large" style={{ width: "100%" }}>Done</Link>
+        <Link to="/" className="btn btn--primary btn--large btn--block">Done</Link>
         {failure && <p role="alert" className="alert">{failure}</p>}
       </div>
     );
@@ -87,15 +89,15 @@ export function AttestPage() {
 
   return (
     <div className="attest">
-      <p className="muted">{data.requested_by} asked you to confirm {data.questions.length === 1 ? "one item" :
+      <p className="muted">{glue(data.requested_by)} asked you to confirm {data.questions.length === 1 ? "one item" :
         `${countWords(data.questions.length).toLowerCase()} items`} before sending this request.</p>
       <section aria-labelledby="pt">
         <h1 id="pt" className="attest__name">{data.patient.name}</h1>
-        <p style={{ fontWeight: 700 }}>Born {data.patient.birth_date}</p>
+        <p className="attest__born">Born {data.patient.birth_date}</p>
         <p className="muted">{data.service}, ordered {data.ordered}</p>
       </section>
       <section className="panel attest__card" aria-labelledby="chart-title">
-        <h2 id="chart-title" style={{ fontSize: "1rem", fontWeight: 700 }}>What the chart shows</h2>
+        <h2 id="chart-title" className="attest__card-title">What the chart shows</h2>
         <p>{data.chart_summary}</p>
       </section>
       {data.questions.map((q) => (
@@ -111,9 +113,9 @@ export function AttestPage() {
           ))}
         </fieldset>
       ))}
-      <button type="button" className="btn btn--primary btn--large" style={{ width: "100%" }} onClick={sign}
+      <button type="button" className="btn btn--primary btn--large btn--block" onClick={sign}
               aria-describedby="sign-note">Sign and return</button>
-      <p id="sign-note" className="support" style={{ textAlign: "center" }}>
+      <p id="sign-note" className="support attest__sign-note">
         {failure ? <span role="alert" className="alert">{failure}</span> : complete ? "You are signing with your own name."
           : "Choose an answer above, then sign."}
       </p>
@@ -146,14 +148,14 @@ function NoteForm({ data, setData }: { data: AttestationView; setData: (v: Attes
   if (done) {
     return (
       <div className="attest attest__done" role="status">
-        <div className="seal seal--full" aria-hidden="true" style={{ background: "var(--paper)", color: "var(--seal)" }}><Check /></div>
+        <div className="seal seal--full seal--mark" aria-hidden="true"><Check size={64} /></div>
         <h1 className="attest__name">{done.signed ? "Signed. Thank you." : "Thank you for saying so."}</h1>
         <p>{done.signed ? `${first} can now send your note to ${data.payer}.`
           : `${first} will see that you cannot document this. Nothing goes to ${data.payer}.`}</p>
         {done.signed && <p className="muted">Your note is in {data.patient.name}’s chart as an addendum dated today,
           with your name.</p>}
         {undoLeft > 0 && (
-          <button type="button" className="btn btn--secondary btn--large" style={{ width: "100%" }}
+          <button type="button" className="btn btn--secondary btn--large btn--block"
                   onClick={async () => {
                     try {
                       setData(await api<AttestationView>(`/api/cases/${data.case_id}/undo`, { method: "POST" }));
@@ -162,10 +164,10 @@ function NoteForm({ data, setData }: { data: AttestationView; setData: (v: Attes
                       setFailure((e as ApiError).message);
                     }
                   }}>
-            {done.signed ? "Undo my signature" : "Undo"} <span className="muted" style={{ fontWeight: 400 }} aria-hidden="true">({undoLeft} seconds)</span>
+            {done.signed ? "Undo my signature" : "Undo"} <span className="countdown" aria-hidden="true">({undoLeft} seconds)</span>
           </button>
         )}
-        <Link to="/" className="btn btn--primary btn--large" style={{ width: "100%" }}>Done</Link>
+        <Link to="/" className="btn btn--primary btn--large btn--block">Done</Link>
         {failure && <p role="alert" className="alert">{failure}</p>}
       </div>
     );
@@ -177,16 +179,16 @@ function NoteForm({ data, setData }: { data: AttestationView; setData: (v: Attes
         what you confirmed before it decides.</p>
       <section aria-labelledby="pt">
         <h1 id="pt" className="attest__name">{data.patient.name}</h1>
-        <p style={{ fontWeight: 700 }}>Born {data.patient.birth_date}</p>
+        <p className="attest__born">Born {data.patient.birth_date}</p>
         <p className="muted">{data.service}, ordered {data.ordered}</p>
       </section>
       <section className="panel attest__card" aria-labelledby="ask-title">
-        <h2 id="ask-title" style={{ fontSize: "1rem", fontWeight: 700 }}>What {data.payer} asked</h2>
+        <h2 id="ask-title" className="attest__card-title">What {data.payer} asked</h2>
         <p>{ask.question}</p>
       </section>
       {ask.confirmed.map((c) => (
         <section key={c.question} className="panel attest__card" aria-label="What you confirmed">
-          <h2 style={{ fontSize: "1rem", fontWeight: 700 }}>You confirmed this {c.at}</h2>
+          <h2 className="attest__card-title">You confirmed this {c.at}</h2>
           <p>{c.question} You answered yes.</p>
           <p className="support">The policy: {c.policy}</p>
         </section>
@@ -198,12 +200,12 @@ function NoteForm({ data, setData }: { data: AttestationView; setData: (v: Attes
         <textarea id="note-text" className="input textarea" rows={8} maxLength={ask.limit} value={text}
                   aria-describedby="note-help" onChange={(e) => { setText(e.target.value); setFailure(null); }} />
       </div>
-      <button type="button" className="btn btn--primary btn--large" style={{ width: "100%" }} onClick={sign}
+      <button type="button" className="btn btn--primary btn--large btn--block" onClick={sign}
               aria-describedby="sign-note">Sign the note and return</button>
-      <p id="sign-note" className="support" style={{ textAlign: "center" }}>
+      <p id="sign-note" className="support attest__sign-note">
         {failure ? <span role="alert" className="alert">{failure}</span> : "You are signing with your own name."}
       </p>
-      <button type="button" className="btn btn--secondary btn--large" style={{ width: "100%" }}
+      <button type="button" className="btn btn--secondary btn--large btn--block"
               onClick={() => send("decline-note")}>I cannot document this</button>
     </div>
   );

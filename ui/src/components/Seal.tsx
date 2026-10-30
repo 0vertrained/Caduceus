@@ -23,3 +23,18 @@ export function Seal({ count, full = false }: { count: number; full?: boolean })
     </div>
   );
 }
+
+/** The small seal: a fine outer ring, a firm inner ring, a check. It means one thing everywhere: a person attested.
+ *  Empty (dashed, no check) where a signature is still to come. Decorative: the words beside it say who signed. */
+export function SealMark({ size = 24, empty = false }: { size?: number; empty?: boolean }) {
+  return (
+    <svg className={`seal-mark${empty ? " seal-mark--empty" : ""}`} width={size} height={size} viewBox="0 0 24 24"
+         fill="none" stroke="currentColor" aria-hidden="true" focusable="false">
+      {empty ? <circle cx="12" cy="12" r="10" strokeWidth={1.5} strokeDasharray="4 4" /> : <>
+        <circle cx="12" cy="12" r="11.4" strokeWidth={1} />
+        <circle cx="12" cy="12" r="8.6" strokeWidth={2} />
+        <path d="M8.4 12.3l2.5 2.5 4.8-5.3" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      </>}
+    </svg>
+  );
+}

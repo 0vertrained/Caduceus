@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { api, CHANGED, sandboxLink, type DemoInfo, type Me, type Tour } from "../api";
+import { glue } from "../hooks";
 
 const HIDDEN_KEY = "caduceus.tourHidden";
 
@@ -39,6 +40,16 @@ export function DemoBanner({ me, onSwitch }: { me: Me | null; onSwitch: (user: s
     return () => window.clearInterval(t);
   }, [waiting, load]);
 
+  // The browser's own bar matches the dark banner at the top of the page while the demo is on.
+  const demo = Boolean(info?.demo);
+  useEffect(() => {
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (!demo || !meta) return;
+    const before = meta.getAttribute("content") ?? "";
+    meta.setAttribute("content", getComputedStyle(document.documentElement).getPropertyValue("--ink").trim());
+    return () => meta.setAttribute("content", before);
+  }, [demo]);
+
   if (!info?.demo) return null;
 
   const startOver = async () => {
@@ -63,17 +74,19 @@ export function DemoBanner({ me, onSwitch }: { me: Me | null; onSwitch: (user: s
   return (
     <>
       <div className="demo-banner" role="region" aria-label="About this demo">
-        <p>
-          <strong>Public demo.</strong> Every patient here is synthetic. These cases are your own copy: sign in as
-          anyone, and they start over after {every(info.reset_every_hours)} or when you choose.
-        </p>
-        <div className="demo-banner__actions">
-          {hidden && info.tour && (
-            <button type="button" className="demo-banner__action" onClick={() => setTourHidden(false)}>Show the tour</button>
-          )}
-          {me && <button type="button" className="demo-banner__action" onClick={startOver}>Start over now</button>}
+        <div className="demo-banner__inner">
+          <p>
+            <strong>Public demo.</strong> Every patient here is synthetic. These cases are your own copy: sign in as
+            anyone, and they start over after {every(info.reset_every_hours)} or when you choose.
+          </p>
+          <div className="demo-banner__actions">
+            {hidden && info.tour && (
+              <button type="button" className="demo-banner__action" onClick={() => setTourHidden(false)}>Show the tour</button>
+            )}
+            {me && <button type="button" className="demo-banner__action" onClick={startOver}>Start over now</button>}
+          </div>
+          {message && <p role="status">{message}</p>}
         </div>
-        {message && <p role="status">{message}</p>}
       </div>
       {!hidden && info.tour && (
         <TourStrip tour={info.tour} me={me} here={location.pathname} onSwitch={onSwitch} onStartOver={startOver}
@@ -116,7 +129,7 @@ function TourStrip({ tour, me, here, onSwitch, onStartOver, onHide }: {
             {tour.done ? "Tour complete" : `Tour, step ${tour.step} of ${tour.steps}`}
             <span className="tour__meter" aria-hidden="true"><span style={{ width: `${(tour.step / tour.steps) * 100}%` }} /></span>
           </p>
-          <p className="tour__text" aria-live="polite">{tour.text}</p>
+          <p className="tour__text" aria-live="polite">{glue(tour.text)}</p>
         </div>
         <div className="tour__actions">
           {action}

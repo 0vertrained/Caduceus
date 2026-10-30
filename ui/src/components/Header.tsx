@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import type { Me } from "../api";
 
 const SIZE_KEY = "caduceus.textSize";
@@ -47,40 +47,41 @@ export function Header({ me, onSignOut }: { me: Me | null; onSignOut: () => void
 
   return (
     <header className="header">
-      <Link to="/" className="header__brand">
-        <span className="header__wordmark">Caduceus</span>{" "}
-        <span className="header__org">Mesa Verde Health</span>
-        <span className="visually-hidden">, home</span>
-      </Link>
-      {canSearch && (
-        <form className="header__search" role="search" onSubmit={search}>
-          <label className="field-label" htmlFor="find-patient">Find a patient</label>
-          <input id="find-patient" className="input" type="search" placeholder="Name or case number"
-                 value={query} onChange={(e) => setQuery(e.target.value)} />
-        </form>
-      )}
-      <div className="header__spacer" />
-      <div className="segmented" role="group" aria-labelledby="text-size-label">
-        <span id="text-size-label" className="field-label">Text size</span>
-        <div className="segmented__options">
-          <button type="button" className="segmented__option" aria-pressed={size === "standard"}
-                  onClick={() => setSize("standard")}>Standard</button>
-          <button type="button" className="segmented__option" aria-pressed={size === "larger"}
-                  onClick={() => setSize("larger")}>Larger</button>
+      <div className="header__inner">
+        <Link to="/" className="header__brand">
+          <span className="header__wordmark">Caduceus</span>{" "}
+          <span className="header__org">Mesa Verde Health</span>
+          <span className="visually-hidden">, home</span>
+        </Link>
+        {me && (
+          <div className="header__user">
+            <span className="header__name">{me.name}</span>
+            <button type="button" className="btn--text" onClick={onSignOut}>Sign out</button>
+          </div>
+        )}
+        <div className="header__tools">
+          {canSearch && (
+            <form className="header__search" role="search" onSubmit={search}>
+              <label className="field-label" htmlFor="find-patient">Find a patient</label>
+              <input id="find-patient" className="input" type="search" placeholder="Name or case number"
+                     value={query} onChange={(e) => setQuery(e.target.value)} />
+            </form>
+          )}
+          <nav className="header__links" aria-label="Pages">
+            {me && me.role !== "clinician" && <NavLink to="/outcomes" className="header__link">Outcomes</NavLink>}
+            <NavLink to="/help" className="header__link">Help</NavLink>
+          </nav>
+          <div className="segmented" role="group" aria-labelledby="text-size-label">
+            <span id="text-size-label" className="field-label">Text size</span>
+            <div className="segmented__options">
+              <button type="button" className="segmented__option" aria-pressed={size === "standard"}
+                      onClick={() => setSize("standard")}>Standard</button>
+              <button type="button" className="segmented__option" aria-pressed={size === "larger"}
+                      onClick={() => setSize("larger")}>Larger</button>
+            </div>
+          </div>
         </div>
       </div>
-      {me && me.role !== "clinician" && (
-        <Link to="/outcomes" className="btn--text" style={{ display: "inline-flex", alignItems: "center" }}>Outcomes</Link>
-      )}
-      <Link to="/help" className="btn--text" style={{ display: "inline-flex", alignItems: "center" }}>Help</Link>
-      {me && (
-        <div className="header__user">
-          <span>{me.name}</span>
-          <button type="button" className="btn btn--secondary" style={{ minHeight: 44 }} onClick={onSignOut}>
-            Sign out
-          </button>
-        </div>
-      )}
     </header>
   );
 }
