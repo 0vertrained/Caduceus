@@ -1,0 +1,44 @@
+# Weekly update proposals for every dependency the project pins. Each waits 7 days after a release before it is
+# proposed, so a hijacked release has time to be caught first. Security updates are not delayed by this.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      python:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: "/ui"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      ui:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+
+  - package-ecosystem: terraform
+    directory: "/infra/terraform"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
