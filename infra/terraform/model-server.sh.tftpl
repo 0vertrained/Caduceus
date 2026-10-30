@@ -1,0 +1,17 @@
+#!/bin/bash
+# Boot script for the in-VPC model server. No internet route: weights come from S3 (gateway endpoint) and the
+# vLLM image from this account's ECR (interface endpoints). Prompts and completions are never logged.
+set -euo pipefail
+
+mkdir -p /opt/models
+aws s3 sync "s3://${weights_bucket}/${model_name}" "/opt/models/${model_name}" --region "${region}" --only-show-errors
+
+registry="$(echo "${vllm_image}" | cut -d/ -f1)"
+aws ecr get-login-password --region "${region}" | docker login --username AWS --password-stdin "$registry"
+
+docker run -d --restart unless-stopped --gpus all --name vllm \
+  -p 8000:8000 -v /opt/models:/models:ro \
+  -e HF_HUB_OFFLINE=1 -e VLLM_NO_USAGE_STATS=1 -e DO_NOT_TRACK=1 \
+  "${vllm_image}" \
+  --model "/models/${model_name}" --served-model-name "${model_name}" \
+  --disable-log-requests --max-model-len 16384
