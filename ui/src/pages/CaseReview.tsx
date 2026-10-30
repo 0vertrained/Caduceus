@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
-import { api, ApiError, type CaseView, type CriterionResult, type Page } from "../api";
+import { api, ApiError, type CaseView, type CriterionResult, type Page, type PayerReply } from "../api";
 import { ChevronLeft, CheckCircle, Triangle } from "../components/Icons";
 import { CriterionIcon, StatusWord, criterionWord } from "../components/Status";
 import { countWords, midSentence, useResource, useSecondsLeft } from "../hooks";
@@ -229,6 +229,29 @@ function SidePanel({ c, panel, setPanel, onSaved }: {
   );
 }
 
+function PayerQuestion({ c, reply }: { c: CaseView; reply: PayerReply }) {
+  const attested = reply.attested[0];
+  return (
+    <section className="panel payer-question" aria-labelledby="payer-question-title">
+      <h2 id="payer-question-title" className="section-title">{c.payer.name} asked a question</h2>
+      {reply.question && <p className="payer-question__ask">{reply.question}</p>}
+      {attested && !reply.note && (
+        <p>No page in the referral packet documents this. {attested.by} attested to it {attested.at}, so the payer
+          wants it written in the chart.</p>
+      )}
+      {reply.note ? (
+        <figure className="payer-question__note">
+          <figcaption className="support">Addendum by {reply.note.author}, signed {reply.note.signed_at}</figcaption>
+          <div className="paper">{reply.note.text}</div>
+        </figure>
+      ) : reply.declined ? (
+        <p><strong>{reply.declined.by} cannot document this.</strong> They said so {reply.declined.at}. Nothing was
+          sent to {c.payer.name}.</p>
+      ) : null}
+    </section>
+  );
+}
+
 function DecisionBar({ c, setCase, reload }: { c: CaseView; setCase: (c: CaseView) => void; reload: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -287,8 +310,33 @@ function DecisionBar({ c, setCase, reload }: { c: CaseView; setCase: (c: CaseVie
   } else if (c.state === "awaiting_attestation") {
     summary = <><CheckCircle size={26} /><span><strong>Sent to {c.ordering_clinician.name}.</strong> This case comes back to you when they sign.</span></>;
     actions = <>{undo}<Link to="/" className="btn btn--primary btn--large">Next case</Link></>;
+  } else if (c.state === "pended") {
+    const returnButton = (primary: boolean) => (
+      <button type="button" className={primary ? "btn btn--primary btn--large" : "btn--text"}
+              onClick={() => setReturning(true)} aria-expanded={returning}>Return for correction</button>
+    );
+    actions = (
+      <>
+        {c.actions.can_send_note ? (
+          <>{c.actions.can_return && returnButton(false)}
+            <button type="button" className="btn btn--primary btn--large" disabled={busy} onClick={() => act("send-note")}>
+              Send the note to {c.payer.name}
+            </button></>
+        ) : c.actions.can_ask_for_note ? (
+          <>{c.actions.can_return && returnButton(false)}
+            <button type="button" className="btn btn--primary btn--large" disabled={busy} onClick={() => act("request-note")}>
+              Ask {c.ordering_clinician.name} for the note
+            </button></>
+        ) : c.actions.can_return ? returnButton(true) : null}
+      </>
+    );
+  } else if (c.state === "awaiting_note") {
+    summary = <><CheckCircle size={26} /><span><strong>Asked {c.ordering_clinician.name} for the note.</strong> This
+      case comes back to you when they sign it.</span></>;
+    actions = <>{undo}<Link to="/" className="btn btn--primary btn--large">Next case</Link></>;
   } else if (c.state === "submitted" && !c.submission?.sent) {
-    summary = <><CheckCircle size={26} /><span><strong>Approved.</strong> Sending to {c.payer.name}
+    summary = <><CheckCircle size={26} /><span><strong>Approved.</strong> Sending
+      {c.submission?.kind === "reply" ? " the note" : ""} to {c.payer.name}
       {sendLeft > 0 ? ` in ${sendLeft} seconds` : " now"}.</span></>;
     actions = <>{undo}<Link to="/" className="btn btn--primary btn--large">Next case</Link></>;
   } else if (c.state === "returned") {
@@ -341,11 +389,7 @@ export function CaseReviewPage() {
       <div className="page page--case">
         <Link to="/" className="back-link"><ChevronLeft />Back to your queue</Link>
         <CaseHeader c={c} />
-        {c.state === "pended" && c.payer_response?.decision.question && (
-          <section className="panel criterion--attention" style={{ margin: 0, padding: "20px 28px" }} role="note">
-            <strong>{c.payer.name} asked a question.</strong> {c.payer_response.decision.question}
-          </section>
-        )}
+        {c.reply && ["pended", "awaiting_note", "submitted"].includes(c.state) && <PayerQuestion c={c} reply={c.reply} />}
         <div className="case-body">
           <Criteria c={c} open={setPanel} />
           <SidePanel key={`${c.id}-${c.draft?.text?.length}`} c={c} panel={panel} setPanel={setPanel} onSaved={setData} />

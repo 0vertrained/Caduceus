@@ -5,8 +5,8 @@ import { Check } from "../components/Icons";
 import { countWords, useResource, useSecondsLeft } from "../hooks";
 
 export function AttestListPage() {
-  const { data, error } = useResource<{ case_id: string; patient: { name: string; age: number }; service: string }[]>(
-    "/api/attestations", 15000);
+  const { data, error } = useResource<{ case_id: string; patient: { name: string; age: number }; service: string;
+    kind: "attestation" | "note" }[]>("/api/attestations", 15000);
   if (error) return <div className="attest"><p role="alert" className="alert">{error.message}</p></div>;
   if (!data) return <div className="attest"><p role="status" className="muted">Loading.</p></div>;
   return (
@@ -19,7 +19,7 @@ export function AttestListPage() {
             <Link to={`/attest/${a.case_id}`} style={{ fontWeight: 700, minHeight: 44, display: "inline-flex", alignItems: "center" }}>
               {a.patient.name}, {a.patient.age}
             </Link>
-            <span className="muted">{a.service}</span>
+            <span className="muted">{a.kind === "note" ? `${a.service}: the payer asked for a note` : a.service}</span>
           </li>
         ))}
       </ul>
@@ -66,6 +66,7 @@ export function AttestPage() {
     );
   }
 
+  if (data.state === "awaiting_note" && data.note_request) return <NoteForm data={data} setData={setData} />;
   if (data.state !== "awaiting_attestation") {
     return <div className="attest"><h1 className="attest__name">This request is not waiting for a signature.</h1>
       <Link to="/">See your other requests</Link></div>;
@@ -116,6 +117,94 @@ export function AttestPage() {
         {failure ? <span role="alert" className="alert">{failure}</span> : complete ? "You are signing with your own name."
           : "Choose an answer above, then sign."}
       </p>
+    </div>
+  );
+}
+
+// The payer pended the request and asked for the note behind what this clinician confirmed. They write it in their
+// own words (nothing is drafted for them) and it joins the chart as an addendum dated today, or they say they cannot.
+function NoteForm({ data, setData }: { data: AttestationView; setData: (v: AttestationView) => void }) {
+  const ask = data.note_request!;
+  const [text, setText] = useState("");
+  const [failure, setFailure] = useState<string | null>(null);
+  const [done, setDone] = useState<{ signed: boolean; until: string | null | undefined } | null>(null);
+  const undoLeft = useSecondsLeft(done?.until);
+  const first = data.requested_by.split(" ")[0];
+
+  const send = async (path: string, body?: unknown) => {
+    setFailure(null);
+    try {
+      const out = await api<AttestationView>(`/api/attestations/${data.case_id}/${path}`,
+        { method: "POST", body: body ? JSON.stringify(body) : undefined });
+      setDone({ signed: path === "note", until: out.undo_until });
+    } catch (e) {
+      setFailure((e as ApiError).message);
+    }
+  };
+  const sign = () => text.trim() ? send("note", { text }) : setFailure("Write the note, then sign it.");
+
+  if (done) {
+    return (
+      <div className="attest attest__done" role="status">
+        <div className="seal seal--full" aria-hidden="true" style={{ background: "var(--paper)", color: "var(--seal)" }}><Check /></div>
+        <h1 className="attest__name">{done.signed ? "Signed. Thank you." : "Thank you for saying so."}</h1>
+        <p>{done.signed ? `${first} can now send your note to ${data.payer}.`
+          : `${first} will see that you cannot document this. Nothing goes to ${data.payer}.`}</p>
+        {done.signed && <p className="muted">Your note is in {data.patient.name}’s chart as an addendum dated today,
+          with your name.</p>}
+        {undoLeft > 0 && (
+          <button type="button" className="btn btn--secondary btn--large" style={{ width: "100%" }}
+                  onClick={async () => {
+                    try {
+                      setData(await api<AttestationView>(`/api/cases/${data.case_id}/undo`, { method: "POST" }));
+                      setDone(null);
+                    } catch (e) {
+                      setFailure((e as ApiError).message);
+                    }
+                  }}>
+            {done.signed ? "Undo my signature" : "Undo"} <span className="muted" style={{ fontWeight: 400 }} aria-hidden="true">({undoLeft} seconds)</span>
+          </button>
+        )}
+        <Link to="/" className="btn btn--primary btn--large" style={{ width: "100%" }}>Done</Link>
+        {failure && <p role="alert" className="alert">{failure}</p>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="attest">
+      <p className="muted">{data.requested_by} asked you for a note. {data.payer} wants the clinical note behind
+        what you confirmed before it decides.</p>
+      <section aria-labelledby="pt">
+        <h1 id="pt" className="attest__name">{data.patient.name}</h1>
+        <p style={{ fontWeight: 700 }}>Born {data.patient.birth_date}</p>
+        <p className="muted">{data.service}, ordered {data.ordered}</p>
+      </section>
+      <section className="panel attest__card" aria-labelledby="ask-title">
+        <h2 id="ask-title" style={{ fontSize: "1rem", fontWeight: 700 }}>What {data.payer} asked</h2>
+        <p>{ask.question}</p>
+      </section>
+      {ask.confirmed.map((c) => (
+        <section key={c.question} className="panel attest__card" aria-label="What you confirmed">
+          <h2 style={{ fontSize: "1rem", fontWeight: 700 }}>You confirmed this {c.at}</h2>
+          <p>{c.question} You answered yes.</p>
+          <p className="support">The policy: {c.policy}</p>
+        </section>
+      ))}
+      <div className="field">
+        <label className="field-label" htmlFor="note-text">Your note</label>
+        <p id="note-help" className="support">Write what you examined and found, in your own words. It is added to
+          the chart as an addendum dated today, with your name.</p>
+        <textarea id="note-text" className="input textarea" rows={8} maxLength={ask.limit} value={text}
+                  aria-describedby="note-help" onChange={(e) => { setText(e.target.value); setFailure(null); }} />
+      </div>
+      <button type="button" className="btn btn--primary btn--large" style={{ width: "100%" }} onClick={sign}
+              aria-describedby="sign-note">Sign the note and return</button>
+      <p id="sign-note" className="support" style={{ textAlign: "center" }}>
+        {failure ? <span role="alert" className="alert">{failure}</span> : "You are signing with your own name."}
+      </p>
+      <button type="button" className="btn btn--secondary btn--large" style={{ width: "100%" }}
+              onClick={() => send("decline-note")}>I cannot document this</button>
     </div>
   );
 }

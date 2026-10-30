@@ -96,11 +96,24 @@ export interface CaseView {
   };
   draft: { text: string; route: string; model: string | null; edited_by?: string; out_of_date?: boolean } | null;
   summary: string;
-  actions: { can_approve: boolean; approve_blocked_reason: string | null; can_request_attestation: boolean; can_return: boolean };
+  actions: {
+    can_approve: boolean; approve_blocked_reason: string | null; can_request_attestation: boolean; can_return: boolean;
+    can_ask_for_note: boolean; can_send_note: boolean;
+  };
   undo: { action: string; until: string; seconds: number } | null;
   returned_reason: string | null;
   payer_response: { decision: { code: string; display: string; question?: string; authorization_number?: string } } | null;
-  submission: { sent?: boolean; send_after?: string; approved_by?: string } | null;
+  submission: { kind?: "reply"; sent?: boolean; send_after?: string; approved_by?: string; submission_id?: string } | null;
+  reply: PayerReply | null;
+}
+
+// A payer's request for more on a pended case, and where its answer stands.
+export interface PayerReply {
+  question: string | null;
+  attested: { text: string; by: string; at: string }[];
+  requested_by: string | null;
+  note: { text: string; author: string; signed_at: string } | null;
+  declined: { by: string; at: string } | null;
 }
 
 export interface Page { id: string; title: string; page: number; pages: number; date: string | null; author: string | null; text: string }
@@ -117,6 +130,7 @@ export interface AttestationView {
   requested_by: string;
   undo_until?: string | null;
   answers?: Record<string, string>;
+  note_request: { question: string | null; confirmed: { question: string; policy: string; at: string }[]; limit: number } | null;
 }
 
 export interface Me { id: string; name: string; role: "pa_specialist" | "clinician" | "admin" | "auditor" }
