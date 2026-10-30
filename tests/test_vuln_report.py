@@ -61,10 +61,25 @@ def test_job_summary_lists_every_finding(report, tmp_path, monkeypatch):
     assert "| libfoo | 1.0 | deb |" in text and "| libbar | 1.0 | deb |" in text and "none released" in text
 
 
-def test_every_finding_is_listed_in_one_annotation_and_escaped(report, capsys):
+def every_finding_lines(out: str) -> list[str]:
+    return [line for line in out.splitlines() if "every finding" in line]
+
+
+def test_every_finding_is_listed_and_escaped(report, capsys):
     findings = [match(f"lib{i}", "Low", "not-fixed") for i in range(15)]
     findings.append(match("evil%0A::error::injected", "Low", "not-fixed"))
     vuln_report.main([report(*findings), "--label", "Image", "--fail-on", "none"])
-    every = [line for line in capsys.readouterr().out.splitlines() if "every finding::" in line][0]
-    assert every.count("%0A") == 15  # 16 findings, one line each
-    assert "evil%250A::error::injected" in every  # a crafted name cannot start a new workflow command
+    lines = every_finding_lines(capsys.readouterr().out)
+    assert len(lines) == 1 and lines[0].count("%0A") == 15  # 16 findings, one line each
+    assert "evil%250A::error::injected" in lines[0]  # a crafted name cannot start a new workflow command
+
+
+def test_long_lists_are_split_and_titles_with_commas_survive(report, capsys):
+    findings = [match(f"org.example.long-package-name-{i:03d}", "High", "fixed", ["9.9.9"]) for i in range(120)]
+    vuln_report.main([report(*findings), "--label", "Synthea (data generator, not shipped)", "--fail-on", "none"])
+    out = capsys.readouterr().out
+    lines = every_finding_lines(out)
+    assert len(lines) > 1
+    assert all(len(line.split("::", 2)[2]) <= vuln_report.ANNOTATION_LIMIT for line in lines)
+    assert sum(line.split("::", 2)[2].count("long-package-name") for line in lines) == 120
+    assert "title=Synthea (data generator%2C not shipped)::" in out

@@ -19,6 +19,7 @@ from collections import Counter
 
 SEVERITIES = ["Critical", "High", "Medium", "Low", "Negligible", "Unknown"]
 MAX_ANNOTATIONS = 10  # GitHub shows at most 10 of each kind per step
+ANNOTATION_LIMIT = 4000  # GitHub cuts an annotation's text at 4,096 characters
 
 
 def findings(report: dict) -> list[dict]:
@@ -49,6 +50,24 @@ def escape(text: str) -> str:
     return text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
 
 
+def escape_property(text: str) -> str:
+    """Property values (the title) also end at a comma or colon, so those are escaped too."""
+    return escape(text).replace(":", "%3A").replace(",", "%2C")
+
+
+def chunks(lines: list[str], limit: int = ANNOTATION_LIMIT) -> list[list[str]]:
+    """Group lines so each group, joined, stays under GitHub's limit for one annotation's text."""
+    out: list[list[str]] = [[]]
+    size = 0
+    for line in lines:
+        if out[-1] and size + len(line) + 3 > limit:
+            out.append([])
+            size = 0
+        out[-1].append(line)
+        size += len(line) + 3
+    return out if out[0] else []
+
+
 def counts(items: list[dict]) -> str:
     c = Counter(f["severity"] for f in items)
     return ", ".join(f"{c[s]} {s.lower()}" for s in SEVERITIES if c[s]) or "none"
@@ -68,15 +87,18 @@ def main(argv: list[str] | None = None) -> int:
 
     headline = (f"{len(items)} known vulnerabilities: {len(fixed)} with a released fix ({counts(fixed)}), "
                 f"{len(unfixed)} without one ({counts(unfixed)})")
-    print(f"::notice title={args.label}::{headline}")
-    if items:  # the full list in one annotation, since each kind is capped at 10 per step
-        listing = "%0A".join(escape(describe(f)) for f in items)
-        print(f"::notice title={args.label}, every finding::{listing}")
+    title = escape_property(args.label)
+    print(f"::notice title={title}::{escape(headline)}")
+    # The full list, split across notices because one annotation holds about 4,000 characters.
+    groups = chunks([escape(describe(f)) for f in items])[: MAX_ANNOTATIONS - 1]
+    for n, group in enumerate(groups, 1):
+        print(f"::notice title={escape_property(f'{args.label} - every finding, part {n} of {len(groups)}')}::"
+              + "%0A".join(group))
     failing = {"fixed": fixed, "any": items, "none": []}[args.fail_on]
     for f in failing[:MAX_ANNOTATIONS]:
-        print(f"::error title={args.label}::{escape(describe(f))}")
+        print(f"::error title={title}::{escape(describe(f))}")
     for f in [f for f in items if f not in failing][:MAX_ANNOTATIONS]:
-        print(f"::warning title={args.label}::{escape(describe(f))}")
+        print(f"::warning title={title}::{escape(describe(f))}")
 
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
