@@ -229,6 +229,12 @@ ul, ol { padding: 0; list-style: none; }
 .payer-question__note { margin: 0; display: flex; flex-direction: column; gap: var(--space-2); max-width: 75ch; }
 .paper { background: #fcfcfa; border: 1px solid var(--rule); border-radius: 4px; padding: 22px 24px;
   font-family: var(--font-serif); line-height: 1.6; white-space: pre-wrap; }
+.paper--sent { font-size: 0.95rem; }
+.placeholder { background: var(--mist); color: var(--seal-strong); border: 1px solid var(--rule); border-radius: 3px;
+  padding: 0 3px; font-family: var(--font-sans); font-weight: 600; font-size: 0.9em; white-space: nowrap; }
+.sent-facts { display: flex; flex-direction: column; gap: var(--space-3); }
+.sent-facts dt { font-size: var(--text-support); font-weight: 700; }
+.sent-facts dd { margin: 0; }
 mark { background: var(--mark); color: var(--ink); padding: 1px 2px; border-radius: 2px; }
 
 /* Decision bar ---------------------------------------------------------------------------------- */

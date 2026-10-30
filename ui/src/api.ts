@@ -148,7 +148,10 @@ export interface CaseView {
     title: string; version: string; source_kind: string; checked_at: string | null;
     counts: { met: number; unmet: number; unknown: number }; total: number; results: CriterionResult[];
   };
-  draft: { text: string; route: string; model: string | null; edited_by?: string; out_of_date?: boolean } | null;
+  draft: {
+    text: string; route: string; model: string | null; edited_by?: string; out_of_date?: boolean;
+    fallback_reason?: string; deid_removed?: Record<string, number>; sent?: SentToModel;
+  } | null;
   summary: string;
   actions: {
     can_approve: boolean; approve_blocked_reason: string | null; can_request_attestation: boolean; can_return: boolean;
@@ -159,6 +162,12 @@ export interface CaseView {
   payer_response: { decision: { code: string; display: string; question?: string; authorization_number?: string } } | null;
   submission: { kind?: "reply"; sent?: boolean; send_after?: string; approved_by?: string; submission_id?: string } | null;
   reply: PayerReply | null;
+}
+
+// Exactly what the draft's model saw: de-identified by construction, so it can be kept and shown.
+export interface SentToModel {
+  text: string; policy: string; text_sha256: string; vendor: string; cached: boolean;
+  input_tokens: number; output_tokens: number; tokens_filled_in: number;
 }
 
 // A payer's request for more on a pended case, and where its answer stands.
