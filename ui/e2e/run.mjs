@@ -124,6 +124,39 @@ await axe(small, "11-case-320px");
 await page.goto(base + "/help");
 await axe(page, "12-help");
 
+// The request approved above leaves the outbox after its undo window, and this payer pends it: it wants the
+// note behind the attestation. The specialist asks for it, the clinician writes and signs it, the specialist sends
+// it, and the payer approves. The case page refreshes itself while something is waiting to be sent.
+await page.goto(caseUrl);
+await page.getByRole("heading", { name: /asked a question$/ }).waitFor({ timeout: 60_000 });
+await shot(page, "13-case-payer-question");
+await axe(page, "13-case-payer-question");
+await page.getByRole("button", { name: /^Ask Dr\. Ana Reyes for the note$/ }).click();
+await page.getByText(/comes back to you when they sign it/).waitFor();
+
+await doc.goto(base + "/");
+await doc.getByRole("link").filter({ hasText: /, \d+$/ }).first().click();
+await doc.getByLabel("Your note").waitFor();
+await shot(doc, "14-note-phone");
+await axe(doc, "14-note-phone");
+await doc.getByRole("button", { name: "Sign the note and return" }).click();
+await doc.getByRole("alert").filter({ hasText: "Write the note" }).waitFor();  // an empty note is never signed
+await doc.getByLabel("Your note").fill("Addendum to the visit of October 27. Red-flag symptoms were asked about " +
+  "and ruled out: no fever, weight loss, history of cancer, saddle anesthesia, or bowel or bladder change.");
+await doc.getByRole("button", { name: "Sign the note and return" }).click();
+await doc.getByText("Signed. Thank you.").waitFor();
+await axe(doc, "15-note-signed");
+
+await page.goto(caseUrl);
+await page.getByRole("button", { name: /^Send the note to / }).waitFor();
+await shot(page, "16-case-note-ready");
+await axe(page, "16-case-note-ready");
+await page.getByRole("button", { name: /^Send the note to / }).click();
+await page.getByRole("status").filter({ hasText: "Sending the note" }).waitFor();
+await page.getByRole("status").filter({ hasText: /^Approved by / }).waitFor({ timeout: 60_000 });
+await shot(page, "17-case-approved");
+await axe(page, "17-case-approved");
+
 await browser.close();
 console.log(JSON.stringify(report, null, 2));
 process.exit(report.failures.length ? 1 : 0);
