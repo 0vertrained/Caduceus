@@ -49,7 +49,7 @@
 
 html {
   font-size: 18px;
-  scroll-padding-bottom: calc(var(--bar-height) + var(--space-4));
+  scroll-padding-bottom: calc(var(--bar-space, var(--bar-height)) + var(--space-4));  /* --bar-space: measured */
 }
 
 html[data-text-size="larger"] {
