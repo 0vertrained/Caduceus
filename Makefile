@@ -17,8 +17,7 @@ SYN_ARGS = -s 20261029 -cs 20261029 -r 20261028 -e 20261029 -p 120 -a 55-89 \
 # in Denver or a CI runner in UTC, produces the same bytes. Mountain time suits a New Mexico health system.
 DATA_TZ   ?= America/Denver
 JAVA_PINS  = -Duser.timezone=$(DATA_TZ) -Duser.language=en -Duser.country=US -Dfile.encoding=UTF-8
-# Synthea bundles library versions with known flaws (README, "Known vulnerabilities"), so it runs with the
-# network switched off.
+# Synthea runs with the network switched off: it needs none, and a library flaw found later cannot be reached.
 OFFLINE    = $(abspath scripts/offline.sh)
 
 .PHONY: help setup data synthea seed dev test lint evals e2e check approve-policy image up clean

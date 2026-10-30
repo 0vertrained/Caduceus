@@ -86,24 +86,23 @@ audit log is append-only at the database level and archived under S3 Object Lock
 
 ### Known vulnerabilities in dependencies
 
-CI checks on every push. As of October 30, 2026:
+CI checks on every push and fails on any finding with a released fix. As of October 30, 2026:
 
 | What | Scanner | Known vulnerabilities |
 |---|---|---|
 | Python packages (47, with dev tools) | pip-audit | 0 |
 | UI packages (126, with build and test tools), Playwright | npm audit | 0 |
 | Container image (Wolfi base, Python 3.13.18) | Grype | 2 medium, no fix released for Python 3.13 |
-| Synthea, the offline data generator (never shipped) | Grype | 106, all in its bundled libraries |
+| Synthea, the data generator (never shipped), built from source with patched libraries | Grype | 0 (upstream's jar: 106) |
 
 The two image findings are in CPython itself. CVE-2026-12345 (a `tempfile` cleanup race) is fixed upstream in
 3.13.18, the version shipped; the scanner's data has not caught up. CVE-2025-15367 is in `poplib`, which
-Caduceus never imports. The image job fails on any finding that has a released fix; Python and npm findings fail
-CI outright.
+Caduceus never imports. Python and npm findings fail CI outright.
 
-Synthea's findings are in old copies of HAPI FHIR, Jackson, commons-text and similar inside its jar, and only a
-new Synthea release can change them. As used here they are not reachable: Synthea makes no network calls, loads
-no packages and reads only its own modules and fixed arguments, and its output is checked byte for byte. They are
-reported on every run rather than gated.
+Upstream Synthea's published jar bundles old library versions with 106 known vulnerabilities (17 critical), so
+`make data` builds Synthea from source with those libraries upgraded ([tools/synthea](tools/synthea)). The
+dataset regenerates byte for byte with the patched build, which shows the upgrades did not change the
+simulation. Synthea also runs with the network switched off (`scripts/offline.sh`), as a second line of defense.
 
 ## Not built yet
 
