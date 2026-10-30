@@ -25,6 +25,7 @@ from caduceus.audit.log import TamperDetected
 from caduceus.auth import AuthError, Principal, Role
 from caduceus.cases import Case, Fax, StaleCase, State
 from caduceus.intake import FaxReadingUnavailable
+from caduceus.outcomes import outcomes
 from caduceus.presenter import Presenter, moment
 from caduceus.ratelimit import DemoLimits
 from caduceus.seed import clone_demo_services, fresh_demo_services
@@ -500,6 +501,15 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
         load_fax(fax_id)
         case = live.svc.workflow.confirm_fax(who, fax_id, body.values)
         return {"case_id": case.id}
+
+    @app.get("/api/outcomes")
+    def queue_outcomes(who: Principal = Depends(role(Role.PA_SPECIALIST, Role.ADMIN, Role.AUDITOR))):
+        safe_dispatch()
+        svc = live.svc
+        sections = outcomes(svc.cases.all(), svc.audit.events(), svc.workflow.faxes.all() if svc.workflow.faxes else [])
+        return {"demo": live.demo, "sections": [
+            {"title": s["title"], "rows": [{"label": a, "value": b, "note": c} for a, b, c in s["rows"]]}
+            for s in sections]}
 
     @app.get("/api/attestations")
     def my_attestations(who: Principal = Depends(role(Role.CLINICIAN))):

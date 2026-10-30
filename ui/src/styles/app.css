@@ -256,6 +256,18 @@ mark { background: var(--mark); color: var(--ink); padding: 1px 2px; border-radi
 .crop { max-width: 100%; border: 1px solid var(--rule); border-radius: 4px; background-color: var(--paper);
   background-repeat: no-repeat; }
 
+/* Outcomes: a ledger of what the work adds up to ----------------------------------------------- */
+.outcomes { max-width: 960px; }
+.outcomes__intro { display: flex; flex-direction: column; gap: var(--space-2); }
+.ledger { padding: 24px 32px; display: flex; flex-direction: column; gap: var(--space-2); }
+.ledger__rows { display: flex; flex-direction: column; }
+.ledger__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "label value" "note value";
+  gap: 2px var(--space-5); padding: 12px 0; border-top: 1px solid var(--rule-soft); align-items: baseline; }
+.ledger__row dt { grid-area: label; font-weight: 600; }
+.ledger__value { grid-area: value; margin: 0; text-align: right; white-space: nowrap; font-family: var(--font-serif); font-size: 1.5rem;
+  font-variant-numeric: tabular-nums lining-nums; }
+.ledger__note { grid-area: note; margin: 0; color: var(--ink-2); font-size: var(--text-support); }
+
 /* Case history: the audit trail in plain words ------------------------------------------------- */
 .history { padding: 24px 36px; display: flex; flex-direction: column; gap: var(--space-4); }
 .history__head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--space-3) var(--space-5); }
@@ -362,7 +374,7 @@ mark { background: var(--mark); color: var(--ink); padding: 1px 2px; border-radi
   .tour__inner { padding: var(--space-3) var(--space-4); }
   .page { padding: var(--space-4) var(--space-4) var(--space-7); }
   .helper__steps, .facts { grid-template-columns: minmax(0, 1fr); }
-  .row, .case-head, .criteria, .side, .payer-question, .history, .fax-inbox, .intake__form { padding-left: var(--space-4); padding-right: var(--space-4); }
+  .row, .case-head, .criteria, .side, .payer-question, .history, .fax-inbox, .intake__form, .ledger { padding-left: var(--space-4); padding-right: var(--space-4); }
   .history__item { grid-template-columns: minmax(0, 1fr); }
   .page-title { font-size: 2rem; }
   .case-name { font-size: 2rem; }
