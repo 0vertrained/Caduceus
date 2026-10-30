@@ -144,6 +144,14 @@ await check.getByText("Confirmed as the patient").first().waitFor();
 await page.getByRole("button", { name: "Create the case" }).click();
 await page.getByRole("heading", { name: "Coverage criteria" }).waitFor();
 if (!page.url().endsWith("/cases/2026-1029")) report.failures.push(`fax: expected case 2026-1029, got ${page.url()}`);
+// The case says it came by fax, who checked it and what they corrected; the cover sheet is page 1 of its packet.
+await page.getByText(/^Came by fax from Mesa Verde Orthopedics, Santa Fe\. Dolores Montoya checked it/).waitFor();
+await page.getByRole("button", { name: /^Fax cover sheet/ }).click();
+await page.getByRole("heading", { name: "Fax cover sheet" }).waitFor();
+await page.getByRole("button", { name: "Show the faxed page" }).click();
+await page.locator("#fax-page-image img").waitFor();
+await shot(page, "02i-case-from-fax");
+await axe(page, "02i-case-from-fax");
 await page.goto(base + "/");
 
 await page.getByRole("link", { name: /^Open case for/ }).first().click();

@@ -264,6 +264,78 @@ def test_a_fax_too_poor_to_read_is_sent_back_in_one_step(inbox):
     assert "too poor to read. Please fax the whole referral again" in fax["request"]["text"]
 
 
+def test_the_cover_sheet_is_page_one_and_the_case_says_it_came_by_fax(inbox):
+    from caduceus.seed import clone_demo_services
+    svc, client = inbox
+    made = client.post("/api/intake/FAX-0001/confirm", headers=DOLORES, json={"values": form_start(client, "FAX-0001")})
+    assert made.json() == {"case_id": "2026-1023"}
+    case = client.get("/api/cases/2026-1023", headers=DOLORES).json()
+    assert case["packet"][0] == {"id": "cover-fax-0001", "page": 1, "title": "Fax cover sheet"}
+    assert len(case["packet"]) == 3  # the cover sheet, then the two pages that came with it, numbered as the fax does
+    assert {e["page"] for r in case["criteria"]["results"] for e in r["evidence"] if e["page"]} <= {2, 3}
+
+    page = client.get("/api/cases/2026-1023/pages/cover-fax-0001", headers=DOLORES).json()
+    assert page["page"] == 1 and page["author"] == "Mesa Verde Sleep Center"
+    assert "Referral number: 2026-1023" in page["text"] and "Federico Gurule" in page["text"]  # what OCR read
+    image = client.get(page["image"], headers=DOLORES)
+    assert image.status_code == 200 and image.headers["content-type"] == "image/png"
+    assert client.get(page["image"], headers=REYES).status_code == 403
+    assert client.get("/api/cases/2026-1043/pages/cover-fax-0001/image", headers=DOLORES).status_code == 404
+    visit = case["packet"][1]["id"]
+    assert client.get(f"/api/cases/2026-1023/pages/{visit}", headers=DOLORES).json()["image"] is None
+    assert client.get(f"/api/cases/2026-1023/pages/{visit}/image", headers=DOLORES).status_code == 404
+    # Filed with the cases, so a demo visitor's copy (and a restart) keeps it.
+    assert clone_demo_services(svc, T0, T0).store.document("cover-fax-0001")["description"] == "Fax cover sheet"
+
+    note = case["came_by_fax"]
+    assert note["from"] == "Mesa Verde Sleep Center" and note["by"] == "Dolores Montoya" and note["corrected"] is None
+    assert note["words"].startswith("Came by fax from Mesa Verde Sleep Center. Dolores Montoya checked it against "
+                                    "the page ") and note["words"].endswith("; nothing needed correcting.")
+    assert client.get("/api/cases/2026-1043", headers=DOLORES).json()["came_by_fax"] is None
+
+    # The case's history starts with the fax.
+    said = [e["what"] for e in client.get("/api/cases/2026-1023/timeline", headers=DOLORES).json()["entries"]]
+    assert said[:3] == ["Received a referral by fax, 3 pages.", "Used 1 tool to read the faxed cover sheet.",
+                        "Read the cover sheet with OCR, inside Mesa Verde’s systems. Every field was read clearly."]
+    assert "Checked the fax against the page and created the case." in said
+    assert "Created the case from the checked fax: 3 pages, the cover sheet first." in said
+
+
+def test_the_case_note_names_what_was_corrected_and_asked_for(inbox):
+    _, client = inbox
+    client.get("/api/intake/FAX-0003", headers=DOLORES)
+    client.post("/api/intake/FAX-0003/ask-clinic", headers=DOLORES, json={"missing": ["member_id"]})
+    client.post("/api/intake/FAX-0003/clinic-sent", headers=DOLORES)
+    client.post("/api/intake/FAX-0003/confirm", headers=DOLORES, json={
+        "values": MANIFEST["FAX-0003"]["expected"], "checked": ["referral", "patient_name", "payer", "clinician",
+                                                                 "service_code"]})
+    note = client.get("/api/cases/2026-1029", headers=DOLORES).json()["came_by_fax"]
+    assert note["corrected"] == "the member ID, the ordering clinician, the requested service and the diagnosis"
+    assert note["words"].endswith("Before that, the clinic was asked for the member ID.")
+
+
+def test_a_referral_that_duplicates_an_open_case_is_refused(inbox):
+    from caduceus.cases import Case, State
+    svc, client = inbox
+    values = form_start(client, "FAX-0001")
+    first = svc.store.find_patient("Federico Gurule", "1966-03-16")
+    service = svc.workflow.catalog["services"]["E0601"]
+    svc.cases.save(Case(id="2026-0999", patient_id=first, service={k: service[k] for k in ("system", "code", "display",
+                                                                                           "short")},
+                        criteria_set=service["criteria_set"], as_of="2026-10-28",
+                        payer={"name": "Medicare", "member_id_last4": "6782"},
+                        ordering_clinician=svc.workflow.catalog["clinicians"]["Dr. Priya Patel"], packet=[],
+                        received_at=T0, due_at=T0, state=State.REVIEW))
+    refused = client.post("/api/intake/FAX-0001/confirm", headers=DOLORES, json={"values": values})
+    assert refused.status_code == 409 and refused.json()["case_id"] == "2026-0999"
+    assert refused.json()["message"].startswith("Case 2026-0999 is already open for this patient and this service")
+    assert svc.cases.get("2026-1023") is None and svc.workflow.faxes.get("FAX-0001").status == "read"
+
+    done = svc.cases.get("2026-0999")
+    svc.cases.save(done.model_copy(update={"state": State.APPROVED}))  # once the payer approved it, it is closed
+    assert client.post("/api/intake/FAX-0001/confirm", headers=DOLORES, json={"values": values}).status_code == 200
+
+
 def test_the_clinics_match_the_ones_the_cover_sheets_are_drawn_with():
     import ast
 

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api, ApiError, type CaseView, type CriterionResult, type Page, type PayerReply, type Timeline } from "../api";
+import { useAuthImage } from "../components/FaxImage";
 import { ChevronLeft, ChevronRight, CheckCircle, Triangle } from "../components/Icons";
 import { SealMark } from "../components/Seal";
 import { CriterionIcon, StatusWord, criterionWord } from "../components/Status";
@@ -114,6 +115,7 @@ function CaseHeader({ c }: { c: CaseView }) {
               <dd className="facts__value">{glue(c.payer_clock.words)}</dd></div>
           )}
         </dl>
+        {c.came_by_fax && <p className="case-head__fax">{glue(c.came_by_fax.words)}</p>}
         <details className="details">
           <summary className="details__summary">More details about this request</summary>
           <dl className="facts">
@@ -200,6 +202,24 @@ function Criteria({ c, open, showing }: { c: CaseView; open: (p: Panel) => void;
   );
 }
 
+/** A faxed page: the text below is what OCR read, so the page itself is a click away. */
+function FaxPageImage({ path }: { path: string }) {
+  const [open, setOpen] = useState(false);
+  const src = useAuthImage(open ? path : null);
+  return (
+    <div className="side__fax">
+      <p className="support">The text below is what OCR read from the faxed page.{" "}
+        <button type="button" className="link-button" aria-expanded={open} aria-controls="fax-page-image"
+                onClick={() => setOpen(!open)}>{open ? "Hide the faxed page" : "Show the faxed page"}</button></p>
+      {open && (
+        <div id="fax-page-image" className="whole-page whole-page--tall" tabIndex={0} role="region" aria-label="The faxed page">
+          {src ? <img src={src} alt="The faxed cover sheet" /> : <p className="muted">Opening the page.</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Highlighted({ text, sentence }: { text: string; sentence: string | null }) {
   const at = sentence ? text.indexOf(sentence) : -1;
   if (!sentence || at < 0) return <>{text}</>;
@@ -247,6 +267,7 @@ function SidePanel({ c, panel, setPanel, onSaved }: {
                 <mark>Highlighted</mark> is the sentence that supports: {panel.supports}.
               </p>
             )}
+            {page.image && <FaxPageImage path={page.image} />}
             <div className="paper">
               <p className="paper__head">
                 <span>Page {page.page} of {page.pages}</span>

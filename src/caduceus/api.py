@@ -24,6 +24,7 @@ from caduceus.app_factory import Services, Settings, build_services
 from caduceus.audit.log import TamperDetected
 from caduceus.auth import AuthError, Principal, Role
 from caduceus.cases import Case, Fax, StaleCase, State
+from caduceus.fhir.store import fax_image
 from caduceus.intake import FaxReadingUnavailable
 from caduceus.outcomes import outcomes
 from caduceus.presenter import Presenter, moment
@@ -354,9 +355,18 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
     def now() -> datetime:
         return live.svc.workflow.now()
 
+    def fax_of(case_id: str) -> Fax | None:
+        """The fax a case was created from, if it came by fax."""
+        faxes = live.svc.workflow.faxes
+        return next((f for f in faxes.all() if f.case_id == case_id), None) if faxes else None
+
     def view(case: Case, who: Principal) -> dict:
         live.svc.audit.append(who.id, who.role, "case.viewed", case.id)
-        return live.presenter.case(load(case.id), now(), who.id, read_only=who.role != Role.PA_SPECIALIST)
+        out = live.presenter.case(load(case.id), now(), who.id, read_only=who.role != Role.PA_SPECIALIST)
+        fax = fax_of(case.id)
+        out["came_by_fax"] = fax and live.presenter.came_by_fax(
+            fax, live.svc.audit.events(fax.id), live.svc.workflow.intake_form(fax)["clinic"], now())
+        return out
 
     @app.get("/api/health")
     def health() -> dict:
@@ -416,6 +426,18 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
         live.svc.audit.append(who.id, who.role, "page.viewed", case_id, {"doc": doc_id})
         return out
 
+    @app.get("/api/cases/{case_id}/pages/{doc_id}/image")
+    def page_image(case_id: str, doc_id: str,
+                   who: Principal = Depends(role(Role.PA_SPECIALIST, Role.ADMIN, Role.AUDITOR))):
+        """The image of a faxed page in the case's packet (the cover sheet), from the intake folder only."""
+        case = load(case_id)
+        doc = live.svc.store.document(doc_id) if doc_id in case.packet else None
+        file = fax_image(doc) if doc else None
+        if not file or not re.fullmatch(r"FAX-\d{4}\.png", file) or live.svc.workflow.fax_dir is None:
+            raise HTTPException(404, "That page has no image.")
+        live.svc.audit.append(who.id, who.role, "page.viewed", case_id, {"doc": doc_id, "image": True})
+        return FileResponse(live.svc.workflow.fax_dir / file, media_type="image/png")
+
     @app.post("/api/cases/{case_id}/request-attestation")
     def request_attestation(case_id: str, who: Principal = Depends(principal)):
         return view(live.svc.workflow.request_attestation(who, load(case_id).id), who)
@@ -466,6 +488,9 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
     def case_timeline(case_id: str, who: Principal = Depends(role(Role.PA_SPECIALIST, Role.ADMIN, Role.AUDITOR))):
         case = load(case_id)
         events = live.svc.audit.events(case_id)
+        fax = fax_of(case_id)
+        if fax:  # a case that came by fax begins with the fax: received, read, checked, perhaps sent back first
+            events = sorted(live.svc.audit.events(fax.id) + events, key=lambda e: e.seq)
         return {"events": len(events), "can_verify": who.role in (Role.AUDITOR, Role.ADMIN),
                 "entries": timeline(events, case.ordering_clinician["name"], live.svc.tz, now())}
 

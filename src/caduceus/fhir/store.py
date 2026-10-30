@@ -96,6 +96,39 @@ class LocalBundleStore:
         return rank(name, birth_date, self._everyone(), limit)
 
 
+class Filed(Protocol):
+    def get(self, doc_id: str) -> dict | None: ...
+
+
+class WithFiledDocuments:
+    """The record's store, plus the documents Caduceus filed itself (a fax cover sheet), found by the same id lookup.
+    The filed ones live in the case database, so they survive a restart and are copied with a demo visitor's cases."""
+
+    def __init__(self, base: FhirStore, filed: Filed):
+        self.base, self.filed = base, filed
+
+    def record(self, patient_id: str, overlay_case: str | None = None) -> PatientRecord:
+        return self.base.record(patient_id, overlay_case)
+
+    def document(self, doc_id: str) -> dict | None:
+        return self.filed.get(doc_id) or self.base.document(doc_id)
+
+    def find_patient(self, name: str, birth_date: str) -> str | None:
+        return self.base.find_patient(name, birth_date)
+
+    def candidates(self, name: str, birth_date: str, limit: int = 3) -> list[dict]:
+        return self.base.candidates(name, birth_date, limit)
+
+
+def fax_image(doc: dict) -> str | None:
+    """The fax page image a filed document came from, if it did: the intake folder's own file name."""
+    for c in doc.get("content", []):
+        url = c.get("attachment", {}).get("url", "")
+        if url.startswith("fax:"):
+            return url.removeprefix("fax:")
+    return None
+
+
 class HapiFhirStore:
     def __init__(self, base_url: str, client: httpx.Client | None = None):
         self._base = base_url.rstrip("/")
