@@ -34,10 +34,20 @@ immutable id, running on `main`. From then on the API deploys by itself whenever
 **3. Netlify.** *Add new site > Import an existing project*, and pick this repository; `netlify.toml` supplies the
 build settings. Under *Site configuration > Environment variables*, add:
 
-| Variable | Value | Scopes |
+| Variable | Value | Settings |
 |---|---|---|
-| `CADUCEUS_API_ORIGIN` | the `https://caduceus-demo-....run.app` address the script printed | Builds |
-| `CADUCEUS_PROXY_SIGNING_KEY` | the output of `gcloud secrets versions access latest --secret caduceus-proxy-signing-key` | Runtime (Builds is optional) |
+| `CADUCEUS_API_ORIGIN` | the `https://caduceus-demo-....run.app` address the script printed | Not secret; scope Builds |
+| `CADUCEUS_PROXY_SIGNING_KEY` | the output of `gcloud secrets versions access latest --secret caduceus-proxy-signing-key` | *Contains secret values*; scope Runtime only; context Production only |
+
+For the signing key:
+
+- *Contains secret values* makes it write-only, and turns on Netlify's secret scanning, which fails any deploy whose
+  repository or build output contains the key.
+- Runtime is the only scope it needs, because Netlify signs at request time. Leaving out Builds means no build step,
+  and no package installed during a build, can read it. That includes the deploy previews Netlify builds for
+  Dependabot's pull requests.
+- With Production as the only context, preview deploys send no signature, so the API refuses their `/api` calls.
+- Give it no `dev` value: values in the dev context stay readable.
 
 Copy the key straight from Cloud Shell into Netlify; it never needs to be anywhere else. Trigger a deploy.
 
