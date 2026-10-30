@@ -613,11 +613,16 @@ function DecisionBar({ c, setCase, reload }: { c: CaseView; setCase: (c: CaseVie
     actions = <>{undo}<Link to="/" className="btn btn--primary btn--large">Next case</Link></>;
   } else if (c.state === "submitted" && !c.submission?.sent) {
     // The countdown is for the eye; a screen reader hears one steady sentence instead of a number every second.
+    const what = c.submission?.kind === "reply" ? "note" : c.submission?.kind === "appeal" ? "appeal" : "request";
     summary = <><CheckCircle size={26} /><span><strong>Approved.</strong> Sending
       {c.submission?.kind === "reply" ? " the note" : c.submission?.kind === "appeal" ? " the appeal" : ""} to {c.payer.name}
       <span aria-hidden="true">{sendLeft > 0 ? ` in ${sendLeft} seconds` : " now"}</span>
-      <span className="visually-hidden"> after 30 seconds, unless you undo it</span>.</span></>;
-    actions = <>{undo}<Link to="/" className="btn btn--primary btn--large">Next case</Link></>;
+      <span className="visually-hidden">{undo ? " after 30 seconds, unless you undo it" : c.actions.can_recall ? ", unless you recall it first" : ""}</span>.</span></>;
+    // After the undo window, until the outbox sends it, any specialist can still recall it.
+    const recall = !undo && c.actions.can_recall ? (
+      <button type="button" className="btn btn--secondary btn--large" disabled={busy} onClick={() => act("recall")}>Recall the {what}</button>
+    ) : null;
+    actions = <>{undo ?? recall}<Link to="/" className="btn btn--primary btn--large">Next case</Link></>;
   } else if (c.state === "returned") {
     summary = <span><strong>Returned to {c.ordering_clinician.name}.</strong> Reason: {c.returned_reason}</span>;
     actions = <>{undo}<Link to="/" className="btn btn--primary btn--large">Next case</Link></>;

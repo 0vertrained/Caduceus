@@ -168,7 +168,11 @@ class Presenter:
                    and not reply.get("declined_by"),
                    "can_send_note": case.state == State.PENDED and bool(reply.get("note")),
                    "can_send_appeal": case.state == State.DENIED and bool(case.appeal),
-                   "can_edit_appeal": case.state == State.DENIED and bool(case.appeal)}
+                   "can_edit_appeal": case.state == State.DENIED and bool(case.appeal),
+                   # Approved but not sent, and this person cannot undo it (their 30 seconds passed, or it was
+                   # someone else's approval): it can still be recalled until the outbox sends it.
+                   "can_recall": case.state == State.SUBMITTED and not (case.submission or {}).get("sent")
+                   and undo is None}
         return {
             "id": case.id, "version": case.version, "state": case.state.value, "status": status(case),
             "patient": {"name": patient_name(p), "birth_date": long_date(born),

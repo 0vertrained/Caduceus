@@ -77,6 +77,10 @@ def sentence(e: AuditEvent, clinician: str) -> str:
             return f"Signed, answering {', '.join(answers) or 'the questions'}."
         case "case.approved":
             return "Approved the request. It waited 30 seconds, so it could be undone, before it was sent."
+        case "case.recalled":
+            return {"reply": "Recalled the note before it was sent. It waits to be sent again.",
+                    "appeal": "Recalled the appeal before it was sent. It waits to be sent again."}.get(
+                d.get("kind"), "Recalled the request before it was sent. It is back in review.")
         case "action.undone":
             return f"Undid their last step ({d.get('undone', 'an action').replace('.', ' ')})."
         case "case.returned":
