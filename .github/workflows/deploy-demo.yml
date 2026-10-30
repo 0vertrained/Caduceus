@@ -1,0 +1,71 @@
+name: deploy-demo
+
+# Deploys the public demo's API to Cloud Run once CI has passed on main. Netlify serves the UI and proxies /api
+# to this service (netlify.toml). Nothing happens until the Google Cloud variables exist: see
+# docs/demo-deployment.md and infra/demo/setup-gcp.sh.
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-demo
+  cancel-in-progress: false
+
+jobs:
+  cloud-run:
+    name: Deploy the demo API to Cloud Run
+    if: >-
+      vars.GCP_PROJECT_ID != '' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'))
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write  # GitHub's OIDC token, exchanged for short-lived Google credentials; no stored key
+    env:
+      PROJECT: ${{ vars.GCP_PROJECT_ID }}
+      REGION: ${{ vars.GCP_REGION }}
+      RUNTIME_SA: ${{ vars.GCP_RUNTIME_SERVICE_ACCOUNT }}
+      SERVICE: caduceus-demo
+      COMMIT: ${{ github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.COMMIT }}
+          persist-credentials: false
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      - name: Build and push the image
+        run: |
+          image="${REGION}-docker.pkg.dev/${PROJECT}/caduceus/api:${COMMIT}"
+          gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+          docker build -t "$image" .
+          docker push "$image"
+          echo "IMAGE=$(docker inspect --format '{{index .RepoDigests 0}}' "$image")" >> "$GITHUB_ENV"
+      - name: Deploy
+        # One instance at most: the demo keeps its cases in memory, and one instance bounds the bill.
+        # Request-based billing and no minimum instances: idle costs nothing, and a cold start reseeds.
+        run: |
+          gcloud run deploy "$SERVICE" --project "$PROJECT" --region "$REGION" --image "$IMAGE" \
+            --service-account "$RUNTIME_SA" --port 8000 --cpu 1 --memory 512Mi --concurrency 40 \
+            --min-instances 0 --max-instances 1 --allow-unauthenticated \
+            --set-env-vars CADUCEUS_AUTH_MODE=demo,CADUCEUS_DEMO_RESET_HOURS=6 \
+            --set-secrets CADUCEUS_PROXY_SIGNING_KEY=caduceus-proxy-signing-key:latest \
+            --quiet
+      - name: The API is up, and refuses requests that did not come through Netlify
+        run: |
+          url="$(gcloud run services describe "$SERVICE" --project "$PROJECT" --region "$REGION" --format 'value(status.url)')"
+          for _ in $(seq 1 20); do curl -fsS "$url/api/health" && break; sleep 3; done
+          code="$(curl -s -o /dev/null -w '%{http_code}' "$url/api/demo")"
+          if [ "$code" != 403 ]; then
+            echo "::error title=Demo API::Expected 403 for an unsigned request, got $code"; exit 1
+          fi
+          echo "::notice title=Demo API::Deployed ${COMMIT:0:7} to $url; unsigned requests are refused"
