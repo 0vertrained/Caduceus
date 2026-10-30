@@ -78,12 +78,36 @@ await page.getByRole("heading", { name: "Check the fax" }).waitFor();
 await page.locator(".crop").first().waitFor();
 await shot(page, "02c-fax-check");
 await axe(page, "02c-fax-check");
-const labels = { referral: "Referral number", patient_name: "Patient name", birth_date: "Date of birth",
-  member_id: "Member ID", payer: "Health plan", clinician: "Ordering clinician", service_code: "CPT/HCPCS code",
-  service: "Requested service", diagnosis: "Diagnosis" };
-for (const [key, label] of Object.entries(labels)) {
-  await page.getByLabel(label, { exact: true }).fill(faxes["FAX-0003"].expected[key]);
+// Creating it before anything is checked: the error summary takes focus and links each problem to its field.
+await page.getByRole("button", { name: "Create the case" }).click();
+await page.getByRole("alert").filter({ hasText: "There is a problem" }).waitFor();
+if (!(await page.evaluate(() => document.activeElement?.classList.contains("error-summary")))) {
+  report.failures.push("fax: the error summary did not take focus");
 }
+await page.getByRole("alert").getByRole("link", { name: /^Enter the member ID/ }).click();
+if (!(await page.evaluate(() => document.activeElement?.id === "fax-member_id"))) {
+  report.failures.push("fax: the error link did not move focus to its field");
+}
+await shot(page, "02d-fax-errors");
+await axe(page, "02d-fax-errors");
+// Text where the fax has text, lists for the plan, the clinician and the service, three boxes for the date.
+const want = faxes["FAX-0003"].expected;
+for (const [key, label] of Object.entries({ referral: "Referral number", patient_name: "Patient name",
+  member_id: "Member ID", diagnosis: "Diagnosis" })) {
+  await page.getByLabel(label, { exact: true }).fill(want[key]);
+}
+const [month, day, year] = want.birth_date.split("/");
+for (const [label, value] of [["Month", month], ["Day", day], ["Year", year]]) {
+  await page.getByLabel(label, { exact: true }).fill(value);
+}
+await page.getByLabel("Health plan", { exact: true }).selectOption(want.payer);
+await page.getByLabel("Ordering clinician", { exact: true }).selectOption(want.clinician);
+await page.getByLabel("Requested service", { exact: true }).selectOption(want.service_code);
+// What the form started on still needs a person's tick, field by field.
+for (const box of await page.getByRole("checkbox", { name: /^Matches the fax/ }).all()) {
+  if (!(await box.isChecked())) await box.check();
+}
+await page.getByText(/^(\d+) of \1 checked$/).first().waitFor();
 await page.getByRole("button", { name: "Create the case" }).click();
 await page.getByRole("heading", { name: "Coverage criteria" }).waitFor();
 if (!page.url().endsWith("/cases/2026-1029")) report.failures.push(`fax: expected case 2026-1029, got ${page.url()}`);

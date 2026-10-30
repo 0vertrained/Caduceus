@@ -73,16 +73,105 @@ def test_a_degraded_fax_needs_its_fields_corrected_first(inbox):
     refused = client.post("/api/intake/FAX-0003/confirm", headers=DOLORES, json={"values": as_read})
     assert refused.status_code == 409 and refused.json()["message"].startswith("Check the ")
 
+    # Unsure, and either read right or started on the right choice: a person ticks each as matching the fax.
+    ticks = ["referral", "patient_name", "payer", "clinician", "service_code"]
     wrong_person = MANIFEST["FAX-0003"]["expected"] | {"birth_date": "01/01/1941"}
-    refused = client.post("/api/intake/FAX-0003/confirm", headers=DOLORES, json={"values": wrong_person})
+    refused = client.post("/api/intake/FAX-0003/confirm", headers=DOLORES,
+                          json={"values": wrong_person, "checked": ticks})
     assert refused.status_code == 409 and "No patient named Shelba Gulgowski" in refused.json()["message"]
 
     fixed = MANIFEST["FAX-0003"]["expected"]
-    assert client.post("/api/intake/FAX-0003/confirm", headers=DOLORES, json={"values": fixed}).json() == {
-        "case_id": "2026-1029"}
+    assert client.post("/api/intake/FAX-0003/confirm", headers=DOLORES,
+                       json={"values": fixed, "checked": ticks}).json() == {"case_id": "2026-1029"}
     confirmed = next(e for e in svc.audit.events("FAX-0003") if e.action == "fax.confirmed")
     assert {"member_id", "clinician", "service_code"} <= set(confirmed.detail["corrected"])
     assert svc.cases.get("2026-1029").effective_counts()["unmet"] == 1  # the same finding as the seeded case
+
+
+def test_the_form_follows_the_page_and_starts_on_the_closest_choice_on_file(inbox):
+    _, client = inbox
+    item = client.get("/api/intake/FAX-0003", headers=DOLORES).json()
+    assert [f["key"] for f in item["form"]] == ["referral", "patient_name", "birth_date", "member_id", "payer",
+                                                "clinician", "service_code", "diagnosis"]
+    form = {f["key"]: f for f in item["form"]}
+    # The "From:" line names the clinic, which narrows the clinicians to the ones who work there.
+    assert item["clinic"] == "Mesa Verde Orthopedics, Santa Fe" and "Santa" in item["sender"]["read_as"]
+    clinician = form["clinician"]
+    assert clinician["kind"] == "select" and clinician["at_clinic"] == ["Dr. Ana Reyes"]
+    assert clinician["read_as"] == "Dr Ana Reyes" and clinician["initial"] == "Dr. Ana Reyes" and clinician["problem"]
+    # One choice for the service, by its code; both lines the fax gave are shown as read.
+    service = form["service_code"]
+    assert service["label"] == "Requested service" and service["initial"] == "72148"
+    assert service["read_as"] == "72148 one, MRI of the lumbar spine without contrast"
+    assert {"code": "72148", "label": "MRI of the lumbar spine without contrast (CPT 72148)"} in \
+        item["choices"]["services"]
+    assert form["payer"]["initial"] == "UnitedHealthcare Medicare Advantage"
+    assert form["birth_date"] == form["birth_date"] | {"kind": "date", "initial": "03/09/1941"}
+    assert form["member_id"]["kind"] == "text" and form["member_id"]["initial"] == "mvo0s4522654"
+    assert item["to_check"] == sum(1 for f in item["form"] if f["problem"]) == 7
+
+    clean = client.get("/api/intake/FAX-0001", headers=DOLORES).json()
+    assert clean["clinic"] == "Mesa Verde Sleep Center" and not any(f["problem"] for f in clean["form"])
+    assert {f["key"]: f["initial"] for f in clean["form"]}["clinician"] == "Dr. Priya Patel"
+
+
+def form_start(client, fax_id: str) -> dict[str, str]:
+    """The values the check-the-fax form starts with, as the screen sends them back untouched."""
+    item = client.get(f"/api/intake/{fax_id}", headers=DOLORES).json()
+    return {f["key"]: f["initial"] for f in item["form"]}
+
+
+def test_every_unsure_field_is_ticked_or_corrected_before_the_case_exists(inbox):
+    svc, client = inbox
+    values = form_start(client, "FAX-0003") | {"member_id": "MV084522654",
+                                                 "diagnosis": "M54.50 Low back pain, unspecified"}
+
+    def confirm(checked: list[str]):
+        return client.post("/api/intake/FAX-0003/confirm", headers=DOLORES, json={"values": values,
+                                                                                   "checked": checked})
+
+    refused = confirm([])
+    assert refused.status_code == 409 and refused.json()["field"] == "referral"
+    assert refused.json()["message"] == ("Check the referral number against the fax, then tick “Matches the fax”, "
+                                         "or correct it.")
+    # A choice the form started on is not a person's choice: the suggested clinician still needs its tick.
+    refused = confirm(["referral", "patient_name", "payer", "service_code"])
+    assert refused.json()["field"] == "clinician" and svc.cases.get("2026-1029") is None
+    # A tick for a field that was read clearly, or for one that does not exist, counts for nothing.
+    assert confirm(["birth_date", "nonsense", "referral", "patient_name", "payer", "service_code"]).json()["field"] \
+        == "clinician"
+    assert client.post("/api/intake/FAX-0003/confirm", headers=DOLORES,
+                       json={"values": values, "checked": ["x" * 41]}).status_code == 422
+
+    made = confirm(["referral", "patient_name", "payer", "clinician", "service_code"])
+    assert made.json() == {"case_id": "2026-1029"}
+    confirmed = next(e for e in svc.audit.events("FAX-0003") if e.action == "fax.confirmed")
+    assert confirmed.detail["ticked"] == ["clinician", "patient_name", "payer", "referral", "service_code"]
+    assert set(confirmed.detail["checked"]) == {"referral", "patient_name", "member_id", "payer", "clinician",
+                                                "service_code", "diagnosis"}
+
+
+def test_the_service_is_chosen_by_its_code_and_named_from_the_catalog(inbox):
+    svc, client = inbox
+    values = form_start(client, "FAX-0001")
+    unknown = client.post("/api/intake/FAX-0001/confirm", headers=DOLORES,
+                          json={"values": values | {"service_code": "99999"}})
+    assert unknown.status_code == 409 and unknown.json()["field"] == "service_code"
+    assert unknown.json()["message"].startswith("Check the requested service:")
+    made = client.post("/api/intake/FAX-0001/confirm", headers=DOLORES,
+                       json={"values": values | {"service": "An MRI of the brain, with contrast"}})
+    assert made.status_code == 200
+    assert svc.cases.get("2026-1023").service["display"] == "CPAP device for sleep apnea"
+
+
+def test_the_clinics_match_the_ones_the_cover_sheets_are_drawn_with():
+    import ast
+
+    from caduceus.app_factory import CLINICS
+    source = ast.parse((DATA.parent / "scripts" / "make_faxes.py").read_text())
+    drawn = next(ast.literal_eval(n.value) for n in source.body
+                 if isinstance(n, ast.Assign) and getattr(n.targets[0], "id", None) == "CLINICS")
+    assert drawn == CLINICS
 
 
 def test_the_fax_tool_reads_only_the_intake_folder(inbox):

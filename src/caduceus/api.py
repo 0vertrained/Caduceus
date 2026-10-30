@@ -199,6 +199,10 @@ class AppealBody(BaseModel):
 
 class ConfirmFaxBody(BaseModel):
     values: dict[str, Annotated[str, Field(max_length=300)]] = Field(max_length=20)
+    # The fields sent to a person that they ticked as matching the fax. The server refuses the case until each one
+    # is ticked or corrected.
+    checked: list[Annotated[str, Field(max_length=40)]] = Field(default_factory=list, max_length=20)
+
 
 
 def create_app(services: Services | None = None, dispatch_interval: float | None = 5.0,
@@ -304,7 +308,7 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
 
     @app.exception_handler(ActionRefused)
     async def refused(_: Request, e: ActionRefused):
-        return JSONResponse({"message": str(e)}, status_code=409)
+        return JSONResponse({"message": str(e)} | e.detail, status_code=409)
 
     @app.exception_handler(StaleCase)
     async def stale(_: Request, e: StaleCase):
@@ -456,13 +460,17 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
     def fax_view(fax: Fax, detail: bool = False) -> dict:
         fields = (fax.reading or {}).get("fields", [])
         by_key = {f["key"]: f for f in fields}
+        checking = live.svc.workflow.intake_form(fax) if fax.reading else None
         out = {"id": fax.id, "status": fax.status, "received": moment(fax.received_at, now(), live.svc.tz),
                "pages": len(fax.pages) + 1, "referral": by_key.get("referral", {}).get("value"),
                "patient": by_key.get("patient_name", {}).get("value"),
-               "to_check": sum(1 for f in fields if f.get("problem")), "case_id": fax.case_id}
+               "to_check": sum(1 for f in checking["fields"] if f["problem"]) if checking else 0,
+               "clinic": checking and checking["clinic"], "case_id": fax.case_id}
         if detail:
             out |= {"fields": fields, "size": (fax.reading or {}).get("size"),
                     "engine": (fax.reading or {}).get("engine"), "image": f"/api/intake/{fax.id}/image"}
+            if checking:
+                out |= {"form": checking["fields"], "sender": checking["sender"], "choices": checking["choices"]}
         return out
 
     def read_new_faxes() -> bool:
@@ -499,7 +507,7 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
     @app.post("/api/intake/{fax_id}/confirm")
     def confirm_fax(fax_id: str, body: ConfirmFaxBody, who: Principal = Depends(principal)):
         load_fax(fax_id)
-        case = live.svc.workflow.confirm_fax(who, fax_id, body.values)
+        case = live.svc.workflow.confirm_fax(who, fax_id, body.values, body.checked)
         return {"case_id": case.id}
 
     @app.get("/api/outcomes")

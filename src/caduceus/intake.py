@@ -13,6 +13,7 @@ import re
 import shutil
 import subprocess
 import threading
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from difflib import SequenceMatcher
@@ -24,6 +25,10 @@ LABELS = [("referral", "Referral number"), ("patient_name", "Patient name"), ("b
           ("member_id", "Member ID"), ("payer", "Health plan"), ("clinician", "Ordering clinician"),
           ("service_code", "CPT/HCPCS code"), ("service", "Requested service"), ("diagnosis", "Diagnosis")]
 JUNK = " .,:;|\"'`“”‘’_-—~*"
+# The form a person checks, in the order the cover sheet gives it. The service's code and its name are two lines on
+# the page but one choice on the form: a person picks the service, and its code and name come from the catalog.
+FORM = ["referral", "patient_name", "birth_date", "member_id", "payer", "clinician", "service_code", "diagnosis"]
+SUGGEST_FLOOR = 0.6  # how like what was read the closest option must be before the form starts on it
 
 
 class FaxReadingUnavailable(Exception):
@@ -93,11 +98,34 @@ def _field(words: list[dict], label: str) -> tuple[str, float, tuple[int, int, i
     value = re.sub(r"\s*[|“”]+\s*", " ", value).strip(JUNK)
     if not value_words:
         return "", 0.0, None, raw
-    left = min(w["box"][0] for w in value_words)
-    top = min(w["box"][1] for w in value_words)
-    right = max(w["box"][0] + w["box"][2] for w in value_words)
-    bottom = max(w["box"][1] + w["box"][3] for w in value_words)
-    return value, min(w["conf"] for w in value_words), (left, top, right - left, bottom - top), raw
+    return value, min(w["conf"] for w in value_words), _box([w["box"] for w in value_words]), raw
+
+
+def _box(boxes: Iterable[tuple[int, int, int, int] | None]) -> tuple[int, int, int, int] | None:
+    """The smallest region holding all these regions."""
+    found = [b for b in boxes if b]
+    if not found:
+        return None
+    left, top = min(b[0] for b in found), min(b[1] for b in found)
+    right, bottom = max(b[0] + b[2] for b in found), max(b[1] + b[3] for b in found)
+    return left, top, right - left, bottom - top
+
+
+def _sender(lines: list[list[dict]]) -> dict[str, Any]:
+    """The cover sheet's "From:" line: the clinic that sent it. The clinic's fax number follows it and is left out."""
+    for words in lines:
+        if not words or not _letters(words[0]["text"]).startswith("from"):
+            continue
+        name = []
+        for w in words[1:]:
+            if _letters(w["text"]).startswith("fax"):
+                break
+            name.append(w)
+        text = re.sub(r"\s*[|“”]+\s*", " ", " ".join(w["text"] for w in name)).strip(JUNK)
+        if text:
+            return {"value": text, "confidence": round(min(w["conf"] for w in name), 2),
+                    "box": _box(w["box"] for w in name)}
+    return {"value": "", "confidence": 0.0, "box": None}
 
 
 def read_fax(path: Path) -> dict[str, Any]:
@@ -117,7 +145,8 @@ def read_fax(path: Path) -> dict[str, Any]:
                 fields[key] = Field(key, label, value, round(conf * (0.85 if junk else 1), 2), box)
         fields.setdefault(key, Field(key, label, "", 0.0, None, "This line could not be found on the page."))
     result = {"sha256": digest, "size": size, "fields": [asdict(f) for f in fields.values()],
-              "read_at": datetime.now().astimezone().isoformat(timespec="seconds"), "engine": "Tesseract OCR"}
+              "sender": _sender(lines), "text": "\n".join(" ".join(w["text"] for w in words) for words in lines),
+              "read_at":datetime.now().astimezone().isoformat(timespec="seconds"), "engine": "Tesseract OCR"}
     with _lock:
         _cache[digest] = result
     return result
@@ -147,6 +176,93 @@ def check(fields: list[dict], known: dict[str, set[str]]) -> list[dict]:
                 f["problem"] = f"Read with {round(f['confidence'] * 100)}% confidence; below {round(THRESHOLD * 100)}%."
         out.append(f)
     return out
+
+
+def _ratio(a: str, b: str) -> float:
+    return SequenceMatcher(None, _letters(a), _letters(b)).ratio()
+
+
+def closest(text: str, options: Iterable[str], floor: float = SUGGEST_FLOOR) -> str | None:
+    """The option most like what was read, if any is like it at all. Only ever where the form starts: a field that was
+    not read clearly still needs a person to tick it, whatever it starts on."""
+    options = list(options)
+    if not _letters(text) or not options:
+        return None
+    best = max(options, key=lambda o: (_ratio(text, o), o))
+    return best if _ratio(text, best) >= floor else None
+
+
+def closest_service(code_text: str, name_text: str, services: dict[str, dict]) -> str | None:
+    """The service code the fax most likely gives: a known code written out ("72148 one"), else a known code read a
+    little wrong ("72I48"), else the service named on the next line."""
+    for token in re.findall(r"\b(?:[A-Z]\d{4}|\d{5})\b", code_text.upper()):
+        if token in services:
+            return token
+    by_code = closest(code_text, services, floor=0.8)
+    if by_code:
+        return by_code
+    names = {s["display"]: code for code, s in services.items()}
+    by_name = closest(name_text, names, floor=0.75)
+    return names[by_name] if by_name else None
+
+
+def date_value(v: str) -> str:
+    """A date read as three numbers, written MM/DD/YYYY for the form's three boxes; empty if it is not three."""
+    parts = re.findall(r"\d+", v)
+    if len(parts) == 3 and len(parts[2]) == 4 and all(len(p) <= 2 for p in parts[:2]):
+        return f"{int(parts[0]):02d}/{int(parts[1]):02d}/{parts[2]}"
+    return ""
+
+
+def service_label(service: dict) -> str:
+    return f"{service['display']} ({service['system'].upper()} {service['code']})"
+
+
+def form(reading: dict[str, Any], catalog: dict[str, Any]) -> dict[str, Any]:
+    """What a person checks, in the order the cover sheet gives it: each field with what was read, any reason to check
+    it, and the value the form starts with. The health plan, the clinician and the service are chosen from the ones on
+    file, starting on the one closest to what was read; clinicians are narrowed to the clinic the fax came from.
+
+    The starting values matter to the rule a person follows: a field sent to a person counts as checked only when they
+    tick it, or change it from where the form started (see `unchecked`)."""
+    by = {f["key"]: f for f in reading.get("fields", [])}
+    sender = reading.get("sender") or {"value": "", "box": None}
+    clinics: dict[str, str] = catalog.get("clinics", {})  # clinician's name -> their clinic
+    clinic = closest(sender["value"], sorted(set(clinics.values())), floor=0.8)
+    fields = []
+    for key in FORM:
+        f = by[key]
+        item = {"key": key, "label": f["label"], "kind": "text", "read_as": f["value"], "initial": f["value"],
+                "problem": f.get("problem"), "confidence": f["confidence"], "box": f["box"]}
+        if key == "birth_date":
+            item |= {"kind": "date", "initial": date_value(f["value"])}
+        elif key == "payer":
+            item |= {"kind": "select", "initial": closest(f["value"], sorted(catalog["payers"])) or ""}
+        elif key == "clinician":
+            here = sorted(name for name, c in clinics.items() if c == clinic)
+            pick = closest(f["value"], here) or closest(f["value"], sorted(catalog["clinicians"]))
+            item |= {"kind": "select", "initial": pick or "", "at_clinic": here}
+        elif key == "service_code":
+            name = by["service"]
+            item |= {"label": "Requested service", "kind": "select",
+                     "read_as": ", ".join(v for v in (f["value"], name["value"]) if v),
+                     "initial": closest_service(f["value"], name["value"], catalog["services"]) or "",
+                     "problem": f.get("problem") or name.get("problem"),
+                     "confidence": min(f["confidence"], name["confidence"]), "box": _box([f["box"], name["box"]])}
+        fields.append(item)
+    return {"fields": fields, "clinic": clinic, "sender": {"read_as": sender["value"], "box": sender["box"]},
+            "choices": {
+                "payers": sorted(catalog["payers"]),
+                "clinicians": [{"name": n, "specialty": c.get("specialty", ""), "clinic": clinics.get(n)}
+                               for n, c in sorted(catalog["clinicians"].items())],
+                "services": [{"code": code, "label": service_label(s)}
+                             for code, s in sorted(catalog["services"].items(), key=lambda kv: kv[1]["display"])]}}
+
+
+def unchecked(fields: list[dict], values: dict[str, str], ticked: Iterable[str]) -> list[dict]:
+    """Fields sent to a person that they neither ticked as matching the fax nor changed from where the form began."""
+    ticked = set(ticked)
+    return [f for f in fields if f["problem"] and f["key"] not in ticked and values.get(f["key"], "") == f["initial"]]
 
 
 def _date(v: str) -> str | None:

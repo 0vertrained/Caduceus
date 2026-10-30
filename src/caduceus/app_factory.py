@@ -139,12 +139,21 @@ def build_services(settings: Settings | None = None, conn: sqlite3.Connection | 
     return Services(s, tz, audit, cases, store, workflow, auth, router, conn)
 
 
+# Where each ordering clinician works: the clinic a faxed referral names on its "From:" line. The fax cover sheets
+# (scripts/make_faxes.py) are drawn with the same names; a test keeps the two lists alike.
+CLINICS = {"pract-patel": "Mesa Verde Sleep Center", "pract-lee": "Mesa Verde Orthopedics, Rio Rancho",
+           "pract-reyes": "Mesa Verde Orthopedics, Santa Fe"}
+
+
 def _catalog(data_dir: Path) -> dict[str, Any]:
-    """The services, payers and ordering clinicians a referral may name, from the scenario data."""
+    """The services, payers and ordering clinicians a referral may name, from the scenario data, and the clinic each
+    clinician works at."""
     path = data_dir / "cases" / "cases.json"
     cases = json.loads(path.read_text()) if path.exists() else []
+    clinicians = {c["ordering_clinician"]["name"]: c["ordering_clinician"] for c in cases}
     return {"services": {c["service"]["code"]: c["service"] | {"criteria_set": c["criteria_set"]} for c in cases},
-            "clinicians": {c["ordering_clinician"]["name"]: c["ordering_clinician"] for c in cases},
+            "clinicians": clinicians,
+            "clinics": {name: CLINICS[c["id"]] for name, c in clinicians.items() if c["id"] in CLINICS},
             "payers": {c["payer"]["name"] for c in cases}}
 
 

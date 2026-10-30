@@ -20,12 +20,12 @@ from typing import Any
 
 from caduceus.audit.log import AuditLog, sha256_of
 from caduceus.auth import AGENT, Principal, Role
-from caduceus.cases import Attestation, Case, CaseRepository, FaxRepository, LastAction, State
+from caduceus.cases import Attestation, Case, CaseRepository, Fax, FaxRepository, LastAction, State
 from caduceus.criteria.dsl import CriteriaSet
 from caduceus.criteria.engine import Engine
-from caduceus.drafting import Drafter
+from caduceus.drafting import Drafter, mid_sentence
 from caduceus.fhir.store import FhirStore
-from caduceus.intake import LABELS, check, iso_date, read_fax
+from caduceus.intake import LABELS, check, form, iso_date, read_fax, unchecked
 from caduceus.payer import MockPayer, build_appeal_bundle, build_reply_bundle, build_request_bundle
 from caduceus.tools import ToolGateway, build_gateway
 
@@ -36,7 +36,12 @@ SNAPSHOT_FIELDS = ("state", "attestation_requested", "attestation_requested_at",
 
 
 class ActionRefused(Exception):
-    """A person tried something the case's state or their role does not allow. The message says why."""
+    """A person tried something the case's state or their role does not allow. The message says why; `detail` can
+    name the form field it is about (`field`) or a case that already covers it (`case_id`), for the screen to link."""
+
+    def __init__(self, message: str, **detail: str):
+        super().__init__(message)
+        self.detail = detail
 
 
 class Workflow:
@@ -49,7 +54,7 @@ class Workflow:
         self.faxes, self.fax_dir = faxes, fax_dir
         self.tz = tz  # the clinic's time zone, for times a refusal or a request to a clinic gives in words
         # What a referral may name: the services this team handles, the payers, the ordering clinicians on file.
-        self.catalog = catalog or {"services": {}, "clinicians": {}, "payers": set()}
+        self.catalog = catalog or {"services": {}, "clinicians": {}, "clinics": {}, "payers": set()}
         self._dispatch_lock = threading.Lock()  # one dispatcher at a time: a request is never sent twice
         self.gateway: ToolGateway = build_gateway(audit, store, library, self._set_state, self._submit,
                                                   self._payer_status, self._respond, self._appeal,
@@ -268,29 +273,44 @@ class Workflow:
             read.append(fax.id)
         return read
 
-    def confirm_fax(self, who: Principal, fax_id: str, values: dict[str, str]) -> Case:
-        """A person confirms the fields (correcting any) against the page; only then is the case created."""
+    def intake_form(self, fax: Fax) -> dict[str, Any]:
+        return form(fax.reading or {}, self.catalog)
+
+    def confirm_fax(self, who: Principal, fax_id: str, values: dict[str, str],
+                    checked: list[str] | None = None) -> Case:
+        """A person confirms the fields (correcting any) against the page; only then is the case created. Every field
+        sent to a person must be ticked as matching the fax, or corrected: nothing they did not look at gets through.
+        The service is chosen by its code; its name comes from the catalog, not from the request."""
         self._require(who, Role.PA_SPECIALIST)
-        fax = self.faxes.get(fax_id) if self.faxes else None
-        if fax is None:
-            raise KeyError(fax_id)
+        fax = self._fax(fax_id)
         if fax.status != "read":
             raise ActionRefused("This fax has already been turned into a case." if fax.status == "confirmed"
                                 else "Caduceus has not read this fax yet.")
         values = {key: str(values.get(key) or "").strip() for key, _ in LABELS}
+        service = self.catalog["services"].get(values["service_code"])
+        values["service"] = service["display"] if service else ""
         entered = [{"key": k, "label": label, "value": values[k], "confidence": 1.0, "box": None}
                    for k, label in LABELS]
         problems = [f for f in check(entered, self.known()) if f["problem"]]
         if problems:
-            raise ActionRefused(f"Check the {problems[0]['label'].lower()}: {problems[0]['problem']}")
+            p = problems[0]
+            if p["key"] in ("service_code", "service"):
+                raise ActionRefused(f"Check the requested service: {p['problem']}", field="service_code")
+            raise ActionRefused(f"Check the {mid_sentence(p['label'])}: {p['problem']}", field=p["key"])
+        fields = self.intake_form(fax)["fields"]
+        missed = unchecked(fields, values, checked or [])
+        if missed:
+            raise ActionRefused(f"Check the {mid_sentence(missed[0]['label'])} against the fax, then tick "
+                                "“Matches the fax”, or correct it.", field=missed[0]["key"])
         patient_id = self.store.find_patient(values["patient_name"], iso_date(values["birth_date"]) or "")
         if patient_id is None:
             raise ActionRefused(f"No patient named {values['patient_name']} born {values['birth_date']} is in the "
-                                "record. Check the name and date of birth against the fax.")
+                                "record. Check the name and date of birth against the fax.", field="patient_name")
         if self.cases.get(values["referral"]) is not None:
-            raise ActionRefused(f"A case for referral {values['referral']} already exists.")
-        service = self.catalog["services"][values["service_code"]]
+            raise ActionRefused(f"A case for referral {values['referral']} already exists.", field="referral",
+                                case_id=values["referral"])
         read = {f["key"]: f for f in (fax.reading or {}).get("fields", [])}
+        flagged = [f["key"] for f in fields if f["problem"]]
         case = Case(id=values["referral"], patient_id=patient_id,
                     service={k: service[k] for k in ("system", "code", "display", "short")},
                     criteria_set=service["criteria_set"], as_of=fax.as_of,
@@ -299,7 +319,7 @@ class Workflow:
                     received_at=fax.received_at, due_at=fax.received_at + timedelta(hours=fax.due_in_hours))
         self.cases.save(case)
         self.audit.append(who.id, who.role, "fax.confirmed", fax.id, {
-            "case": case.id, "checked": [k for k, f in read.items() if f.get("problem")],
+            "case": case.id, "checked": flagged, "ticked": sorted(set(checked or []) & set(flagged)),
             "corrected": [k for k in values if values[k] != read.get(k, {}).get("value")]})
         self.audit.append("intake", "agent_runtime", "case.received", case.id,
                           {"service": case.service["code"], "pages": len(case.packet), "from": fax.id})
@@ -394,6 +414,12 @@ class Workflow:
         if case is None:
             raise KeyError(case_id)
         return case
+
+    def _fax(self, fax_id: str) -> Fax:
+        fax = self.faxes.get(fax_id) if self.faxes else None
+        if fax is None:
+            raise KeyError(fax_id)
+        return fax
 
     @staticmethod
     def _require(who: Principal, role: Role) -> None:
