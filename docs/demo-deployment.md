@@ -25,10 +25,11 @@ infra/demo/setup-gcp.sh YOUR_PROJECT_ID us-central1
 
 The script prints the values for the next two steps. It is safe to run again.
 
-**2. GitHub.** In the repository's *Settings > Secrets and variables > Actions > Variables*, add the five values
-the script printed (`GCP_PROJECT_ID`, `GCP_REGION`, `GCP_WORKLOAD_IDENTITY_PROVIDER`,
-`GCP_DEPLOY_SERVICE_ACCOUNT`, `GCP_RUNTIME_SERVICE_ACCOUNT`). None of them is a secret. Then run the
-*deploy-demo* workflow from the Actions tab. After that it deploys by itself whenever CI passes on `main`.
+**2. GitHub.** Put the five values the script printed into the `env` block of
+`.github/workflows/deploy-demo.yml` (`PROJECT`, `REGION`, `WORKLOAD_IDENTITY_PROVIDER`, `DEPLOY_SA`,
+`RUNTIME_SA`) and push. None of them is a secret: Google accepts GitHub's token only from this repository, by its
+immutable id, running on `main`. From then on the API deploys by itself whenever CI passes on `main`; the
+*deploy-demo* workflow can also be run by hand from the Actions tab.
 
 **3. Netlify.** *Add new site > Import an existing project*, and pick this repository; `netlify.toml` supplies the
 build settings. Under *Site configuration > Environment variables*, add:
@@ -59,4 +60,4 @@ Copy the key straight from Cloud Shell into Netlify; it never needs to be anywhe
 ## Taking it down
 
 Delete the Cloud Run service (`gcloud run services delete caduceus-demo --region us-central1`) and the Netlify
-site. Removing `GCP_PROJECT_ID` from the GitHub variables stops further deploys.
+site, then remove `.github/workflows/deploy-demo.yml` (or disable it in the Actions tab) to stop further deploys.
