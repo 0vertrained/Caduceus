@@ -65,6 +65,13 @@ class Case(BaseModel):
     # The answer to a payer's request for more: who asked the clinician, and the note they signed (or that they
     # could not document it). Sent to the payer only after a PA specialist approves it.
     reply: dict[str, Any] | None = None
+    # What the payer's coverage-requirements service said at intake (CRD-style): whether prior authorization is
+    # required, which policy version it publishes, and whether that matches the criteria approved here.
+    requirements: dict[str, Any] | None = None
+    sent_at: datetime | None = None       # when the request first reached the payer; starts the decision clock
+    decided_at: datetime | None = None    # when the payer first approved or denied it
+    # After a denial: the appeal the agent drafted, which a PA specialist reads (and may edit) before it is sent.
+    appeal: dict[str, Any] | None = None
     last_action: LastAction | None = None
     version: int = 0
 
@@ -104,7 +111,8 @@ class Case(BaseModel):
     def ready_to_approve(self) -> bool:
         c = self.effective_counts()
         return (self.state == State.REVIEW and c["unmet"] == 0 and c["unknown"] == 0 and sum(c.values()) > 0
-                and not (self.draft or {}).get("out_of_date"))
+                and not (self.draft or {}).get("out_of_date")
+                and (self.requirements is None or bool(self.requirements.get("matches"))))
 
 
 class StaleCase(Exception):

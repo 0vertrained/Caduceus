@@ -190,6 +190,10 @@ class NoteBody(BaseModel):
     text: str = Field(max_length=20_000)
 
 
+class AppealBody(BaseModel):
+    text: str = Field(max_length=20_000)
+
+
 def create_app(services: Services | None = None, dispatch_interval: float | None = 5.0,
                fresh_demo: Callable[[], Services] | None = None) -> FastAPI:
     """dispatch_interval=None (tests) starts no background threads: no outbox dispatcher, no demo resets."""
@@ -404,6 +408,14 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
     @app.post("/api/cases/{case_id}/send-note")
     def send_note(case_id: str, who: Principal = Depends(principal)):
         return view(live.svc.workflow.approve_reply(who, load(case_id).id), who)
+
+    @app.post("/api/cases/{case_id}/send-appeal")
+    def send_appeal(case_id: str, who: Principal = Depends(principal)):
+        return view(live.svc.workflow.approve_appeal(who, load(case_id).id), who)
+
+    @app.put("/api/cases/{case_id}/appeal")
+    def edit_appeal(case_id: str, body: AppealBody, who: Principal = Depends(principal)):
+        return view(live.svc.workflow.edit_appeal(who, load(case_id).id, body.text), who)
 
     @app.post("/api/cases/{case_id}/return")
     def return_case(case_id: str, body: ReturnBody, who: Principal = Depends(principal)):

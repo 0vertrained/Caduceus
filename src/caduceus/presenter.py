@@ -14,6 +14,7 @@ from caduceus.cases import Case, State
 from caduceus.criteria.dsl import CriteriaSet
 from caduceus.drafting import age_on, patient_name
 from caduceus.fhir.store import FhirStore, document_text
+from caduceus.payer import RULE_PLANS, STANDARD_DECISION_DAYS
 from caduceus.workflow import NOTE_LIMIT, UNDO_SECONDS, approve_blocked_reason
 
 URGENT = timedelta(hours=2)
@@ -80,11 +81,39 @@ def status(case: Case) -> dict[str, str]:
                        else {"key": "payer_question", "word": "The payer asked a question"}),
         State.AWAITING_NOTE: {"key": "waiting_clinician", "word": f"Waiting on {clin}"},
         State.APPROVED: {"key": "approved", "word": "Approved by the payer"},
-        State.DENIED: {"key": "denied", "word": "Denied by the payer"},
+        State.DENIED: {"key": "denied", "word": "Denied; appeal drafted" if case.appeal else "Denied by the payer"},
     }[case.state]
 
 
-ACTIVE = {State.REVIEW, State.PENDED}
+ACTIVE = {State.REVIEW, State.PENDED, State.DENIED}
+
+
+def took(delta: timedelta) -> str:
+    minutes = int(delta.total_seconds() // 60)
+    if minutes < 1:
+        return "under a minute"
+    if minutes < 120:
+        return f"{minutes} minute{'s' if minutes != 1 else ''}"
+    hours = minutes // 60
+    return f"{hours} hours" if hours < 48 else f"{hours // 24} days"
+
+
+def payer_clock(case: Case, now: datetime, tz: ZoneInfo) -> dict[str, Any] | None:
+    """The payer's decision deadline under the CMS prior authorization rule, once the request has reached it."""
+    plan = (case.requirements or {}).get("plan_type")
+    if case.sent_at is None or plan is None:
+        return None
+    if plan not in RULE_PLANS:
+        return {"applies": False, "plan_type": plan,
+                "words": f"{plan} is not covered by the CMS prior authorization rule's decision deadlines."}
+    due_at = case.sent_at + timedelta(days=STANDARD_DECISION_DAYS)
+    if case.decided_at is not None:
+        within = case.decided_at <= due_at
+        return {"applies": True, "plan_type": plan, "decided": True, "within": within,
+                "words": f"Decided in {took(case.decided_at - case.sent_at)}, "
+                         f"{'within' if within else 'past'} the {STANDARD_DECISION_DAYS}-day limit."}
+    return {"applies": True, "plan_type": plan, "decided": False, "within": now <= due_at,
+            "words": f"Due by {moment(due_at, now, tz)}: {STANDARD_DECISION_DAYS} calendar days under the CMS rule."}
 WITH_CLINICIAN = {State.AWAITING_ATTESTATION, State.AWAITING_NOTE}
 WAITING = WITH_CLINICIAN | {State.RETURNED, State.SUBMITTED}
 
@@ -159,7 +188,9 @@ class Presenter:
                    "can_return": case.state in ACTIVE,
                    "can_ask_for_note": case.state == State.PENDED and not reply.get("note")
                    and not reply.get("declined_by"),
-                   "can_send_note": case.state == State.PENDED and bool(reply.get("note"))}
+                   "can_send_note": case.state == State.PENDED and bool(reply.get("note")),
+                   "can_send_appeal": case.state == State.DENIED and bool(case.appeal),
+                   "can_edit_appeal": case.state == State.DENIED and bool(case.appeal)}
         return {
             "id": case.id, "version": case.version, "state": case.state.value, "status": status(case),
             "patient": {"name": patient_name(p), "birth_date": long_date(born),
@@ -178,10 +209,26 @@ class Presenter:
             "payer_response": case.payer_response,
             "submission": case.submission,
             "reply": self.reply(case, now),
+            "appeal": self.appeal(case),
+            "payer_clock": payer_clock(case, now, self.tz),
+            "requirements": case.requirements and {
+                "matches": case.requirements.get("matches"), "plan_type": case.requirements.get("plan_type"),
+                "checked_at": clock(datetime.fromisoformat(case.requirements["checked_at"]), self.tz)},
             "read_only": read_only,
         } | ({"actions": {k: False if k.startswith("can_") else v for k, v in actions.items()},
               "summary": "Read only. Only a prior-authorization specialist can act on a case."}
              if read_only else {})
+
+    def appeal(self, case: Case) -> dict[str, Any] | None:
+        """A denial with its specific reason, the policy and record behind the criterion, and the drafted appeal."""
+        decision = (case.payer_response or {}).get("decision", {})
+        if not case.appeal and decision.get("code") != "A3":
+            return None
+        reason = decision.get("reason") or (case.appeal or {}).get("reason") or {}
+        result = next((r for r in case.effective_results() if r["text"] == reason.get("criterion")), None)
+        return {"reason": reason.get("text"), "criterion": reason.get("criterion"),
+                "policy_sentence": result and result["policy_sentence"], "record": result and result["explanation"],
+                "draft": case.appeal}
 
     def reply(self, case: Case, now: datetime) -> dict[str, Any] | None:
         """The payer's request for more, and where its answer stands, in words."""
@@ -246,6 +293,10 @@ def summary_sentence(case: Case, counts: dict[str, int], total: int) -> str:
         return f"{lead} Waiting for {clin} to sign."
     if case.state == State.AWAITING_NOTE:
         return f"Waiting for {clin} to write the note {payer} asked for."
+    if case.state == State.DENIED:
+        reason = (case.payer_response or {}).get("decision", {}).get("reason", {}).get("text", "")
+        return (f"{payer} denied it. {reason} An appeal citing the policy and the record is drafted; read it, "
+                "then send it.") if case.appeal else f"{payer} denied it. {reason}"
     if case.state == State.PENDED:
         reply = case.reply or {}
         if reply.get("note"):

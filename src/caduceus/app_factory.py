@@ -126,7 +126,8 @@ def build_services(settings: Settings | None = None, conn: sqlite3.Connection | 
         external = CachingProvider(external, recordings, model=s.external_model)
     router = Router(in_vpc, external, deid) if (in_vpc or external) else None
 
-    workflow = Workflow(cases, audit, store, library, engine, Drafter(router, deid), MockPayer())
+    workflow = Workflow(cases, audit, store, library, engine, Drafter(router, deid),
+                        MockPayer(published=load_lock(policies)))
     auth = Authenticator(s.auth_mode, s.oidc_jwks_url, s.oidc_issuer, s.oidc_audience)
     return Services(s, ZoneInfo(s.clinic_tz), audit, cases, store, workflow, auth, router, conn)
 
@@ -143,9 +144,16 @@ def _external_provider(s: Settings) -> Provider | None:
                                      base_url=s.external_base_url or "https://api.anthropic.com")
 
 
-def _stub_reply(_system: str, user: str) -> str:
+def _stub_reply(system: str, user: str) -> str:
     """A fixed, predictable paragraph built from the de-identified facts, keeping their tokens."""
     lines = user.splitlines()
+    if "reconsideration" in system:
+        found = {k: ln.split(": ", 1)[1] for ln in lines for k in ("Payer", "Payer's reason for denial",
+                 "Coverage policy sentence", "What the record shows") if ln.startswith(k + ": ")}
+        reason, policy = found.get("Payer's reason for denial", ""), found.get("Coverage policy sentence", "")
+        return (f"We ask {found.get('Payer', 'the payer').rstrip('.')} to reconsider. The denial states: {reason} "
+                f"The policy reads: {policy} The record shows: {found.get('What the record shows', '')} "
+                "We ask that the denial be reversed.")
     who = lines[0].removeprefix("Patient: ").rstrip(".") if lines else "The patient"
     what = lines[1].removeprefix("Requested service: ").rstrip(".") if len(lines) > 1 else "the requested service"
     met = [ln[2:].split(":")[0].lower() for ln in lines if ln.startswith("- ") and ": met." in ln]

@@ -23,6 +23,13 @@ DRAFT_SYSTEM = (
     "headings, no salutation."
 )
 
+APPEAL_SYSTEM = (
+    "You write a request for reconsideration of a prior-authorization denial for a medical group. Use only the facts "
+    "provided. Quote the payer's stated reason and the coverage policy sentence exactly, then show how the documented "
+    "facts meet the policy. Do not add diagnoses, dates or results that are not in the facts. Keep every bracketed "
+    "token such as [NAME_1] or [DATE_2] exactly as written. Write 120 to 180 words of formal, plain English, no "
+    "headings, no salutation, no signature."
+)
 SUMMARY_SYSTEM = (
     "Summarize, for the ordering clinician, what this patient's chart shows about the listed criteria, in at most "
     "two sentences. State plainly what the chart does not say. Use only the facts provided."
@@ -81,6 +88,39 @@ def _facts(case: Case, patient: dict) -> str:
     return "\n".join(lines)
 
 
+def _denied(case: Case) -> tuple[dict[str, Any], dict[str, Any] | None]:
+    reason = (case.payer_response or {}).get("decision", {}).get("reason") or {}
+    result = next((r for r in case.effective_results() if r["text"] == reason.get("criterion")), None)
+    return reason, result
+
+
+def _appeal_facts(case: Case, patient: dict) -> str:
+    reason, r = _denied(case)
+    lines = [_facts(case, patient), "", f"Payer: {case.payer['name']}.",
+             f"Payer's reason for denial: {reason.get('text')}"]
+    if r:
+        lines += [f"Criterion the payer cited: {r['text']}.", f"Coverage policy sentence: \"{r['policy_sentence']}\"",
+                  f"What the record shows: {r['explanation']}"]
+    return "\n".join(lines)
+
+
+def template_appeal(case: Case, patient: dict) -> str:
+    age = age_on(patient, date.fromisoformat(case.as_of))
+    sex = {"male": "man", "female": "woman"}.get(patient.get("gender", ""), "patient")
+    reason, r = _denied(case)
+    parts = [f"We ask {case.payer['name']} to reconsider its denial of {mid_sentence(case.service['display'])} "
+             f"({case.service['system'].upper()} {case.service['code']}) for a {age}-year-old {sex}.",
+             f"The denial states: \"{reason.get('text', '').strip()}\""]
+    if r:
+        parts += [f"The coverage policy for this service reads: \"{r['policy_sentence']}\"",
+                  f"The record meets it as written. {r['explanation']}"]
+        source = next((e["source_sentence"] for e in r.get("evidence", []) if e.get("source_sentence")), None)
+        if source:
+            parts.append(f"The chart states: \"{source}\"")
+    parts.append("We ask that the denial be reversed and the request approved.")
+    return " ".join(parts)
+
+
 def template_draft(case: Case, patient: dict) -> str:
     age = age_on(patient, date.fromisoformat(case.as_of))
     sex = {"male": "man", "female": "woman"}.get(patient.get("gender", ""), "patient")
@@ -101,14 +141,22 @@ class Drafter:
         self._deid = deid
 
     def draft(self, case: Case, patient: dict) -> dict[str, Any]:
-        template = template_draft(case, patient)
+        return self._write(case, patient, "draft_request", DRAFT_SYSTEM, _facts(case, patient),
+                           template_draft(case, patient))
+
+    def appeal(self, case: Case, patient: dict) -> dict[str, Any]:
+        """The request for reconsideration after a denial, written the same way as the request itself."""
+        return self._write(case, patient, "draft_appeal", APPEAL_SYSTEM, _appeal_facts(case, patient),
+                           template_appeal(case, patient))
+
+    def _write(self, case: Case, patient: dict, task: str, system: str, facts: str, template: str) -> dict[str, Any]:
         if self._router is None:
             return {"text": template, "route": "template", "model": None}
         ctx = patient_context(patient)
-        result = self._deid.deidentify(_facts(case, patient), ctx)
+        result = self._deid.deidentify(facts, ctx)
         stamped = self._deid.stamp(result)
         try:
-            out = self._router.complete_deid("draft_request", DRAFT_SYSTEM, [stamped], case.id, ctx)
+            out = self._router.complete_deid(task, system, [stamped], case.id, ctx)
         except (InVpcUnavailable, ProviderUnavailable, UnstampedPayload) as e:
             return {"text": template, "route": "template", "model": None, "fallback_reason": type(e).__name__}
         reply = out.completion.text.strip()

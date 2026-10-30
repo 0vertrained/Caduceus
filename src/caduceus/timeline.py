@@ -16,7 +16,7 @@ from caduceus.audit.log import AuditEvent
 from caduceus.auth import DEV_USERS
 
 AGENT_IDS = {"caduceus-agent", "intake"}
-STEP_WORDS = {"enrichment": "read the patient's record and the referral packet",
+STEP_WORDS = {"enrichment": "read the record, the referral packet and the payer's requirements",
               "drafting": "read the packet to write the draft", "review": "move the case to review",
               "submission": "send it to the payer", "follow_up": "read the payer's decision and file it"}
 VIEWS = {"case.viewed": "Opened the case", "page.viewed": "Read a packet page",

@@ -51,10 +51,11 @@ class ToolSpec:
 
 ALLOWLIST: dict[str, frozenset[str]] = {
     "enrichment": frozenset({"ehr.get_patient_summary", "ehr.list_active_conditions", "ehr.list_procedures",
-                             "ehr.search_observations", "documents.list_packet", "policies.criteria_set_for"}),
+                             "ehr.search_observations", "documents.list_packet", "policies.criteria_set_for",
+                             "payer.coverage_requirements"}),
     "drafting": frozenset({"documents.list_packet", "documents.get_page"}),
     "review": frozenset({"tickets.set_state", "documents.get_page"}),
-    "submission": frozenset({"payer.submit", "payer.respond"}),
+    "submission": frozenset({"payer.submit", "payer.respond", "payer.appeal"}),
     "follow_up": frozenset({"payer.status", "tickets.set_state"}),
 }
 
@@ -95,7 +96,8 @@ def _ago(as_of: date, days: int | None) -> date | None:
 
 def build_gateway(audit: AuditLog, store: FhirStore, library: dict[str, CriteriaSet],
                   set_state: Callable[[str, str, str], None], submit: Callable[..., dict],
-                  status: Callable[[str], dict], respond: Callable[..., dict]) -> ToolGateway:
+                  status: Callable[[str], dict], respond: Callable[..., dict], appeal: Callable[..., dict],
+                  requirements: Callable[..., dict]) -> ToolGateway:
     gw = ToolGateway(audit)
 
     # ehr: narrow, read-scoped views of the record. No generic FHIR search is exposed.
@@ -167,6 +169,10 @@ def build_gateway(audit: AuditLog, store: FhirStore, library: dict[str, Criteria
     gw.register(ToolSpec("payer.respond", "payer", frozenset({Role.AGENT_RUNTIME}), respond,
                          "Send the payer the documentation it asked for, once a person has approved it.",
                          writes=True))
+    gw.register(ToolSpec("payer.appeal", "payer", frozenset({Role.AGENT_RUNTIME}), appeal,
+                         "Send an appeal of a denial, once a person has approved it.", writes=True))
+    gw.register(ToolSpec("payer.coverage_requirements", "payer", frozenset({Role.AGENT_RUNTIME}), requirements,
+                         "Ask the payer whether prior authorization is required and which policy it applies."))
     gw.register(ToolSpec("payer.status", "payer", frozenset({Role.AGENT_RUNTIME}), status,
                          "Read the payer's decision on a submission."))
     return gw
