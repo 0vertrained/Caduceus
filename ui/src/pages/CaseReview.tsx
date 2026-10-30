@@ -1,11 +1,68 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api, ApiError, type CaseView, type CriterionResult, type Page, type PayerReply } from "../api";
 import { ChevronLeft, CheckCircle, Triangle } from "../components/Icons";
 import { CriterionIcon, StatusWord, criterionWord } from "../components/Status";
 import { countWords, midSentence, useResource, useSecondsLeft } from "../hooks";
 
-type Panel = { kind: "draft" } | { kind: "edit" } | { kind: "page"; docId: string; sentence: string | null; supports: string | null };
+type Panel = { kind: "draft" } | { kind: "edit" } | { kind: "sent" }
+  | { kind: "page"; docId: string; sentence: string | null; supports: string | null };
+
+const REMOVED: Record<string, [string, string]> = {
+  NAME: ["name part", "name parts"], DATE: ["date", "dates"], ADDRESS: ["street address", "street addresses"],
+  CITY: ["city", "cities"], ZIP: ["ZIP code", "ZIP codes"], PHONE: ["phone number", "phone numbers"],
+  EMAIL: ["email address", "email addresses"], RECORD_NUMBER: ["record number", "record numbers"],
+  SSN: ["Social Security number", "Social Security numbers"], URL: ["web address", "web addresses"],
+};
+
+function removedWords(removed: Record<string, number> = {}): string {
+  const parts = Object.entries(removed).filter(([, n]) => n > 0)
+    .map(([k, n]) => `${n} ${(REMOVED[k] ?? [k.toLowerCase(), k.toLowerCase()])[n === 1 ? 0 : 1]}`);
+  if (!parts.length) return "Nothing identifying was found in the facts.";
+  return parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
+}
+
+/** De-identified text with each placeholder marked, so a reader sees where a name or date was taken out. */
+function Placeholders({ text }: { text: string }) {
+  return <>{text.split(/(\[[A-Z_]+_\d+\])/).map((part, i) =>
+    /^\[[A-Z_]+_\d+\]$/.test(part) ? <span key={i} className="placeholder">{part}</span> : part)}</>;
+}
+
+function DraftOrigin({ c, onOpen }: { c: CaseView; onOpen: () => void }) {
+  const d = c.draft;
+  if (!d) return null;
+  if (d.route === "template" || !d.sent) {
+    return <p className="support">Written from a template inside Caduceus{d.fallback_reason ? " because the model was not available" : ""}.
+      No model was used, so nothing was sent anywhere.</p>;
+  }
+  return (
+    <p className="support">Written by {d.model} on {d.sent.vendor}, from the case facts with every identifier removed.{" "}
+      <button type="button" className="link-button" onClick={onOpen}>See what was sent</button></p>
+  );
+}
+
+function SentPanel({ c, back, heading }: { c: CaseView; back: () => void; heading: RefObject<HTMLHeadingElement | null> }) {
+  const d = c.draft!, sent = d.sent!;
+  return (
+    <aside className="panel side" aria-labelledby="panel-title">
+      <button type="button" className="link-button" style={{ display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none" }}
+              onClick={back}><ChevronLeft size={20} />Back to the draft</button>
+      <h2 id="panel-title" ref={heading} tabIndex={-1} className="section-title">What was sent to the model</h2>
+      <p>{d.model} on {sent.vendor} saw only the text below. Caduceus took the patient’s identifiers out first, and put
+        them back into the reply here, inside the clinic’s systems.</p>
+      <dl className="sent-facts">
+        <div><dt>Taken out before sending</dt><dd>{removedWords(d.deid_removed)}</dd></div>
+        <div><dt>Checked before it left</dt><dd>The de-identification stamp ({sent.policy}) was verified, and the text
+          was scanned again for this patient’s identifiers. None were found.</dd></div>
+        <div><dt>Put back here</dt><dd>{sent.tokens_filled_in === 1 ? "1 placeholder" : `${sent.tokens_filled_in} placeholders`} in
+          the reply, filled in after it came back.</dd></div>
+        <div><dt>The call</dt><dd>{sent.cached ? "A recorded reply to this exact request, reused. No new call was made."
+          : `${sent.input_tokens.toLocaleString()} tokens in, ${sent.output_tokens.toLocaleString()} out.`}</dd></div>
+      </dl>
+      <div className="paper paper--sent"><Placeholders text={sent.text} /></div>
+    </aside>
+  );
+}
 
 const STEPS = ["Packet checked", "Review the criteria", "Approve the draft", "Sent to the payer"];
 
@@ -148,6 +205,8 @@ function SidePanel({ c, panel, setPanel, onSaved }: {
   const pending = c.criteria.results.filter((r) => r.status === "unknown");
   const signedBy = c.criteria.results.find((r) => r.attested_by)?.attested_by;
 
+  if (panel.kind === "sent" && c.draft?.sent) return <SentPanel c={c} back={() => setPanel({ kind: "draft" })} heading={heading} />;
+
   if (panel.kind === "page") {
     return (
       <aside className="panel side" aria-labelledby="panel-title" aria-live="polite">
@@ -205,7 +264,8 @@ function SidePanel({ c, panel, setPanel, onSaved }: {
         </div>
       )}
       <p className="draft">{c.draft?.text}</p>
-      {c.draft?.edited_by && <p className="support">Edited by {c.draft.edited_by}.</p>}
+      {c.draft?.edited_by ? <p className="support">Edited by {c.draft.edited_by}.</p>
+        : <DraftOrigin c={c} onOpen={() => setPanel({ kind: "sent" })} />}
       <div className="signature">
         {signedBy ? <span className="signature__line signature__line--signed">Signed by {signedBy}</span>
           : pending.length ? <span className="signature__line">awaiting signature</span>

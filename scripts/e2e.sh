@@ -14,6 +14,11 @@ export CADUCEUS_DB="$work/e2e.sqlite3"
 export CADUCEUS_DEID_KEY="${CADUCEUS_DEID_KEY:-e2e-only-signing-key-at-least-32-bytes-long}"
 export CADUCEUS_AUTH_MODE=demo  # as deployed: the demo banner is on every screen the walk checks
 
+# Replies from a stub model on the de-identified route, recorded the way the real ones are, so the walk can open
+# "What was sent to the model" without calling a model.
+CADUCEUS_EXTERNAL_PROVIDER=stub CADUCEUS_AUTH_MODE=dev python scripts/record_completions.py "$work/recorded.json" >/dev/null
+export CADUCEUS_MODEL_RECORDINGS="$work/recorded.json"
+
 python -m caduceus.seed
 uvicorn caduceus.api:create_app --factory --host 127.0.0.1 --port "$port" --log-level warning &
 server=$!

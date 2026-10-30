@@ -86,6 +86,15 @@ await view(page, "04-case-evidence");
 await page.evaluate(() => { document.documentElement.style.scrollBehavior = ""; window.scrollTo(0, 0); });
 await axe(page, "04-case-evidence");
 
+// How the draft was written: exactly what the model saw, with the placeholders where identifiers were.
+await page.getByRole("button", { name: "Back to the draft" }).click();
+await page.getByRole("button", { name: "See what was sent" }).click();
+await page.getByRole("heading", { name: "What was sent to the model" }).waitFor();
+if (await page.locator(".paper--sent").getByText(/Kristina|Mante/).count()) report.failures.push("sent text holds a name");
+await shot(page, "04b-case-sent-to-model");
+await axe(page, "04b-case-sent-to-model");
+await page.getByRole("button", { name: "Back to the draft" }).click();
+
 await page.getByRole("button", { name: /to attest$/ }).click();
 await page.getByText(/This case comes back to you/).waitFor();
 await shot(page, "05-case-sent-for-attestation");
