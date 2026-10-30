@@ -45,6 +45,7 @@ await page.goto(base + "/");
 await axe(page, "01-sign-in");
 await signIn(page, "Dolores Montoya");
 await page.getByRole("heading", { level: 1 }).waitFor();
+if (!(await page.getByRole("region", { name: "About this demo" }).isVisible())) report.failures.push("demo banner missing");
 await shot(page, "02-queue");
 await view(page, "02-queue");
 await axe(page, "02-queue");

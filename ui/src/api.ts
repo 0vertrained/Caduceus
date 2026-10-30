@@ -45,6 +45,11 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+/** Whether this is the public demo, and when its cases go back to the start. */
+export type DemoInfo =
+  | { demo: false }
+  | { demo: true; reset_every_hours: number; last_reset_at: string; next_reset_at: string };
+
 export type StatusKey =
   | "ready" | "needs_clinician" | "not_met" | "preparing" | "waiting_clinician" | "returned"
   | "sending" | "waiting_payer" | "payer_question" | "approved" | "denied";
