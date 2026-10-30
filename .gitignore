@@ -15,3 +15,6 @@ data/synthea-raw/
 evals/reports/*.json
 !evals/reports/.gitkeep
 .synthea/
+
+# Isolated working copies made by coding agents
+.claude/worktrees/

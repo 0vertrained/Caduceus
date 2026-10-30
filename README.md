@@ -16,13 +16,24 @@ who to act as at each step. Your queue is your own copy, so nothing you do chang
 faxed referrals, the denied CPAP request and its appeal, "See what was sent" under any draft, the case history,
 and the outcomes page. [How it would roll out at a real health system](docs/rollout-plan.md).
 
-| Queue | Evidence for a criterion |
-|---|---|
-| ![The queue: cases due today, soonest first, each with a status in words](docs/screenshots/queue.png) | ![A case with the visit note open beside the criteria and the supporting sentence highlighted](docs/screenshots/case-evidence.png) |
+**[Watch the 98-second walkthrough](https://caduceusdemo.netlify.app/demo.mp4)**: a faxed referral, the evidence,
+the clinician's attestation, the payer's question and the clinician's note, a denial and its appeal, the audit trail.
 
-| Approved, with undo | The clinician's phone |
+| The queue, with referrals that arrived by fax | Checking a poor fax against the page |
 |---|---|
-| ![After approval: a 30-second undo before the request is sent](docs/screenshots/case-approved.png) | ![The ordering clinician confirms one item from a phone](docs/screenshots/attest-phone.png) |
+| ![The queue: three faxed referrals read inside the boundary, then cases due today](docs/screenshots/queue.png) | ![Each unsure field beside the part of the fax it came from](docs/screenshots/fax-check.png) |
+
+| Evidence for a criterion | What was sent to the model |
+|---|---|
+| ![A criterion beside the visit note, with the supporting sentence highlighted](docs/screenshots/case-evidence.png) | ![The exact de-identified text Kimi K2.6 saw, with every placeholder marked](docs/screenshots/sent-to-model.png) |
+
+| The payer asks a question | A denial, and the appeal drafted from the policy |
+|---|---|
+| ![Humana asks for the note behind the clinician's attestation](docs/screenshots/payer-question.png) | ![UnitedHealthcare's specific reason, the policy sentence and the record, side by side](docs/screenshots/denial.png) |
+
+| The case history, sealed | Outcomes, counted from the audit log |
+|---|---|
+| ![Every step, who took it and when, in plain words](docs/screenshots/history.png) | ![A ledger of what the agent and people did, and where patient information went](docs/screenshots/outcomes.png) |
 
 ## What is built, and how it is checked
 
