@@ -56,6 +56,15 @@ async function as(page, label) {
   await page.waitForLoadState("networkidle");
 }
 const status = (page, text) => page.getByRole("status").filter({ hasText: text });
+// Waits between clips, unrecorded: ask the API, as Dolores in this copy, until the case reaches a state.
+async function until(caseId, states, ms = 120_000) {
+  const headers = { "X-Caduceus-User": "dolores", "X-Caduceus-Sandbox": SANDBOX };
+  for (const start = Date.now(); Date.now() - start < ms; await pause(1000)) {
+    const c = await (await fetch(`${base}/api/cases/${caseId}`, { headers })).json();
+    if (states.includes(c.state) && !(c.state === "submitted" && !c.submission?.sent)) return c;
+  }
+  throw new Error(`${caseId} did not reach ${states.join(" or ")}`);
+}
 
 // Clip 1: the queue, and a faxed referral read inside the boundary.
 let page = await context.newPage();
@@ -131,11 +140,44 @@ await page.getByRole("button", { name: "Approve and send" }).click();
 await status(page, "Approved.").waitFor();
 await say(page, "For 30 seconds she can still undo it. Then the agent sends it, through a tool that refuses anything a person did not approve.", 4600);
 await page.close();
-await pause(36_000);
 
-// Clip 3: the payer asks a question; the clinician writes the note; it goes back.
+// Clip 2b, while the outbox waits: three cases built to show one thing each, and the policies behind them.
+page = await context.newPage();
+await as(page, "Dolores Montoya");  // the queue is "/", where a new tab is not signed in yet
+await page.locator("li.row").filter({ hasText: "Raymond Vigil" }).scrollIntoViewIfNeeded();
+await say(page, "Some requests can't wait. The sleep clinic marked Raymond Vigil's CPAP request expedited.", 3600);
+await page.goto(base + "/cases/2026-1053");
+await page.getByText("Expedited.", { exact: true }).waitFor();
+await still(page, "expedited");
+await say(page, "Its reason is on the case, and the payer owes a decision in 72 hours, not 7 days. A specialist can change it until approval.", 4600);
+await page.goto(base + "/cases/2026-1052");
+await page.getByText("The packet may answer this").waitFor();
+await say(page, "Esther Maestas's therapy isn't in her chart, so Caduceus can't count it. But it searched her 9-page packet.", 4200);
+await page.getByRole("button", { name: /^Show the therapy notes, page\s\d+$/ }).first().click();
+await page.locator("mark").filter({ hasText: "10 weeks of physical therapy" }).waitFor();
+await still(page, "where-to-look");
+await say(page, "It opens the outside therapy summary on the passage. That's where to look, not evidence: only Dr. Reyes can confirm it.", 4800);
+await page.goto(base + "/cases/2026-1051");
+await page.getByText(/left knee is charted, but the request is for the right side/).waitFor();
+await still(page, "other-knee");
+await say(page, "Gilbert Romero's referral asks for the right knee. His chart documents the left. Caduceus stops it and says why.", 4600);
+await page.goto(base + "/policies");
+await page.getByRole("heading", { name: "Total knee arthroplasty" }).waitFor();
+await still(page, "policies");
+await say(page, "Those criteria are compiled from Medicare's own words, quoted, approved by a reviewer and locked by hash.", 4400);
+await page.close();
+
+// Clip 3: the payer reviews it, asks a question; the clinician writes the note; it goes back.
+await until("2026-1043", ["submitted", "pended"]);
 page = await context.newPage();
 await page.goto(base + "/cases/2026-1043");
+if (await status(page, "Its decision is expected by").isVisible().catch(() => false)) {
+  await say(page, "Humana is reviewing it, and said when it would decide. Caduceus asks again only then.", 3800);
+  await page.close();
+  await until("2026-1043", ["pended"]);
+  page = await context.newPage();
+  await page.goto(base + "/cases/2026-1043");
+}
 await page.getByRole("heading", { name: /asked a question$/ }).waitFor({ timeout: 60_000 });
 await still(page, "payer-question");
 await say(page, "Humana pended it: it wants the clinical note behind Dr. Reyes's answer. Caduceus never writes that note for her.", 4400);
@@ -154,7 +196,7 @@ await say(page, "Dolores reads the note and sends it, with the same 30 seconds t
 await page.getByRole("button", { name: /^Send the note to / }).click();
 await status(page, "Sending the note").waitFor();
 await page.close();
-await pause(36_000);
+await until("2026-1043", ["approved"], 180_000);
 
 // Clip 4: approval, the denial and its appeal, the audit trail, and the outcomes.
 page = await context.newPage();
@@ -177,6 +219,12 @@ await page.getByText("Asked Dr. Ana Reyes for the note the payer wants.").waitFo
 await page.getByRole("heading", { name: "Case history" }).scrollIntoViewIfNeeded();
 await still(page, "history");
 await say(page, "Every step, who took it and when, sealed to the one before. An auditor can check that none of it was changed.", 4400);
+await as(page, "Avery Chen");
+await page.goto(base + "/admin");
+await page.getByRole("heading", { name: "Where patient information can go" }).waitFor();
+await still(page, "admin");
+await say(page, "An administrator sees where patient information can go, and can switch the outside model off at once.", 4400);
+await as(page, "Dolores Montoya");
 await page.goto(base + "/outcomes");
 await page.getByRole("heading", { name: "Where patient information went" }).waitFor();
 await still(page, "outcomes");
