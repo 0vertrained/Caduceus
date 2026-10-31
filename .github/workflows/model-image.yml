@@ -1,0 +1,77 @@
+name: model-image
+
+# The in-network model's image (infra/model): llama.cpp built from source with the weights baked in. It takes about
+# half an hour to build, so it is built only when its folder changes, checked, and published for the demo's deploy
+# to run beside the API (deploy-demo.yml looks for the "current" tag).
+on:
+  push:
+    branches: [main]
+    paths: [infra/model/**, .github/workflows/model-image.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: model-image
+  cancel-in-progress: false
+
+env:
+  GRYPE_VERSION: "0.120.1"
+  GRYPE_SHA256: "0a9ee97ef5ae2ee953b0a80098105052e846cdbe319a57d808b519c33cd1343d"
+
+jobs:
+  image:
+    name: Build, check and publish the in-network model
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      id-token: write  # GitHub's OIDC token, exchanged for short-lived Google credentials; no stored key
+    env:
+      PROJECT: project-fc4eda29-999d-4812-a00
+      REGION: us-central1
+      WORKLOAD_IDENTITY_PROVIDER: projects/612996341673/locations/global/workloadIdentityPools/github/providers/caduceus
+      DEPLOY_SA: caduceus-deployer@project-fc4eda29-999d-4812-a00.iam.gserviceaccount.com
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Build llama.cpp from source, every CPU variant, with the weights baked in
+        run: docker build -t caduceus-model:ci infra/model
+      - name: It answers with no network at all
+        # --network none: no interface but loopback. The server must start, load the model and answer from it.
+        run: |
+          docker run -d --name model --network none caduceus-model:ci
+          ok=""
+          for _ in $(seq 1 90); do
+            if docker exec model wget -qO- http://127.0.0.1:8081/health >/dev/null 2>&1; then ok=1; break; fi
+            sleep 2
+          done
+          docker logs model 2>&1 | tail -n 30
+          [ -n "$ok" ] || { echo "::error title=Model image::The server did not become healthy"; exit 1; }
+          docker exec model wget -qO- --header 'Content-Type: application/json' \
+            --post-data '{"messages":[{"role":"user","content":"Reply with the word ready."}],"max_tokens":8,"temperature":0}' \
+            http://127.0.0.1:8081/v1/chat/completions > reply.json
+          python3 -c "import json; r = json.load(open('reply.json')); t = r['choices'][0]['message']['content']; assert t.strip(), r; print('Reply:', t)"
+          docker rm -f model
+      - name: Install Grype (pinned release, checksum verified)
+        run: scripts/install_grype.sh
+      - name: Known vulnerabilities in the image (fails on any with a released fix)
+        # Grype sees Wolfi's packages, not llama.cpp, which is compiled here: its advisories are watched by hand
+        # (see infra/model/Dockerfile).
+        run: |
+          grype docker:caduceus-model:ci -o json --file grype-model.json
+          python3 scripts/vuln_report.py grype-model.json --label "Model image" --fail-on fixed
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SA }}
+      - name: Publish it, and mark it the one the demo runs
+        run: |
+          image="${REGION}-docker.pkg.dev/${PROJECT}/caduceus/model"
+          gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+          docker tag caduceus-model:ci "$image:${GITHUB_SHA}"
+          docker push "$image:${GITHUB_SHA}"
+          gcloud artifacts docker tags add "$image:${GITHUB_SHA}" "$image:current" --quiet
+          echo "::notice title=Model image::Published $image:${GITHUB_SHA} as current; the next demo deploy runs it."
