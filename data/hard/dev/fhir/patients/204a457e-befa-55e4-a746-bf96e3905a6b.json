@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "204a457e-befa-55e4-a746-bf96e3905a6b",
+    "name": [
+     {
+      "given": [
+       "Walter"
+      ],
+      "family": "Ortiz"
+     }
+    ],
+    "gender": "female",
+    "birthDate": "1969-10-16"
+   }
+  }
+ ]
+}

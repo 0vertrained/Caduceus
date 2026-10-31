@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "2f2f352b-7282-5e4c-8dd9-79ad842ced7e",
+    "name": [
+     {
+      "given": [
+       "Irene"
+      ],
+      "family": "Baca"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1963-02-18"
+   }
+  }
+ ]
+}

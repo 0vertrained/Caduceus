@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "a9670955-eca6-56ed-8be9-f661cf71c3d2",
+    "name": [
+     {
+      "given": [
+       "Walter"
+      ],
+      "family": "Vigil"
+     }
+    ],
+    "gender": "female",
+    "birthDate": "1952-03-28"
+   }
+  }
+ ]
+}

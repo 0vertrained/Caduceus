@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "111b0119-a251-5960-a0c8-657811befda9",
+    "name": [
+     {
+      "given": [
+       "Dennis"
+      ],
+      "family": "Padilla"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1941-09-02"
+   }
+  }
+ ]
+}

@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "2200163c-d989-5f58-a0f8-dd29a1a0d042",
+    "name": [
+     {
+      "given": [
+       "Pilar"
+      ],
+      "family": "Maestas"
+     }
+    ],
+    "gender": "female",
+    "birthDate": "1962-03-15"
+   }
+  }
+ ]
+}

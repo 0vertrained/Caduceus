@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "8e37a0b5-316f-5b31-9dac-162330fa9a64",
+    "name": [
+     {
+      "given": [
+       "Gilbert"
+      ],
+      "family": "Maestas"
+     }
+    ],
+    "gender": "female",
+    "birthDate": "1964-10-19"
+   }
+  }
+ ]
+}

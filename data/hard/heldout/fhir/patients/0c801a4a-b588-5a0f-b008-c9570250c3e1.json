@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "0c801a4a-b588-5a0f-b008-c9570250c3e1",
+    "name": [
+     {
+      "given": [
+       "Lucia"
+      ],
+      "family": "Salazar"
+     }
+    ],
+    "gender": "female",
+    "birthDate": "1949-12-06"
+   }
+  }
+ ]
+}

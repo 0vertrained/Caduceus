@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "d4d68d77-ee4f-55c1-a5a0-c116586f7cd5",
+    "name": [
+     {
+      "given": [
+       "Pilar"
+      ],
+      "family": "Valdez"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1964-06-16"
+   }
+  }
+ ]
+}

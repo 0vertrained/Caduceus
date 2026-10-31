@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "f00d5129-e67f-55a5-acb3-501722a8dce7",
+    "name": [
+     {
+      "given": [
+       "Gilbert"
+      ],
+      "family": "Valdez"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1964-05-11"
+   }
+  }
+ ]
+}

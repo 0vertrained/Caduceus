@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "aecc5076-3f09-5b06-a425-03482e1bb109",
+    "name": [
+     {
+      "given": [
+       "Gloria"
+      ],
+      "family": "Chavez"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1951-09-09"
+   }
+  }
+ ]
+}

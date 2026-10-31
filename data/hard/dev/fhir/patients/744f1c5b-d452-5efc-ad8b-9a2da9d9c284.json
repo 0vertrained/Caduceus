@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "744f1c5b-d452-5efc-ad8b-9a2da9d9c284",
+    "name": [
+     {
+      "given": [
+       "Gilbert"
+      ],
+      "family": "Gallegos"
+     }
+    ],
+    "gender": "female",
+    "birthDate": "1945-05-21"
+   }
+  }
+ ]
+}

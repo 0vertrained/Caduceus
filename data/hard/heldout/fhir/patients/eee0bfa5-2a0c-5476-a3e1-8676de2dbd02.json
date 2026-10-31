@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "eee0bfa5-2a0c-5476-a3e1-8676de2dbd02",
+    "name": [
+     {
+      "given": [
+       "Raymond"
+      ],
+      "family": "Gallegos"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1950-07-01"
+   }
+  }
+ ]
+}

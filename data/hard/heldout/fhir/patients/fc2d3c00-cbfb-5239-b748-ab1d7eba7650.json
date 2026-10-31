@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "fc2d3c00-cbfb-5239-b748-ab1d7eba7650",
+    "name": [
+     {
+      "given": [
+       "Irene"
+      ],
+      "family": "Montoya"
+     }
+    ],
+    "gender": "female",
+    "birthDate": "1942-07-05"
+   }
+  }
+ ]
+}

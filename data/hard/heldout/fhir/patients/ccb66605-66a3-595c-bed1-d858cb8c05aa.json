@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "ccb66605-66a3-595c-bed1-d858cb8c05aa",
+    "name": [
+     {
+      "given": [
+       "Tomas"
+      ],
+      "family": "Salazar"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1948-12-28"
+   }
+  }
+ ]
+}

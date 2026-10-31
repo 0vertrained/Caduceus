@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "926273c1-f4e8-5a00-bbbc-afa77d312f4f",
+    "name": [
+     {
+      "given": [
+       "Beatriz"
+      ],
+      "family": "Chavez"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1950-01-23"
+   }
+  }
+ ]
+}

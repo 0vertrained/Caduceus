@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "3417d6a2-4b3f-526f-9ce1-9a75b222802d",
+    "name": [
+     {
+      "given": [
+       "Juana"
+      ],
+      "family": "Vigil"
+     }
+    ],
+    "gender": "female",
+    "birthDate": "1943-05-18"
+   }
+  }
+ ]
+}

@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "6a9c633d-aa10-536b-9eb1-15e1863d9a74",
+    "name": [
+     {
+      "given": [
+       "Ronald"
+      ],
+      "family": "Trujillo"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1961-07-04"
+   }
+  }
+ ]
+}

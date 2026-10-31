@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "cd49b388-222f-53e7-97e6-fadf9854a062",
+    "name": [
+     {
+      "given": [
+       "Lucia"
+      ],
+      "family": "Valdez"
+     }
+    ],
+    "gender": "female",
+    "birthDate": "1956-09-13"
+   }
+  }
+ ]
+}

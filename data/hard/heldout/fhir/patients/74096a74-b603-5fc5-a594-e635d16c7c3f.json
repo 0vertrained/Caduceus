@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "74096a74-b603-5fc5-a594-e635d16c7c3f",
+    "name": [
+     {
+      "given": [
+       "Leonard"
+      ],
+      "family": "Gallegos"
+     }
+    ],
+    "gender": "female",
+    "birthDate": "1970-05-08"
+   }
+  }
+ ]
+}

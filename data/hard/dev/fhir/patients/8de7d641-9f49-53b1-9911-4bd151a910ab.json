@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "8de7d641-9f49-53b1-9911-4bd151a910ab",
+    "name": [
+     {
+      "given": [
+       "Juana"
+      ],
+      "family": "Trujillo"
+     }
+    ],
+    "gender": "female",
+    "birthDate": "1947-07-23"
+   }
+  }
+ ]
+}

@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "0473e089-4d8d-5968-bf28-8d8c8fb020df",
+    "name": [
+     {
+      "given": [
+       "Walter"
+      ],
+      "family": "Sandoval"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1939-03-12"
+   }
+  }
+ ]
+}

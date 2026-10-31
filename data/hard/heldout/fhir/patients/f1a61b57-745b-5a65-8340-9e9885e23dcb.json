@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "f1a61b57-745b-5a65-8340-9e9885e23dcb",
+    "name": [
+     {
+      "given": [
+       "Beatriz"
+      ],
+      "family": "Romero"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1951-11-15"
+   }
+  }
+ ]
+}

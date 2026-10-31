@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "654c7117-e221-58ad-89c7-12e6decfce9f",
+    "name": [
+     {
+      "given": [
+       "Marcus"
+      ],
+      "family": "Chavez"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1958-10-02"
+   }
+  }
+ ]
+}

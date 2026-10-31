@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "0ddf3007-8687-5050-87f0-3910bb073abe",
+    "name": [
+     {
+      "given": [
+       "Ines"
+      ],
+      "family": "Gallegos"
+     }
+    ],
+    "gender": "female",
+    "birthDate": "1956-08-14"
+   }
+  }
+ ]
+}

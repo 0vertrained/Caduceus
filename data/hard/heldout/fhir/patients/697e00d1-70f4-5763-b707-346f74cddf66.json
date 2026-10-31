@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "697e00d1-70f4-5763-b707-346f74cddf66",
+    "name": [
+     {
+      "given": [
+       "Walter"
+      ],
+      "family": "Padilla"
+     }
+    ],
+    "gender": "female",
+    "birthDate": "1940-12-02"
+   }
+  }
+ ]
+}

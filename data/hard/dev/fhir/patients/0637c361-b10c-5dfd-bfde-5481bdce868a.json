@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "0637c361-b10c-5dfd-bfde-5481bdce868a",
+    "name": [
+     {
+      "given": [
+       "Walter"
+      ],
+      "family": "Quintana"
+     }
+    ],
+    "gender": "female",
+    "birthDate": "1941-04-14"
+   }
+  }
+ ]
+}

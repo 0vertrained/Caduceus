@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "669d1c30-64ee-55f5-ad8f-0f448aa5f45a",
+    "name": [
+     {
+      "given": [
+       "Rosa"
+      ],
+      "family": "Quintana"
+     }
+    ],
+    "gender": "female",
+    "birthDate": "1965-12-10"
+   }
+  }
+ ]
+}
