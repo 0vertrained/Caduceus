@@ -71,6 +71,9 @@ DEMO_EHR_RECORDS = 3         # patients opened from an EHR that one visitor's co
 # A view of a case is recorded once a minute per person: a page that refreshes itself while a payer or the model
 # works is one view, not one per refresh. Someone who comes back later is recorded again.
 VIEW_AGAIN = timedelta(minutes=1)
+# Neither reads any data, and every page load asks the second before anything else, so the demo's limits count
+# neither, and neither starts a visitor's copy of the cases.
+NOT_COUNTED = {"/api/health", "/api/auth-config"}
 
 
 class TooManySandboxes(Exception):
@@ -331,7 +334,7 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
     async def choose_sandbox(request: Request, call_next):
         """Registered first, so it runs last: only signed requests within the limits reach a visitor's copy."""
         sandbox_id = request.headers.get("x-caduceus-sandbox")
-        if not live.demo or not request.url.path.startswith("/api/") or request.url.path == "/api/health":
+        if not live.demo or not request.url.path.startswith("/api/") or request.url.path in NOT_COUNTED:
             sandbox_id = None
         if sandbox_id is not None and not SANDBOX_ID.fullmatch(sandbox_id):
             return JSONResponse({"message": "That demo session id is not valid. Reload the page."}, status_code=400)
@@ -350,7 +353,7 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
     async def limit_demo_requests(request: Request, call_next):
         """Runs after the signature check: only requests that came through the site count."""
         limits = request.app.state.demo_limits
-        if limits is not None and request.url.path != "/api/health":
+        if limits is not None and request.url.path not in NOT_COUNTED:
             visitor = visitor_of(request)
             wait = limits.check(visitor, write=request.method in ("POST", "PUT", "PATCH", "DELETE"))
             if wait:
