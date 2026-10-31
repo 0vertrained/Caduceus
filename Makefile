@@ -20,7 +20,7 @@ JAVA_PINS  = -Duser.timezone=$(DATA_TZ) -Duser.language=en -Duser.country=US -Df
 # Synthea runs with the network switched off: it needs none, and a library flaw found later cannot be reached.
 OFFLINE    = $(abspath scripts/offline.sh)
 
-.PHONY: help setup data fixtures synthea seed dev test lint evals evals-hard e2e check approve-policy image up clean
+.PHONY: help setup data fixtures synthea seed dev test lint evals evals-hard e2e e2e-oidc check approve-policy image up clean
 
 help: ## List the commands
 	@grep -hE '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  make %-15s %s\n", $$1, $$2}'
@@ -69,11 +69,15 @@ e2e: ## Build the UI, then walk every screen in Chromium with axe-core accessibi
 	cd ui && npm run build
 	PATH=$(abspath .venv/bin):$$PATH scripts/e2e.sh
 
+e2e-oidc: ## Build the UI, then sign in through OIDC against a test identity provider, in Chromium with axe-core
+	cd ui && npm run build
+	PATH=$(abspath .venv/bin):$$PATH scripts/e2e-oidc.sh
+
 evals-hard: ## The hard sets: engine errors by cost and packet retrieval, reported (docs/hard-evaluation.md)
 	$(PY) -m caduceus.evals.hard --split dev
 	$(PY) -m caduceus.evals.hard --split heldout
 
-check: lint test evals evals-hard e2e ## Everything CI runs, locally
+check: lint test evals evals-hard e2e e2e-oidc ## Everything CI runs, locally
 
 approve-policy: ## Approve a reviewed criteria set: make approve-policy KEY=lumbar-mri@2026-09
 	@test -n "$(KEY)" || { echo "usage: make approve-policy KEY=<id>@<version>"; exit 1; }

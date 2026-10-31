@@ -172,6 +172,9 @@ jobs:
           npx --yes "playwright@${PLAYWRIGHT_VERSION}" install --with-deps chromium
       - name: Walk the screens (axe-core, WCAG 2.2 AA tags; reflow at 320 px)
         run: NODE_PATH="$(npm root --global)" scripts/e2e.sh ui/test-results
+      - name: Sign in through OIDC against a test identity provider (policy enforced; axe-core on sign-in)
+        if: ${{ !cancelled() }}
+        run: NODE_PATH="$(npm root --global)" scripts/e2e-oidc.sh ui/test-results/oidc
       - name: Keep screenshots and the accessibility report
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
