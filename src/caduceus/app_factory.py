@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import secrets
 import sqlite3
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
 from caduceus.audit.log import AuditLog
@@ -29,6 +31,7 @@ from caduceus.router.providers import (
     Provider,
     StubProvider,
 )
+from caduceus.smart import SANDBOX_ISS, safe_url
 from caduceus.storage import AuditStore, CaseStore, DocumentStore, FaxStore
 from caduceus.workflow import Workflow
 
@@ -93,6 +96,22 @@ class Settings:
         """Where the scenarios and their records are: the data directory, then the showcase when it is on."""
         on = self.showcase.strip().lower() in ("1", "true", "yes")
         return [self.data_dir, *([self.data_dir / "showcase"] if on else [])]
+    # Opening Caduceus from an EHR by SMART launch (docs/smart-launch.md). The FHIR servers it may be launched from,
+    # as base URLs separated by spaces or commas: in the demo the public SMART sandbox unless set, and nowhere
+    # outside it unless set. The launch is off until a redirect URI is set too: this site's /smart/callback.
+    smart_iss: str | None = _env("CADUCEUS_SMART_ISS")
+    smart_redirect_uris: str | None = _env("CADUCEUS_SMART_REDIRECT_URIS")
+    smart_client_id: str = _env("CADUCEUS_SMART_CLIENT_ID", "caduceus-demo")
+
+    @property
+    def smart_allowed(self) -> tuple[str, ...]:
+        if self.smart_iss is not None:
+            return tuple(u for u in re.split(r"[\s,]+", self.smart_iss) if u)
+        return SANDBOX_ISS if self.auth_mode == "demo" else ()
+
+    @property
+    def smart_redirects(self) -> tuple[str, ...]:
+        return tuple(u for u in re.split(r"[\s,]+", self.smart_redirect_uris or "") if u)
 
     def check(self) -> None:
         if self.auth_mode not in ("dev", "oidc", "demo"):
@@ -112,6 +131,13 @@ class Settings:
                                             "in a database: unset CADUCEUS_DATABASE_URL.")
             if not self.database_url.startswith(("postgresql://", "postgres://")):
                 raise InsecureConfiguration("CADUCEUS_DATABASE_URL must be a postgresql:// URL.")
+        for url in self.smart_allowed + self.smart_redirects:
+            if not safe_url(url) or urlsplit(url).query:
+                raise InsecureConfiguration(f"{url[:80]} is not a safe SMART launch address: use https (plain http "
+                                            "only to this machine), with no query, user name or fragment.")
+        if not re.fullmatch(r"[A-Za-z0-9._-]{1,100}", self.smart_client_id):
+            raise InsecureConfiguration("CADUCEUS_SMART_CLIENT_ID must be letters, digits, dots, dashes or "
+                                        "underscores.")
         if self.auth_mode == "oidc":
             if not self.deid_key or len(self.deid_key.encode()) < 32:
                 raise InsecureConfiguration("Set CADUCEUS_DEID_KEY (at least 32 bytes) outside development.")
