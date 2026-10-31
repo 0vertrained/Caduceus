@@ -99,10 +99,11 @@ Sign in as **Dolores Montoya** (prior-authorization specialist) or **Dr. Ana Rey
 it at phone width). Development sign-in is on only when `CADUCEUS_AUTH_MODE=dev`; by default the service expects
 OIDC bearer tokens and refuses to start without a de-identification key.
 
-With Docker: `cp .env.example .env`, set `CADUCEUS_DEID_KEY`, then `docker compose up --build`. To have a local
-model stand in for the in-VPC one, set `CADUCEUS_IN_VPC_URL=http://model:11434/v1` in `.env`, then run
-`docker compose --profile llm run --rm model-pull` and `docker compose --profile llm up --build`. Without a model
-configured, drafts come from a deterministic template and everything else works the same.
+With Docker: `cp .env.example .env`, set `CADUCEUS_DEID_KEY`, then `docker compose up --build`. To run the model
+inside the network as the demo does (llama.cpp and Qwen2.5-1.5B on a CPU, [infra/model](infra/model/Dockerfile)), set
+`CADUCEUS_IN_VPC_URL=http://model:8081/v1` in `.env` and run `docker compose --profile llm up --build`; the first
+build compiles llama.cpp and takes a while. Without a model configured, drafts come from a deterministic template,
+the clinician's chart summary from the record's facts, and everything else works the same.
 
 `make check` runs what CI runs: lint, the tests, the eval gate, and the end-to-end walk with accessibility
 checks. Fax intake needs Tesseract (`apt install tesseract-ocr` or `brew install tesseract`).
