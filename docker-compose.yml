@@ -3,9 +3,8 @@
 #   cp .env.example .env                    # then set CADUCEUS_DEID_KEY and CADUCEUS_DB_PASSWORD
 #   docker compose up --build               # review UI and API on http://127.0.0.1:8000
 #
-# With a local model standing in for the in-VPC model (see README, "Run a local model"):
-#   docker compose --profile llm run --rm model-pull
-#   docker compose --profile llm up --build
+# With the in-network model the demo runs (infra/model), after setting CADUCEUS_IN_VPC_URL=http://model:8081/v1 in .env:
+#   docker compose --profile llm up --build   # the first build compiles llama.cpp, which takes a while
 #
 # The model server sits on an internal network with no route to the internet, as the GPU instance sits in an
 # isolated subnet in AWS. Only the API can reach it, and nothing publishes its port.
@@ -82,11 +81,8 @@ services:
     read_only: true
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8081/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 20
+    # No health check: the image holds no HTTP client to run one with, on purpose. The API does not wait for it;
+    # until it answers, the clinician's summary comes from the record's facts.
 
 networks:
   edge: {}
