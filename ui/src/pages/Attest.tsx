@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api, ApiError, type AttestationRow, type AttestationView } from "../api";
 import { Check } from "../components/Icons";
-import { countWords, glue, useResource, useSecondsLeft, useTitle } from "../hooks";
+import { countWords, glue, oneLine, useResource, useSecondsLeft, useTitle } from "../hooks";
 
 export function AttestListPage() {
   const { data, error } = useResource<AttestationRow[]>("/api/attestations", 15000);
@@ -109,6 +109,19 @@ export function AttestPage() {
         <fieldset key={q.criterion_id} className="fieldset">
           <legend className="legend">{q.question}</legend>
           {q.help && <p className="support">{q.help}</p>}
+          {q.leads.length > 0 && (
+            <div className="leads">
+              <p className="leads__title" id={`leads-${q.criterion_id}`}>Where the referral packet may answer this</p>
+              <ul className="leads__list" aria-labelledby={`leads-${q.criterion_id}`}>
+                {q.leads.map((l) => (
+                  <li key={`${l.page}:${l.text}`} className="leads__item">
+                    <q className="leads__text">{oneLine(l.text)}</q>
+                    <span className="support">{glue(`${l.title}, page ${l.page}`)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {[["yes", "Yes, I confirm this"], ["no", "No, or I need to check first"]].map(([value, label]) => (
             <label key={value} className={`choice${answers[q.criterion_id] === value ? " choice--chosen" : ""}`}>
               <input type="radio" name={q.criterion_id} value={value} checked={answers[q.criterion_id] === value}

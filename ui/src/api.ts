@@ -134,9 +134,11 @@ export interface Queue {
 }
 
 export interface Evidence { display: string; date: string | null; document_id: string | null; page: number | null; sentence: string | null }
+/** A packet passage that may answer a criterion the record could not: where to look, never evidence. */
+export interface Lead { document_id: string; page: number; title: string; text: string; start: number; end: number }
 export interface CriterionResult {
   id: string; text: string; status: "met" | "unmet" | "unknown"; explanation: string; attested_by: string | null;
-  policy_sentence: string; question: string | null; evidence: Evidence[];
+  policy_sentence: string; question: string | null; evidence: Evidence[]; leads: Lead[];
 }
 
 export interface CaseView {
@@ -223,7 +225,8 @@ export interface AttestationView {
   service: string;
   ordered: string;
   chart_summary: string;
-  questions: { criterion_id: string; question: string; help: string | null }[];
+  questions: { criterion_id: string; question: string; help: string | null;
+               leads: { title: string; page: number; text: string }[] }[];
   payer: string;
   requested_by: string;
   undo_until?: string | null;
