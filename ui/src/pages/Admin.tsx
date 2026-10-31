@@ -110,7 +110,8 @@ export function AdminPage() {
               {data.people.map((p) => <tr key={p.id}><td>{glue(p.name)}</td><td>{ROLES[p.role] ?? p.role}</td></tr>)}
             </tbody>
           </table>
-        ) : <p>People sign in through your identity provider, and each one’s role comes from its groups claim.</p>}
+        ) : <p>People sign in through your identity provider, and each one’s role comes with their sign-in, in
+          its <span translate="no">caduceus_role</span> claim.</p>}
       </section>
 
       <section className="panel admin__section" aria-labelledby="systems-title">
