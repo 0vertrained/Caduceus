@@ -41,3 +41,17 @@ def test_a_dense_channel_is_fused_when_one_is_configured():
 def test_an_empty_packet_returns_nothing():
     assert search([], "anything") == [] and search([""], "anything") == []
     assert isinstance(passages(PAGES)[0], Passage)
+
+
+def test_a_word_broken_across_a_line_stays_one_word_in_one_sentence():
+    page = "Face-to-face sleep evalu-\nation on 09/27/2025: loud snoring.\nLungs clear."
+    first = passages([page])[0]
+    assert "evalu-\nation" in first.text and "facetoface" in normalize(first.text)
+
+
+def test_a_signature_line_does_not_outrank_the_evidence():
+    pages = ["Electronically signed by the attending clinician.\n" * 3,
+             "Functional assessment: unable to complete daily activities without stopping."]
+    hits = search(pages, "The clinician documents pain or loss of function that limits activities of daily living")
+    assert hits[0].passage.page == 2
+    assert len([h for h in hits if h.passage.page == 1]) <= 1  # a copied-forward line takes one place

@@ -75,11 +75,17 @@ CONCEPTS: list[tuple[str, str]] = [
 STOP = set("""a an and are as at be been but by for from has have had he her his in into is it its of on or our
 she that the their them they this to was were which while who will with within before after than then there these
 those patient patients pt per also any all not no yes""".split())
+# Words about documenting, not about the patient: criteria are full of them, and so is every signature line.
+STOP |= set("""clinician clinicians physician provider documents documented documentation record records chart
+request requested policy example""".split())
 
 _CASED = [(re.compile(p), f" {t} ") for p, t in CASED]
 _CONCEPTS = [(re.compile(p), f" {t} ") for p, t in CONCEPTS]
 _WORD = re.compile(r"[a-z0-9]+")
-_SENTENCE = re.compile(r"[^.!?\n]+(?:[.!?]+|\n|$)")
+# A sentence ends at . ! or ?, or at a line break that does not follow a hyphen: "evalu-\nation" is one word.
+_SENTENCE = re.compile(r"(?:-\n|[^.!?\n])+(?:[.!?]+|\n|$)")
+_BROKEN = re.compile(r"(\w)-\s*\n\s*(\w)")
+_CONCEPT_TOKENS = {t for _, t in CASED + CONCEPTS}
 
 
 def _stem(w: str) -> str:
@@ -90,6 +96,7 @@ def _stem(w: str) -> str:
 
 
 def normalize(text: str) -> str:
+    text = _BROKEN.sub(r"\1\2", text)
     for rx, token in _CASED:
         text = rx.sub(token, text)
     text = text.lower()
@@ -103,8 +110,11 @@ def words(text: str) -> list[str]:
 
 
 def trigrams(text: str) -> list[str]:
+    """Trigrams of the raw words (which survive OCR damage) and of any concept the text names."""
+    raw = _WORD.findall(_BROKEN.sub(r"\1\2", text).lower())
+    named = [w for w in _WORD.findall(normalize(text)) if w in _CONCEPT_TOKENS]
     out = []
-    for w in _WORD.findall(normalize(text)):
+    for w in raw + named:
         if w in STOP:
             continue
         padded = f"#{w}#"
@@ -186,7 +196,13 @@ def search(pages: Sequence[str], query: str, k: int = 5, channels: Sequence[str]
         if mine:
             fused.append(Hit(p, sum(1 / (rrf_k + r) for r in mine.values()), mine))
     fused.sort(key=lambda h: (-h.score, h.passage.page, h.passage.start))
-    return fused[:k]
+    seen, unique = set(), []
+    for h in fused:  # a line copied forward onto many pages takes one place in the results, not several
+        key = " ".join(words(h.passage.text))
+        if key not in seen:
+            seen.add(key)
+            unique.append(h)
+    return unique[:k]
 
 
 def _cosine(a: list[float], b: list[float]) -> float:
