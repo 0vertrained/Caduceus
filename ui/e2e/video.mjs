@@ -66,6 +66,17 @@ async function until(caseId, states, ms = 120_000) {
   }
   throw new Error(`${caseId} did not reach ${states.join(" or ")}`);
 }
+// With the in-network model (CADUCEUS_IN_VPC_URL, as the demo runs), the clinician's chart summary is written in the
+// background. Wait for it, unrecorded, by the case history, which reading does not add to.
+const IN_VPC = Boolean(process.env.CADUCEUS_IN_VPC_URL);
+async function summarized(caseId, ms = 240_000) {
+  const headers = { "X-Caduceus-User": "dolores", "X-Caduceus-Sandbox": SANDBOX };
+  for (const start = Date.now(); Date.now() - start < ms; await pause(3000)) {
+    const t = await (await fetch(`${base}/api/cases/${caseId}/timeline`, { headers })).json();
+    if (t.entries.some((e) => /^(Summarized the chart|Could not summarize)/.test(e.what))) return;
+  }
+  throw new Error(`${caseId}: no chart summary`);
+}
 
 // Clip 1: the queue, and a faxed referral read inside the boundary.
 let page = await context.newPage();
@@ -126,10 +137,21 @@ if (await sent.isVisible().catch(() => false)) {
 await say(page, "Nothing in her record says red-flag symptoms were ruled out, so nothing is assumed: the ordering clinician is asked.", 4200);
 await page.getByRole("button", { name: /to attest$/ }).click();
 await status(page, "This case comes back to you").waitFor();
+if (IN_VPC) {  // cut the half minute the model takes, as the outbox waits are cut
+  await page.close();
+  await summarized("2026-1043");
+  page = await context.newPage();
+  await page.goto(base + "/cases/2026-1043");
+  await page.getByRole("heading", { name: "Coverage criteria" }).waitFor();
+}
 await page.getByRole("region", { name: "Guided tour" }).getByRole("button", { name: /^Switch to Dr\. Ana Reyes/ }).click();
 await page.getByLabel("Yes, I confirm this").waitFor();
 await still(page, "attest");
 await say(page, "Dr. Reyes answers one question on one screen, usually from her phone, and signs with her own name.", 3800);
+if (await page.getByText(/inside Mesa Verde’s network\.$/).isVisible().catch(() => false)) {
+  await say(page, "The summary of her chart above it was written by the small model inside the network: the only model " +
+    "allowed to see who the patient is.", 4600);
+}
 await page.getByLabel("Yes, I confirm this").check();
 await page.getByRole("button", { name: "Sign and return" }).click();
 await page.getByText("Signed. Thank you.").waitFor();
