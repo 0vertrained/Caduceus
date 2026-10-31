@@ -8,7 +8,8 @@ get around the site.
 visitor --> Netlify (UI, security headers) --signed /api/*--> Cloud Run (API, demo mode, 1 instance)
 ```
 
-In demo mode the API serves the 11 synthetic cases from memory with the development sign-in. Each visitor's
+In demo mode the API serves the 11 synthetic cases, and three showcase cases built to show one thing each
+(`data/showcase`), from memory with the development sign-in. Each visitor's
 browser gets its own copy of the cases (a random id it keeps and sends with every request), so one visitor's clicks
 never change what another sees. Copies are cloned in milliseconds from a seeded template, at most 60 are kept (the
 least recently used goes first), and each starts over after 6 hours or when its visitor asks. A banner on every page
@@ -18,7 +19,12 @@ PHI router's de-identified route, and each case page shows exactly what was sent
 replies into the image, so a cold start makes no calls; the running demo calls the model only for a request it has
 not seen. Ollama Cloud is a subscription with fixed limits, so its key can use up a quota but never run up a bill,
 and the demo refuses any metered key. Without a key the demo still runs, with drafts from the deterministic template.
-There is no in-VPC model in the demo, so the chart summary a clinician sees comes from the template too.
+Beside the API, in the same instance, runs the model inside the network: llama.cpp and Qwen2.5-1.5B-Instruct on
+2 vCPU ([infra/model](../infra/model/Dockerfile)). It listens on 127.0.0.1, which nothing outside the instance can
+reach, has no way to call out, and writes the chart summary a clinician sees, in the background, in about half a
+minute. The [model-image](../.github/workflows/model-image.yml) workflow builds it (about half an hour, only when
+its folder changes), checks that it answers with no network at all, scans it, and publishes it; the deploy runs the
+published one, and runs the API alone if there is none, when the summary comes from the record's facts.
 
 A visitor can also open Caduceus from an EHR: the Help page links to the public SMART launcher, and the API reads the
 launched sandbox patient's chart into that visitor's copy ([docs/smart-launch.md](smart-launch.md)). The API accepts
@@ -78,8 +84,10 @@ with the list of offered models if none matches. Run the deploy-demo workflow af
 
 ## Cost and limits
 
-- Cloud Run bills only while a request is being handled, scales to zero when idle, and is capped at one instance.
-  A demo that is visited now and then fits in the free tier. Set a budget alert on the project anyway.
+- Cloud Run scales to zero when idle and is capped at one instance. Without the model, it bills only while a
+  request is being handled. With the model, CPU stays on while the instance is up, so a summary can finish after
+  its request returns; an instance stays at most 15 minutes after its last request. At 3 vCPU and 4 GiB, ten hours
+  a month fits in the free tier, and heavy use costs a few dollars. Set a budget alert on the project anyway.
 - Each visitor gets 300 requests and 60 changes per five minutes, and all visitors together get 5,000 requests per
   five minutes. Steps of an EHR launch, which make requests to the SMART sandbox, are capped apart: 10 per visitor
   and 200 for everyone per five minutes. One copy holds at most 3 patients from an EHR.
@@ -87,6 +95,7 @@ with the list of offered models if none matches. Run the deploy-demo workflow af
   page can never run up a bill. It may hold a fixed-quota key, such as Ollama Cloud's.
 - Netlify gives proxied requests 26 seconds; the API answers in well under one. The two slow exceptions stay inside
   it: reading a record from the EHR is cut off at 20 seconds, and a live draft falls back to the template after 20.
+  The in-network model's summary never runs on a request: it is written in the background.
 
 ## Taking it down
 

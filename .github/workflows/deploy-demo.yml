@@ -108,20 +108,51 @@ jobs:
           docker build -t "$image" .
           docker push "$image"
           echo "IMAGE=$(docker inspect --format '{{index .RepoDigests 0}}' "$image")" >> "$GITHUB_ENV"
+      - name: Find the in-network model's image
+        # Published by model-image.yml. Without one, the API runs alone, and work that needs the patient's details
+        # is done from the record's facts, without a model.
+        run: |
+          image="${REGION}-docker.pkg.dev/${PROJECT}/caduceus/model"
+          digest="$(gcloud artifacts docker images describe "$image:current" --format 'value(image_summary.digest)' 2>/dev/null || true)"
+          if [ -n "$digest" ]; then
+            echo "MODEL_IMAGE=$image@$digest" >> "$GITHUB_ENV"
+            echo "::notice title=In-network model::Running $image@$digest beside the API"
+          else
+            echo "::notice title=In-network model::No model image is published yet (model-image.yml); the API runs alone."
+          fi
       - name: Deploy
-        # One instance at most: the demo keeps its cases in memory, and one instance bounds the bill.
-        # Request-based billing and no minimum instances: idle costs nothing, and a cold start reseeds.
+        # One instance at most: the demo keeps its cases in memory, and one instance bounds the bill. No minimum
+        # instances: idle costs nothing, and a cold start reseeds.
         # The demo adds the three showcase cases, and its payer takes 30 seconds to decide (15 when expedited), so a
         # visitor sees a request under review before the decision comes back.
+        # With the model: two containers in one instance. Only the API takes traffic; the model listens on
+        # 127.0.0.1, which nothing outside the instance can reach. CPU stays on between requests (instance billing),
+        # so the model can finish a summary after the request that asked for it has returned.
         run: |
           secrets="CADUCEUS_PROXY_SIGNING_KEY=caduceus-proxy-signing-key:latest"
           if [ "${MODEL_KEY:-}" = 1 ]; then secrets="$secrets,CADUCEUS_EXTERNAL_API_KEY=$MODEL_SECRET:latest"; fi
-          gcloud run deploy "$SERVICE" --project "$PROJECT" --region "$REGION" --image "$IMAGE" \
-            --service-account "$RUNTIME_SA" --port 8000 --cpu 1 --memory 1Gi --concurrency 40 \
-            --min-instances 0 --max-instances 1 --allow-unauthenticated \
-            --set-env-vars "CADUCEUS_AUTH_MODE=demo,CADUCEUS_DEMO_RESET_HOURS=6,CADUCEUS_SHOWCASE=1,CADUCEUS_PAYER_REVIEW_SECONDS=30,CADUCEUS_EXTERNAL_PROVIDER=ollama,CADUCEUS_EXTERNAL_MODEL=$EXTERNAL_MODEL,CADUCEUS_EXTERNAL_TIMEOUT=20,CADUCEUS_SMART_REDIRECT_URIS=$SITE/smart/callback" \
-            --set-secrets "$secrets" \
-            --quiet
+          env="CADUCEUS_AUTH_MODE=demo,CADUCEUS_DEMO_RESET_HOURS=6,CADUCEUS_SHOWCASE=1,CADUCEUS_PAYER_REVIEW_SECONDS=30,CADUCEUS_EXTERNAL_PROVIDER=ollama,CADUCEUS_EXTERNAL_MODEL=$EXTERNAL_MODEL,CADUCEUS_EXTERNAL_TIMEOUT=20,CADUCEUS_SMART_REDIRECT_URIS=$SITE/smart/callback"
+          common=(--project "$PROJECT" --region "$REGION" --service-account "$RUNTIME_SA" --concurrency 40
+                  --min-instances 0 --max-instances 1 --allow-unauthenticated --quiet)
+          alone() {
+            gcloud run deploy "$SERVICE" "${common[@]}" --image "$IMAGE" --port 8000 --cpu 1 --memory 1Gi \
+              --set-env-vars "$env" --set-secrets "$secrets"
+          }
+          if [ -z "${MODEL_IMAGE:-}" ]; then alone; exit 0; fi
+          # A container from an earlier, single-container revision goes, so only "api" takes traffic.
+          others="$(gcloud run services describe "$SERVICE" --project "$PROJECT" --region "$REGION" \
+                      --format 'value(spec.template.spec.containers[].name)' 2>/dev/null | tr ';,' '\n\n' \
+                      | grep -vxE 'api|model|' | paste -sd, - || true)"
+          if gcloud run deploy "$SERVICE" "${common[@]}" ${others:+--remove-containers "$others"} \
+              --execution-environment gen2 --no-cpu-throttling --cpu-boost \
+              --container api --image "$IMAGE" --port 8000 --cpu 1 --memory 1Gi \
+                --set-env-vars "$env,CADUCEUS_IN_VPC_URL=http://127.0.0.1:8081/v1,CADUCEUS_IN_VPC_MODEL=qwen2.5-1.5b-instruct" \
+                --set-secrets "$secrets" \
+              --container model --image "$MODEL_IMAGE" --cpu 2 --memory 3Gi; then
+            exit 0
+          fi
+          echo "::warning title=In-network model::Deploying with the model failed; deploying the API alone instead."
+          alone
       - name: The API is up, and refuses requests that did not come through Netlify
         run: |
           url="$(gcloud run services describe "$SERVICE" --project "$PROJECT" --region "$REGION" --format 'value(status.url)')"
