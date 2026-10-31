@@ -34,7 +34,7 @@ services:
       CADUCEUS_DATABASE_URL: postgresql://caduceus:${CADUCEUS_DB_PASSWORD:?Set CADUCEUS_DB_PASSWORD in .env}@db:5432/caduceus
       CADUCEUS_CLINIC_TZ: ${CADUCEUS_CLINIC_TZ:-America/Denver}
       CADUCEUS_IN_VPC_URL: ${CADUCEUS_IN_VPC_URL:-}
-      CADUCEUS_IN_VPC_MODEL: ${CADUCEUS_IN_VPC_MODEL:-llama3.1:8b}
+      CADUCEUS_IN_VPC_MODEL: ${CADUCEUS_IN_VPC_MODEL:-qwen2.5-1.5b-instruct}
       CADUCEUS_EXTERNAL_API_KEY: ${CADUCEUS_EXTERNAL_API_KEY:-}
       CADUCEUS_OIDC_JWKS_URL: ${CADUCEUS_OIDC_JWKS_URL:-}
       CADUCEUS_OIDC_ISSUER: ${CADUCEUS_OIDC_ISSUER:-}
@@ -70,25 +70,23 @@ services:
       retries: 20
       start_period: 10s
 
+  # The same image the demo runs beside the API (infra/model): llama.cpp and Qwen2.5-1.5B, weights baked in at build
+  # time, served offline. The build downloads the source and weights; the running container has no route out.
   model:
     profiles: [llm]
-    image: ollama/ollama:0.9.0
-    volumes:
-      - models:/root/.ollama
+    build: infra/model
+    image: caduceus-model:local
+    environment:
+      LLAMA_ARG_HOST: 0.0.0.0   # on the internal model network only; nothing publishes its port
     networks: [model]           # internal only: no egress, no published port
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
     healthcheck:
-      test: ["CMD", "ollama", "list"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8081/health"]
       interval: 15s
       timeout: 5s
-      retries: 10
-
-  model-pull:
-    profiles: [llm]
-    image: ollama/ollama:0.9.0
-    entrypoint: ["sh", "-c", "ollama serve & sleep 3 && ollama pull ${CADUCEUS_IN_VPC_MODEL:-llama3.1:8b}"]
-    volumes:
-      - models:/root/.ollama
-    networks: [edge]            # the one container allowed out, and only to download weights
+      retries: 20
 
 networks:
   edge: {}
@@ -99,4 +97,3 @@ networks:
 
 volumes:
   pgdata: {}
-  models: {}

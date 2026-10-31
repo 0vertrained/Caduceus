@@ -76,7 +76,7 @@ Set as environment variables. The API checks them at start and refuses to start 
 | `CADUCEUS_DB` | `var/caduceus.sqlite3` | The SQLite file, when no database URL is set |
 | `CADUCEUS_DATA_DIR` | `data` | Policies, scenario data, the fax folder and recorded replies |
 | `CADUCEUS_FHIR_BASE_URL` | none | A FHIR server for patient records; without it, the bundles in the data folder |
-| `CADUCEUS_IN_VPC_URL`, `CADUCEUS_IN_VPC_MODEL` | none, `llama3.1:8b` | The model inside the network, an OpenAI-compatible server |
+| `CADUCEUS_IN_VPC_URL`, `CADUCEUS_IN_VPC_MODEL` | none, `llama3.1:8b` | The model inside the network, an OpenAI-compatible server. The demo and docker compose run [infra/model](../infra/model/Dockerfile) as `qwen2.5-1.5b-instruct` |
 | `CADUCEUS_EXTERNAL_PROVIDER` | `anthropic` | The external model's vendor: `anthropic`, `ollama`, or `stub` (development only) |
 | `CADUCEUS_EXTERNAL_API_KEY`, `CADUCEUS_EXTERNAL_MODEL`, `CADUCEUS_EXTERNAL_BASE_URL` | none | The external model. With `oidc`, a key without an in-network model is refused: work that needs the patient's details would have nowhere to run |
 | `CADUCEUS_EXTERNAL_TIMEOUT` | `60` | Seconds to wait for the external model before the template writes the draft |
