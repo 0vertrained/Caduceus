@@ -14,7 +14,11 @@ audited, and whether the people who use it every day can.
 the payer's approval, through a clinician's attestation, the payer's question and the clinician's note, and says
 who to act as at each step. Your queue is your own copy, so nothing you do changes anyone else's. Then try the
 faxed referrals, the denied CPAP request and its appeal, "See what was sent" under any draft, the case history,
-and the outcomes page. [How it would roll out at a real health system](docs/rollout-plan.md).
+and the outcomes page.
+
+**[Read the case study](docs/engagement/case-study.md)**: the problem, the decisions, what the measurements found and
+what went wrong. The engagement around it: the [discovery memo](docs/engagement/discovery-memo.md) and
+[how it would roll out at a real health system](docs/rollout-plan.md).
 
 **[Watch the 98-second walkthrough](https://caduceusdemo.netlify.app/demo.mp4)**: a faxed referral, the evidence,
 the clinician's attestation, the payer's question and the clinician's note, a denial and its appeal, the audit trail.
@@ -50,11 +54,22 @@ the clinician's attestation, the payer's question and the clinician's note, a de
 | **Outcomes** | What the work adds up to, counted live from the audit log: agent work, human decisions, payer outcomes, where patient information went, fax fields routed. | Nothing estimated or stored |
 | **Review UI** | The "Attestation" design system: plain words, 18 px base text with a larger option, status always as icon plus word, red only when under two hours remain. | axe-core (WCAG 2.2 AA rules) on 32 screens with 0 violations; no sideways scroll at 320 px |
 | **Eval gate** | `make evals` fails the build if agreement falls below 0.97, or if any unknown is reported as met, any identifier leaks, any attack succeeds, or any wrong fax field is accepted without a person. | CI |
+| **Hard sets and packet retrieval** | 54 messy synthetic cases (a dev split and a held-out split) with long, shuffled, OCR-damaged packets and record problems from real charts. Retrieval finds the sentences that bear on a criterion inside the boundary: word BM25 after clinical normalization, fused with character trigrams; the agent calls it as `documents.search_packet`. | Held-out, first run: engine agreement 0.885 with 4 unsafe errors; 0.942 with 2 after fixes. Evidence in the top 5 passages: 0.899 (plain BM25: 0.512). Reported in CI, not yet a gate |
 | **Reproducible data** | 11 scenarios built from Synthea with labels known by construction. | `make data` regenerates the dataset byte for byte; CI checks with `git diff --exit-code` |
 | **Deployment** | Dockerfile, docker-compose (the model on an internal-only network), a Terraform skeleton for AWS. | Compose validated; Checkov 292 passed, 0 failed; Terraform not yet applied |
 
 The 1.00 agreement measures that the engine does what its criteria say on cases built to known labels. It is not
-a measure of clinical validity. That needs real policies, real charts and clinician reviewers.
+a measure of clinical validity. That needs real policies, real charts and clinician reviewers. The hard sets are a
+step toward it: on messy records the engine as shipped agreed 0.885 of the time.
+
+## Messy records and long packets
+
+[The hard sets](docs/hard-evaluation.md) were built to break the 1.00. Retrieval and its vocabulary were committed
+before any packet existed; the held-out split was run once and committed as it came out. The engine counted
+diagnoses entered in error, read therapy in progress as zero days, and counted osteoarthritis in the other knee for the
+knee being replaced. The first two are fixed. The last is in the approved knee criteria, which have no laterality, so the
+change is proposed for a reviewer rather than made. Retrieval found 14 of the 15 passages a clinician would need
+where the structured record was silent, but its first result was right only half the time on unseen phrasing.
 
 ## Public demo
 
@@ -107,7 +122,7 @@ src/caduceus/
 ui/             React review UI; e2e/ walks it in Chromium with axe-core
 data/           synthetic patients, case overlays, criteria sets
 infra/          Terraform skeleton, Postgres audit-log SQL
-docs/           ADRs, data handling, incidents, the model bake-off
+docs/           ADRs, data handling, incidents, the model bake-off, the hard sets, engagement documents
 ```
 
 ## Security posture, in brief
@@ -141,7 +156,9 @@ simulation. Synthea also runs with the network switched off (`scripts/offline.sh
 ## Not built yet
 
 An in-VPC vision-language model behind the fax tool, and per-tier thresholds fitted on real faxes (ADR 6).
-Hybrid retrieval over long packets (ADR 5). The Postgres repository, then Temporal (ADR 4). OIDC sign-in in the
+Dense retrieval with an in-VPC embedding model (ADR 5), and packet passages in the interface. Laterality, order and
+value-set changes to the criteria sets, for a reviewer ([docs/hard-evaluation.md](docs/hard-evaluation.md)). The
+Postgres repository, then Temporal (ADR 4). OIDC sign-in in the
 UI: the API side is done and tested. HAPI FHIR and Keycloak in compose. An AWS apply. The full red-team corpus.
 Expedited (72-hour) requests.
 
@@ -164,4 +181,4 @@ letter.
 ## Decisions
 
 [docs/adr](docs/adr): PHI-aware routing; policy as code; MCP as the integration boundary; state machine first,
-Temporal later; hybrid retrieval (proposed); confidence routing (built, with OCR).
+Temporal later; hybrid retrieval (lexical channels built, dense pending); confidence routing (built, with OCR).
