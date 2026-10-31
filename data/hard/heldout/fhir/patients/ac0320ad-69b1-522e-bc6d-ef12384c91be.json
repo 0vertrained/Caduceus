@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "ac0320ad-69b1-522e-bc6d-ef12384c91be",
+    "name": [
+     {
+      "given": [
+       "Harold"
+      ],
+      "family": "Tafoya"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1945-11-02"
+   }
+  }
+ ]
+}

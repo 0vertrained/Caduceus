@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "4de72dd7-f4a0-5219-8599-17e8f840fcd0",
+    "name": [
+     {
+      "given": [
+       "Gilbert"
+      ],
+      "family": "Lucero"
+     }
+    ],
+    "gender": "female",
+    "birthDate": "1947-09-03"
+   }
+  }
+ ]
+}

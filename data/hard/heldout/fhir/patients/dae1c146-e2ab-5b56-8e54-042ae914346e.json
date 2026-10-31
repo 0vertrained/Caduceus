@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "dae1c146-e2ab-5b56-8e54-042ae914346e",
+    "name": [
+     {
+      "given": [
+       "Tomas"
+      ],
+      "family": "Gallegos"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1968-09-18"
+   }
+  }
+ ]
+}

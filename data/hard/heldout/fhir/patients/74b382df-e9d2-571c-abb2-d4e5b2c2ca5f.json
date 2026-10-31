@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "74b382df-e9d2-571c-abb2-d4e5b2c2ca5f",
+    "name": [
+     {
+      "given": [
+       "Tomas"
+      ],
+      "family": "Duran"
+     }
+    ],
+    "gender": "female",
+    "birthDate": "1956-10-01"
+   }
+  }
+ ]
+}

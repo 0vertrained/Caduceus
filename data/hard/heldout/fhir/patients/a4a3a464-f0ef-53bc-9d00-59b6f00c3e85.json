@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "a4a3a464-f0ef-53bc-9d00-59b6f00c3e85",
+    "name": [
+     {
+      "given": [
+       "Dennis"
+      ],
+      "family": "Tafoya"
+     }
+    ],
+    "gender": "female",
+    "birthDate": "1959-05-07"
+   }
+  }
+ ]
+}

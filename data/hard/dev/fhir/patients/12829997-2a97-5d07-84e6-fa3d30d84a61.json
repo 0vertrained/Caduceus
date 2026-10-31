@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "12829997-2a97-5d07-84e6-fa3d30d84a61",
+    "name": [
+     {
+      "given": [
+       "Raymond"
+      ],
+      "family": "Sandoval"
+     }
+    ],
+    "gender": "female",
+    "birthDate": "1968-05-24"
+   }
+  }
+ ]
+}

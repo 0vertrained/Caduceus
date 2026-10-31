@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "18269f2c-61ff-5c61-99d5-f8694798b8ab",
+    "name": [
+     {
+      "given": [
+       "Lucia"
+      ],
+      "family": "Lucero"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1948-02-19"
+   }
+  }
+ ]
+}

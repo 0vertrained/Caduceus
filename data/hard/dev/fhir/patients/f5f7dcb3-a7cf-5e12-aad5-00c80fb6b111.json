@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "f5f7dcb3-a7cf-5e12-aad5-00c80fb6b111",
+    "name": [
+     {
+      "given": [
+       "Arturo"
+      ],
+      "family": "Duran"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1966-03-13"
+   }
+  }
+ ]
+}

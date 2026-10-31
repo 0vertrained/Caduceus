@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "50fff532-c330-5280-9f6e-7328809bf723",
+    "name": [
+     {
+      "given": [
+       "Juana"
+      ],
+      "family": "Trujillo"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1960-09-02"
+   }
+  }
+ ]
+}

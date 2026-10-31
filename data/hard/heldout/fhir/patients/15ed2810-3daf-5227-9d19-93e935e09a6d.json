@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "15ed2810-3daf-5227-9d19-93e935e09a6d",
+    "name": [
+     {
+      "given": [
+       "Frank"
+      ],
+      "family": "Baca"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1971-07-19"
+   }
+  }
+ ]
+}

@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "6785a180-0a88-5fa1-92f7-cfd8c3b63b1b",
+    "name": [
+     {
+      "given": [
+       "Ines"
+      ],
+      "family": "Quintana"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1940-08-03"
+   }
+  }
+ ]
+}

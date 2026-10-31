@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "17ed80d4-4114-51d9-8b41-c6cd48c79c93",
+    "name": [
+     {
+      "given": [
+       "Arturo"
+      ],
+      "family": "Baca"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1953-10-20"
+   }
+  }
+ ]
+}

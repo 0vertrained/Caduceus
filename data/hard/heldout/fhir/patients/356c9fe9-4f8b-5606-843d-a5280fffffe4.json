@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "356c9fe9-4f8b-5606-843d-a5280fffffe4",
+    "name": [
+     {
+      "given": [
+       "Raymond"
+      ],
+      "family": "Lucero"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1941-02-04"
+   }
+  }
+ ]
+}

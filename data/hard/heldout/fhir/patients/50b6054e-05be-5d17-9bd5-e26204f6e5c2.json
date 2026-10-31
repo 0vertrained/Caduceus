@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "50b6054e-05be-5d17-9bd5-e26204f6e5c2",
+    "name": [
+     {
+      "given": [
+       "Raymond"
+      ],
+      "family": "Ortiz"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1942-05-23"
+   }
+  }
+ ]
+}

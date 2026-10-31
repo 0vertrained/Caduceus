@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "feb4c5b2-a0b2-5886-8abb-3f3f106c8bc0",
+    "name": [
+     {
+      "given": [
+       "Walter"
+      ],
+      "family": "Romero"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1945-12-22"
+   }
+  }
+ ]
+}

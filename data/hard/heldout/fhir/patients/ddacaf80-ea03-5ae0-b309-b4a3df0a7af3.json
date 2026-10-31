@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "ddacaf80-ea03-5ae0-b309-b4a3df0a7af3",
+    "name": [
+     {
+      "given": [
+       "Rosa"
+      ],
+      "family": "Chavez"
+     }
+    ],
+    "gender": "female",
+    "birthDate": "1960-05-15"
+   }
+  }
+ ]
+}

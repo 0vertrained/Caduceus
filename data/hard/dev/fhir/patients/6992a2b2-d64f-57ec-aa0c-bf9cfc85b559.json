@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "6992a2b2-d64f-57ec-aa0c-bf9cfc85b559",
+    "name": [
+     {
+      "given": [
+       "Leonard"
+      ],
+      "family": "Romero"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1961-09-18"
+   }
+  }
+ ]
+}

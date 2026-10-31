@@ -1,0 +1,2932 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Condition",
+    "code": {
+     "coding": [
+      {
+       "system": "http://hl7.org/fhir/sid/icd-10-cm",
+       "code": "E78.5",
+       "display": "Hyperlipidemia"
+      }
+     ],
+     "text": "Hyperlipidemia"
+    },
+    "clinicalStatus": {
+     "coding": [
+      {
+       "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+       "code": "active",
+       "display": "active"
+      }
+     ],
+     "text": "active"
+    },
+    "onsetDateTime": "2021-12-26",
+    "id": "6fb5218b-1e67-5bf8-8d17-0b4439d45d85",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Condition",
+    "code": {
+     "coding": [
+      {
+       "system": "http://hl7.org/fhir/sid/icd-10-cm",
+       "code": "N18.30",
+       "display": "Chronic kidney disease, stage 3"
+      }
+     ],
+     "text": "Chronic kidney disease, stage 3"
+    },
+    "clinicalStatus": {
+     "coding": [
+      {
+       "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+       "code": "active",
+       "display": "active"
+      }
+     ],
+     "text": "active"
+    },
+    "onsetDateTime": "2020-08-28",
+    "id": "15c18a37-f0a9-5a92-8def-b73434634f1e",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Condition",
+    "code": {
+     "coding": [
+      {
+       "system": "http://hl7.org/fhir/sid/icd-10-cm",
+       "code": "F32.A",
+       "display": "Depression"
+      }
+     ],
+     "text": "Depression"
+    },
+    "clinicalStatus": {
+     "coding": [
+      {
+       "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+       "code": "active",
+       "display": "active"
+      }
+     ],
+     "text": "active"
+    },
+    "onsetDateTime": "2016-05-01",
+    "id": "bc82e263-2e40-5100-a06d-995fbca9ec9b",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Condition",
+    "code": {
+     "coding": [
+      {
+       "system": "http://hl7.org/fhir/sid/icd-10-cm",
+       "code": "N40.0",
+       "display": "Benign prostatic hyperplasia"
+      }
+     ],
+     "text": "Benign prostatic hyperplasia"
+    },
+    "clinicalStatus": {
+     "coding": [
+      {
+       "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+       "code": "active",
+       "display": "active"
+      }
+     ],
+     "text": "active"
+    },
+    "onsetDateTime": "2017-04-07",
+    "id": "2c639238-3db5-5b9f-99da-5a4ad6155133",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Condition",
+    "code": {
+     "coding": [
+      {
+       "system": "http://hl7.org/fhir/sid/icd-10-cm",
+       "code": "K21.9",
+       "display": "GERD"
+      }
+     ],
+     "text": "GERD"
+    },
+    "clinicalStatus": {
+     "coding": [
+      {
+       "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+       "code": "active",
+       "display": "active"
+      }
+     ],
+     "text": "active"
+    },
+    "onsetDateTime": "2016-04-09",
+    "id": "03bff55b-eb03-5ef7-a96e-ae3c738749d7",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Condition",
+    "code": {
+     "coding": [
+      {
+       "system": "http://hl7.org/fhir/sid/icd-10-cm",
+       "code": "R73.03",
+       "display": "Prediabetes"
+      }
+     ],
+     "text": "Prediabetes"
+    },
+    "clinicalStatus": {
+     "coding": [
+      {
+       "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+       "code": "active",
+       "display": "active"
+      }
+     ],
+     "text": "active"
+    },
+    "onsetDateTime": "2021-03-12",
+    "id": "afc1ebd9-a416-5ae0-ac39-f99e57c4bf3b",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Condition",
+    "code": {
+     "coding": [
+      {
+       "system": "http://hl7.org/fhir/sid/icd-10-cm",
+       "code": "J30.9",
+       "display": "Allergic rhinitis"
+      }
+     ],
+     "text": "Allergic rhinitis"
+    },
+    "clinicalStatus": {
+     "coding": [
+      {
+       "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+       "code": "active",
+       "display": "active"
+      }
+     ],
+     "text": "active"
+    },
+    "onsetDateTime": "2025-07-22",
+    "id": "d72d18ed-487b-5675-be45-bfb9e604a30e",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Condition",
+    "code": {
+     "coding": [
+      {
+       "system": "http://hl7.org/fhir/sid/icd-10-cm",
+       "code": "H40.9",
+       "display": "Glaucoma"
+      }
+     ],
+     "text": "Glaucoma"
+    },
+    "clinicalStatus": {
+     "coding": [
+      {
+       "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+       "code": "active",
+       "display": "active"
+      }
+     ],
+     "text": "active"
+    },
+    "onsetDateTime": "2023-10-18",
+    "id": "3082b76c-40c1-5b08-97a6-9ac69ec888e1",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "90686",
+       "display": "Influenza vaccine"
+      }
+     ],
+     "text": "Influenza vaccine"
+    },
+    "performedDateTime": "2024-05-16T10:00:00Z",
+    "id": "f080e373-4ae0-5ff5-94bf-802c89e571ff",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "99213",
+       "display": "Office visit"
+      }
+     ],
+     "text": "Office visit"
+    },
+    "performedDateTime": "2023-12-20T10:00:00Z",
+    "id": "663ae672-2839-50fd-ae07-eb3798d45a33",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "93000",
+       "display": "Electrocardiogram"
+      }
+     ],
+     "text": "Electrocardiogram"
+    },
+    "performedDateTime": "2026-03-29T10:00:00Z",
+    "id": "eeb48ac7-cb6e-577b-84a3-037ff33f871a",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "45378",
+       "display": "Colonoscopy"
+      }
+     ],
+     "text": "Colonoscopy"
+    },
+    "performedDateTime": "2026-08-28T10:00:00Z",
+    "id": "f24ab281-471d-5b5e-b39a-3f6467479a04",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "93306",
+       "display": "Echocardiogram"
+      }
+     ],
+     "text": "Echocardiogram"
+    },
+    "performedDateTime": "2024-02-06T10:00:00Z",
+    "id": "7ceffac0-dbcc-550e-8002-d6a8faa138a3",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "77080",
+       "display": "DEXA scan"
+      }
+     ],
+     "text": "DEXA scan"
+    },
+    "performedDateTime": "2024-11-25T10:00:00Z",
+    "id": "da6c8e34-ec2b-55bf-ae48-f935d1d41c09",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "93000",
+       "display": "Electrocardiogram"
+      }
+     ],
+     "text": "Electrocardiogram"
+    },
+    "performedDateTime": "2024-11-14T10:00:00Z",
+    "id": "a9edd6cb-1b3a-502e-8e0f-0048910d70d7",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "45378",
+       "display": "Colonoscopy"
+      }
+     ],
+     "text": "Colonoscopy"
+    },
+    "performedDateTime": "2024-12-13T10:00:00Z",
+    "id": "b6d0a667-dcbe-5d25-a958-bc9175f69ffd",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "99213",
+       "display": "Office visit"
+      }
+     ],
+     "text": "Office visit"
+    },
+    "performedDateTime": "2026-01-09T10:00:00Z",
+    "id": "c4de6f84-e697-5ecc-97f4-55e6ec96077f",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "71046",
+       "display": "Chest X-ray, 2 views"
+      }
+     ],
+     "text": "Chest X-ray, 2 views"
+    },
+    "performedDateTime": "2026-09-29T10:00:00Z",
+    "id": "d535e8b6-33ae-5d40-ad0e-f6c53e768c4b",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "36415",
+       "display": "Venipuncture"
+      }
+     ],
+     "text": "Venipuncture"
+    },
+    "performedDateTime": "2024-11-14T10:00:00Z",
+    "id": "28ad11f4-5ced-5cc0-bd84-f6c33a9d5def",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "90686",
+       "display": "Influenza vaccine"
+      }
+     ],
+     "text": "Influenza vaccine"
+    },
+    "performedDateTime": "2023-11-06T10:00:00Z",
+    "id": "f62d8d18-ec46-5020-ab7b-b30b6a5587e0",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "99213",
+       "display": "Office visit"
+      }
+     ],
+     "text": "Office visit"
+    },
+    "performedDateTime": "2023-12-04T10:00:00Z",
+    "id": "1252093f-d42b-5b57-bf69-b0cc0e9acf98",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "99213",
+       "display": "Office visit"
+      }
+     ],
+     "text": "Office visit"
+    },
+    "performedDateTime": "2024-07-04T10:00:00Z",
+    "id": "c939592f-a157-55d5-b863-b98a5bbc21eb",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "45378",
+       "display": "Colonoscopy"
+      }
+     ],
+     "text": "Colonoscopy"
+    },
+    "performedDateTime": "2024-06-15T10:00:00Z",
+    "id": "c9c550af-bb48-51ca-8773-dbf109fe7f91",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "99213",
+       "display": "Office visit"
+      }
+     ],
+     "text": "Office visit"
+    },
+    "performedDateTime": "2024-12-23T10:00:00Z",
+    "id": "0b1afea1-22d6-5f00-8f13-152921824024",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "93306",
+       "display": "Echocardiogram"
+      }
+     ],
+     "text": "Echocardiogram"
+    },
+    "performedDateTime": "2024-12-29T10:00:00Z",
+    "id": "88cbd598-c272-5a43-86ac-e9ce38753fed",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "45378",
+       "display": "Colonoscopy"
+      }
+     ],
+     "text": "Colonoscopy"
+    },
+    "performedDateTime": "2024-02-22T10:00:00Z",
+    "id": "bf4f875e-5c1b-5ea7-b8ed-d7d6c57e7262",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "99213",
+       "display": "Office visit"
+      }
+     ],
+     "text": "Office visit"
+    },
+    "performedDateTime": "2026-08-21T10:00:00Z",
+    "id": "d1fc663f-6963-5260-983c-191f4e736de2",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "93306",
+       "display": "Echocardiogram"
+      }
+     ],
+     "text": "Echocardiogram"
+    },
+    "performedDateTime": "2024-03-23T10:00:00Z",
+    "id": "209e81ce-45f4-58e3-b4b9-809ebe91e89a",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "45378",
+       "display": "Colonoscopy"
+      }
+     ],
+     "text": "Colonoscopy"
+    },
+    "performedDateTime": "2026-03-29T10:00:00Z",
+    "id": "50064d4a-18a2-57ea-9385-7f7e08db3d93",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "93306",
+       "display": "Echocardiogram"
+      }
+     ],
+     "text": "Echocardiogram"
+    },
+    "performedDateTime": "2024-05-10T10:00:00Z",
+    "id": "9bb14242-69f9-551a-b1d4-db06b0b0b205",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "99213",
+       "display": "Office visit"
+      }
+     ],
+     "text": "Office visit"
+    },
+    "performedDateTime": "2025-07-13T10:00:00Z",
+    "id": "cb185008-e23f-5266-aa84-e970f0925852",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "77080",
+       "display": "DEXA scan"
+      }
+     ],
+     "text": "DEXA scan"
+    },
+    "performedDateTime": "2024-10-12T10:00:00Z",
+    "id": "c4c31890-fc1c-577a-98b8-04f71fa1ebca",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "77080",
+       "display": "DEXA scan"
+      }
+     ],
+     "text": "DEXA scan"
+    },
+    "performedDateTime": "2024-04-09T10:00:00Z",
+    "id": "1f36ce39-3181-5b3f-bad4-cc9bac1439b7",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "99213",
+       "display": "Office visit"
+      }
+     ],
+     "text": "Office visit"
+    },
+    "performedDateTime": "2025-11-18T10:00:00Z",
+    "id": "23d1ae01-8e1b-563e-9cbf-1364a54facee",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "93306",
+       "display": "Echocardiogram"
+      }
+     ],
+     "text": "Echocardiogram"
+    },
+    "performedDateTime": "2025-03-19T10:00:00Z",
+    "id": "433532b2-32d2-56bc-9ec0-50a4344cb646",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "45378",
+       "display": "Colonoscopy"
+      }
+     ],
+     "text": "Colonoscopy"
+    },
+    "performedDateTime": "2025-01-23T10:00:00Z",
+    "id": "e8f272f6-1f5f-5b5d-be88-d1f532ce59df",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "71046",
+       "display": "Chest X-ray, 2 views"
+      }
+     ],
+     "text": "Chest X-ray, 2 views"
+    },
+    "performedDateTime": "2026-06-03T10:00:00Z",
+    "id": "be2ca26a-d883-59a9-b450-0a8c3efb1164",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "99213",
+       "display": "Office visit"
+      }
+     ],
+     "text": "Office visit"
+    },
+    "performedDateTime": "2024-06-15T10:00:00Z",
+    "id": "324bfcb9-7152-5d33-a720-41cd350aa89d",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "45378",
+       "display": "Colonoscopy"
+      }
+     ],
+     "text": "Colonoscopy"
+    },
+    "performedDateTime": "2026-08-29T10:00:00Z",
+    "id": "646d74cc-8dcf-5d41-8bd5-6cf57ee882c5",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "77080",
+       "display": "DEXA scan"
+      }
+     ],
+     "text": "DEXA scan"
+    },
+    "performedDateTime": "2026-07-26T10:00:00Z",
+    "id": "9b14b1b5-48fa-5e8a-a53f-1bec57cf9587",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "93000",
+       "display": "Electrocardiogram"
+      }
+     ],
+     "text": "Electrocardiogram"
+    },
+    "performedDateTime": "2025-11-25T10:00:00Z",
+    "id": "3b482482-1b7e-51d3-a599-596353acce9f",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "90686",
+       "display": "Influenza vaccine"
+      }
+     ],
+     "text": "Influenza vaccine"
+    },
+    "performedDateTime": "2025-06-26T10:00:00Z",
+    "id": "0e969301-ef90-5850-8073-04e7ee2de489",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "99213",
+       "display": "Office visit"
+      }
+     ],
+     "text": "Office visit"
+    },
+    "performedDateTime": "2023-10-24T10:00:00Z",
+    "id": "9047b3bf-53b8-5784-bd44-9baa655996d5",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "93000",
+       "display": "Electrocardiogram"
+      }
+     ],
+     "text": "Electrocardiogram"
+    },
+    "performedDateTime": "2026-04-10T10:00:00Z",
+    "id": "cc7f3fa9-a04d-574f-b71e-0f09c34a0ab6",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "45378",
+       "display": "Colonoscopy"
+      }
+     ],
+     "text": "Colonoscopy"
+    },
+    "performedDateTime": "2025-02-18T10:00:00Z",
+    "id": "7713c95d-5b8f-57f5-8798-ec78d566a435",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "90686",
+       "display": "Influenza vaccine"
+      }
+     ],
+     "text": "Influenza vaccine"
+    },
+    "performedDateTime": "2025-08-29T10:00:00Z",
+    "id": "f0d23c21-7bb2-5ad7-a968-9987a1264fc5",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "99213",
+       "display": "Office visit"
+      }
+     ],
+     "text": "Office visit"
+    },
+    "performedDateTime": "2026-07-20T10:00:00Z",
+    "id": "0e5666ef-da8a-521b-92c5-5f1a56471462",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "90686",
+       "display": "Influenza vaccine"
+      }
+     ],
+     "text": "Influenza vaccine"
+    },
+    "performedDateTime": "2026-04-04T10:00:00Z",
+    "id": "7988a43c-eb80-56b8-9294-55868281aa07",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "45378",
+       "display": "Colonoscopy"
+      }
+     ],
+     "text": "Colonoscopy"
+    },
+    "performedDateTime": "2024-09-04T10:00:00Z",
+    "id": "6ed05daf-25a0-5f69-81c7-94b064634893",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "71046",
+       "display": "Chest X-ray, 2 views"
+      }
+     ],
+     "text": "Chest X-ray, 2 views"
+    },
+    "performedDateTime": "2024-01-04T10:00:00Z",
+    "id": "1501e40d-3e00-5a2e-8c83-5f28c7115d42",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "71046",
+       "display": "Chest X-ray, 2 views"
+      }
+     ],
+     "text": "Chest X-ray, 2 views"
+    },
+    "performedDateTime": "2025-10-21T10:00:00Z",
+    "id": "032e4e39-3369-5d27-b5b9-37558c3ad56f",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "93306",
+       "display": "Echocardiogram"
+      }
+     ],
+     "text": "Echocardiogram"
+    },
+    "performedDateTime": "2026-06-20T10:00:00Z",
+    "id": "607bf360-f5f7-517d-b854-ee5766fb807e",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "71046",
+       "display": "Chest X-ray, 2 views"
+      }
+     ],
+     "text": "Chest X-ray, 2 views"
+    },
+    "performedDateTime": "2024-02-09T10:00:00Z",
+    "id": "e5e4ccb4-a23c-5d85-876c-0758dfe0330c",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "45378",
+       "display": "Colonoscopy"
+      }
+     ],
+     "text": "Colonoscopy"
+    },
+    "performedDateTime": "2025-02-26T10:00:00Z",
+    "id": "9a34e424-3169-5620-8ba5-a2916f603ec0",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "90686",
+       "display": "Influenza vaccine"
+      }
+     ],
+     "text": "Influenza vaccine"
+    },
+    "performedDateTime": "2024-08-05T10:00:00Z",
+    "id": "72e230e6-ba35-53c1-a7fe-f7a7d89f54b0",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "71046",
+       "display": "Chest X-ray, 2 views"
+      }
+     ],
+     "text": "Chest X-ray, 2 views"
+    },
+    "performedDateTime": "2025-02-18T10:00:00Z",
+    "id": "933c48cd-5bbc-5b33-8777-b791f1dd7a86",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "99213",
+       "display": "Office visit"
+      }
+     ],
+     "text": "Office visit"
+    },
+    "performedDateTime": "2026-02-04T10:00:00Z",
+    "id": "2757b257-1ec5-5209-8a93-96a6d54e7b06",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "93306",
+       "display": "Echocardiogram"
+      }
+     ],
+     "text": "Echocardiogram"
+    },
+    "performedDateTime": "2024-12-16T10:00:00Z",
+    "id": "cd699662-a16c-5984-b03b-b82a569340f2",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "8480-6",
+       "display": "Systolic blood pressure"
+      }
+     ],
+     "text": "Systolic blood pressure"
+    },
+    "effectiveDateTime": "2025-05-15T09:00:00Z",
+    "valueQuantity": {
+     "value": 117.5,
+     "unit": "mm[Hg]"
+    },
+    "id": "143b9ffe-d7f4-59dc-a925-883de48ad755",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "4548-4",
+       "display": "Hemoglobin A1c"
+      }
+     ],
+     "text": "Hemoglobin A1c"
+    },
+    "effectiveDateTime": "2025-05-03T09:00:00Z",
+    "valueQuantity": {
+     "value": 5.6,
+     "unit": "%"
+    },
+    "id": "e9896f13-eb40-568e-a9b1-f957ccd7902c",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "13457-7",
+       "display": "LDL cholesterol"
+      }
+     ],
+     "text": "LDL cholesterol"
+    },
+    "effectiveDateTime": "2025-05-09T09:00:00Z",
+    "valueQuantity": {
+     "value": 111.8,
+     "unit": "mg/dL"
+    },
+    "id": "213b8bd2-b234-5669-a8f7-0856aa8411f6",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "39156-5",
+       "display": "Body mass index"
+      }
+     ],
+     "text": "Body mass index"
+    },
+    "effectiveDateTime": "2025-01-07T09:00:00Z",
+    "valueQuantity": {
+     "value": 29.4,
+     "unit": "kg/m2"
+    },
+    "id": "77a1a98f-87ef-5ed2-b88b-f9634e8ffbf3",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "4548-4",
+       "display": "Hemoglobin A1c"
+      }
+     ],
+     "text": "Hemoglobin A1c"
+    },
+    "effectiveDateTime": "2024-03-02T09:00:00Z",
+    "valueQuantity": {
+     "value": 6.7,
+     "unit": "%"
+    },
+    "id": "1cc651b6-c71d-5fcb-8c30-6ca23e657640",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "39156-5",
+       "display": "Body mass index"
+      }
+     ],
+     "text": "Body mass index"
+    },
+    "effectiveDateTime": "2026-06-19T09:00:00Z",
+    "valueQuantity": {
+     "value": 29.2,
+     "unit": "kg/m2"
+    },
+    "id": "b7919040-126a-55b0-8e1e-c37853792aab",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "2160-0",
+       "display": "Creatinine"
+      }
+     ],
+     "text": "Creatinine"
+    },
+    "effectiveDateTime": "2024-11-16T09:00:00Z",
+    "valueQuantity": {
+     "value": 0.6,
+     "unit": "mg/dL"
+    },
+    "id": "3d1210f6-fe27-53ab-ae43-4d2357c7eb79",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "39156-5",
+       "display": "Body mass index"
+      }
+     ],
+     "text": "Body mass index"
+    },
+    "effectiveDateTime": "2024-12-16T09:00:00Z",
+    "valueQuantity": {
+     "value": 26.9,
+     "unit": "kg/m2"
+    },
+    "id": "6ff47932-3146-5b1c-b890-503068098d44",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "4548-4",
+       "display": "Hemoglobin A1c"
+      }
+     ],
+     "text": "Hemoglobin A1c"
+    },
+    "effectiveDateTime": "2026-08-23T09:00:00Z",
+    "valueQuantity": {
+     "value": 6.9,
+     "unit": "%"
+    },
+    "id": "e0701206-8e3d-5b4d-8c8d-14d855069d5a",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "8480-6",
+       "display": "Systolic blood pressure"
+      }
+     ],
+     "text": "Systolic blood pressure"
+    },
+    "effectiveDateTime": "2026-10-12T09:00:00Z",
+    "valueQuantity": {
+     "value": 129.6,
+     "unit": "mm[Hg]"
+    },
+    "id": "2b8db378-1d77-5328-bb4b-105ebee55239",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "2160-0",
+       "display": "Creatinine"
+      }
+     ],
+     "text": "Creatinine"
+    },
+    "effectiveDateTime": "2025-12-02T09:00:00Z",
+    "valueQuantity": {
+     "value": 0.8,
+     "unit": "mg/dL"
+    },
+    "id": "0200422e-4ffa-57f8-b9dc-a25749a3cac9",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "8480-6",
+       "display": "Systolic blood pressure"
+      }
+     ],
+     "text": "Systolic blood pressure"
+    },
+    "effectiveDateTime": "2024-07-08T09:00:00Z",
+    "valueQuantity": {
+     "value": 114.8,
+     "unit": "mm[Hg]"
+    },
+    "id": "7f631aa5-c47e-5c30-aafc-e6285b9894cf",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "13457-7",
+       "display": "LDL cholesterol"
+      }
+     ],
+     "text": "LDL cholesterol"
+    },
+    "effectiveDateTime": "2026-05-14T09:00:00Z",
+    "valueQuantity": {
+     "value": 83.9,
+     "unit": "mg/dL"
+    },
+    "id": "86d3b9c8-63d6-530c-a116-8a2abae74c5d",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "2160-0",
+       "display": "Creatinine"
+      }
+     ],
+     "text": "Creatinine"
+    },
+    "effectiveDateTime": "2024-06-24T09:00:00Z",
+    "valueQuantity": {
+     "value": 0.8,
+     "unit": "mg/dL"
+    },
+    "id": "530e588c-7f39-5843-aa85-fd3502f40654",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "2160-0",
+       "display": "Creatinine"
+      }
+     ],
+     "text": "Creatinine"
+    },
+    "effectiveDateTime": "2024-09-27T09:00:00Z",
+    "valueQuantity": {
+     "value": 0.8,
+     "unit": "mg/dL"
+    },
+    "id": "79302843-fd18-54b6-bb4f-67887ebcc755",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "39156-5",
+       "display": "Body mass index"
+      }
+     ],
+     "text": "Body mass index"
+    },
+    "effectiveDateTime": "2025-10-15T09:00:00Z",
+    "valueQuantity": {
+     "value": 28.1,
+     "unit": "kg/m2"
+    },
+    "id": "2e6a9f4b-b70d-5c70-89e3-30737413f550",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "39156-5",
+       "display": "Body mass index"
+      }
+     ],
+     "text": "Body mass index"
+    },
+    "effectiveDateTime": "2025-02-04T09:00:00Z",
+    "valueQuantity": {
+     "value": 33.2,
+     "unit": "kg/m2"
+    },
+    "id": "25bae2af-224e-5f12-a35f-07e888f8c111",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "39156-5",
+       "display": "Body mass index"
+      }
+     ],
+     "text": "Body mass index"
+    },
+    "effectiveDateTime": "2025-05-04T09:00:00Z",
+    "valueQuantity": {
+     "value": 38.5,
+     "unit": "kg/m2"
+    },
+    "id": "75ccac85-c648-524c-9815-688fd273cda9",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "4548-4",
+       "display": "Hemoglobin A1c"
+      }
+     ],
+     "text": "Hemoglobin A1c"
+    },
+    "effectiveDateTime": "2025-08-21T09:00:00Z",
+    "valueQuantity": {
+     "value": 5.2,
+     "unit": "%"
+    },
+    "id": "a3ab6326-5919-533a-a568-320fc36ac1ca",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "13457-7",
+       "display": "LDL cholesterol"
+      }
+     ],
+     "text": "LDL cholesterol"
+    },
+    "effectiveDateTime": "2025-05-09T09:00:00Z",
+    "valueQuantity": {
+     "value": 148.7,
+     "unit": "mg/dL"
+    },
+    "id": "22cf866f-39b0-5559-835e-fbb24e582ced",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "39156-5",
+       "display": "Body mass index"
+      }
+     ],
+     "text": "Body mass index"
+    },
+    "effectiveDateTime": "2023-11-20T09:00:00Z",
+    "valueQuantity": {
+     "value": 33.7,
+     "unit": "kg/m2"
+    },
+    "id": "03aa33a0-92a6-51cf-aed4-43adc1608e77",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "2160-0",
+       "display": "Creatinine"
+      }
+     ],
+     "text": "Creatinine"
+    },
+    "effectiveDateTime": "2026-07-18T09:00:00Z",
+    "valueQuantity": {
+     "value": 0.7,
+     "unit": "mg/dL"
+    },
+    "id": "6824e0fc-82e6-5357-b16c-b4cf9d856167",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "39156-5",
+       "display": "Body mass index"
+      }
+     ],
+     "text": "Body mass index"
+    },
+    "effectiveDateTime": "2026-05-31T09:00:00Z",
+    "valueQuantity": {
+     "value": 22.9,
+     "unit": "kg/m2"
+    },
+    "id": "c010cd72-33b3-596b-bb22-0402e1aba5a1",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "8480-6",
+       "display": "Systolic blood pressure"
+      }
+     ],
+     "text": "Systolic blood pressure"
+    },
+    "effectiveDateTime": "2025-02-19T09:00:00Z",
+    "valueQuantity": {
+     "value": 124.4,
+     "unit": "mm[Hg]"
+    },
+    "id": "c4a11510-300e-5167-9821-4f40a080cb92",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "13457-7",
+       "display": "LDL cholesterol"
+      }
+     ],
+     "text": "LDL cholesterol"
+    },
+    "effectiveDateTime": "2025-11-19T09:00:00Z",
+    "valueQuantity": {
+     "value": 60.6,
+     "unit": "mg/dL"
+    },
+    "id": "6cf1ebdf-bdba-5042-ade8-d5825c02d6a3",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "4548-4",
+       "display": "Hemoglobin A1c"
+      }
+     ],
+     "text": "Hemoglobin A1c"
+    },
+    "effectiveDateTime": "2025-03-18T09:00:00Z",
+    "valueQuantity": {
+     "value": 8.4,
+     "unit": "%"
+    },
+    "id": "7a89782c-c22b-56c9-b137-47e536501d67",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "8480-6",
+       "display": "Systolic blood pressure"
+      }
+     ],
+     "text": "Systolic blood pressure"
+    },
+    "effectiveDateTime": "2026-05-27T09:00:00Z",
+    "valueQuantity": {
+     "value": 135.7,
+     "unit": "mm[Hg]"
+    },
+    "id": "ea5a72f8-16fc-5a9c-89e1-99839d0da26e",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "8480-6",
+       "display": "Systolic blood pressure"
+      }
+     ],
+     "text": "Systolic blood pressure"
+    },
+    "effectiveDateTime": "2023-11-19T09:00:00Z",
+    "valueQuantity": {
+     "value": 145.5,
+     "unit": "mm[Hg]"
+    },
+    "id": "5fce784d-b017-59b0-a416-4f28291b0325",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "39156-5",
+       "display": "Body mass index"
+      }
+     ],
+     "text": "Body mass index"
+    },
+    "effectiveDateTime": "2025-07-12T09:00:00Z",
+    "valueQuantity": {
+     "value": 36.7,
+     "unit": "kg/m2"
+    },
+    "id": "2ff3f0c6-586e-54cd-84ae-1f0e80fcefa4",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "13457-7",
+       "display": "LDL cholesterol"
+      }
+     ],
+     "text": "LDL cholesterol"
+    },
+    "effectiveDateTime": "2026-06-15T09:00:00Z",
+    "valueQuantity": {
+     "value": 150.0,
+     "unit": "mg/dL"
+    },
+    "id": "ba913d76-11d3-59b9-959f-6e114b4d8f7b",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "13457-7",
+       "display": "LDL cholesterol"
+      }
+     ],
+     "text": "LDL cholesterol"
+    },
+    "effectiveDateTime": "2024-11-07T09:00:00Z",
+    "valueQuantity": {
+     "value": 163.5,
+     "unit": "mg/dL"
+    },
+    "id": "ff37de36-a6e3-5d1b-bf39-7d8ca49e0182",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "2160-0",
+       "display": "Creatinine"
+      }
+     ],
+     "text": "Creatinine"
+    },
+    "effectiveDateTime": "2026-09-03T09:00:00Z",
+    "valueQuantity": {
+     "value": 0.8,
+     "unit": "mg/dL"
+    },
+    "id": "afc52337-a226-5153-b524-4141aafdc394",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "8480-6",
+       "display": "Systolic blood pressure"
+      }
+     ],
+     "text": "Systolic blood pressure"
+    },
+    "effectiveDateTime": "2025-02-23T09:00:00Z",
+    "valueQuantity": {
+     "value": 132.0,
+     "unit": "mm[Hg]"
+    },
+    "id": "b8dab6e4-b3c5-5985-bfda-4e0063fb6b8c",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "8480-6",
+       "display": "Systolic blood pressure"
+      }
+     ],
+     "text": "Systolic blood pressure"
+    },
+    "effectiveDateTime": "2023-11-18T09:00:00Z",
+    "valueQuantity": {
+     "value": 123.8,
+     "unit": "mm[Hg]"
+    },
+    "id": "f85c9760-1b91-5da1-a0fb-f58a385c2553",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "13457-7",
+       "display": "LDL cholesterol"
+      }
+     ],
+     "text": "LDL cholesterol"
+    },
+    "effectiveDateTime": "2025-01-07T09:00:00Z",
+    "valueQuantity": {
+     "value": 106.1,
+     "unit": "mg/dL"
+    },
+    "id": "5f90aeb7-1f07-5a92-aad9-e78ffe42e180",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "8480-6",
+       "display": "Systolic blood pressure"
+      }
+     ],
+     "text": "Systolic blood pressure"
+    },
+    "effectiveDateTime": "2026-05-18T09:00:00Z",
+    "valueQuantity": {
+     "value": 124.7,
+     "unit": "mm[Hg]"
+    },
+    "id": "b6dfca3b-1a3e-598d-9147-d5a45bf3b544",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "13457-7",
+       "display": "LDL cholesterol"
+      }
+     ],
+     "text": "LDL cholesterol"
+    },
+    "effectiveDateTime": "2024-02-27T09:00:00Z",
+    "valueQuantity": {
+     "value": 65.7,
+     "unit": "mg/dL"
+    },
+    "id": "6419109b-9bc6-57be-b68f-602db1fa3e42",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "4548-4",
+       "display": "Hemoglobin A1c"
+      }
+     ],
+     "text": "Hemoglobin A1c"
+    },
+    "effectiveDateTime": "2025-03-29T09:00:00Z",
+    "valueQuantity": {
+     "value": 8.5,
+     "unit": "%"
+    },
+    "id": "4dac6b0e-94d2-5d88-b289-f4d87dfe4192",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "4548-4",
+       "display": "Hemoglobin A1c"
+      }
+     ],
+     "text": "Hemoglobin A1c"
+    },
+    "effectiveDateTime": "2025-01-18T09:00:00Z",
+    "valueQuantity": {
+     "value": 5.3,
+     "unit": "%"
+    },
+    "id": "3bd60623-6c93-5dac-9315-738da3f2709a",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "13457-7",
+       "display": "LDL cholesterol"
+      }
+     ],
+     "text": "LDL cholesterol"
+    },
+    "effectiveDateTime": "2026-05-17T09:00:00Z",
+    "valueQuantity": {
+     "value": 70.3,
+     "unit": "mg/dL"
+    },
+    "id": "2f46cdc3-b4e1-5fe4-84ee-e94eb80ded04",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "39156-5",
+       "display": "Body mass index"
+      }
+     ],
+     "text": "Body mass index"
+    },
+    "effectiveDateTime": "2026-05-11T09:00:00Z",
+    "valueQuantity": {
+     "value": 35.5,
+     "unit": "kg/m2"
+    },
+    "id": "d4e85fdc-4243-5537-8781-6a268879f47b",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "4548-4",
+       "display": "Hemoglobin A1c"
+      }
+     ],
+     "text": "Hemoglobin A1c"
+    },
+    "effectiveDateTime": "2025-03-05T09:00:00Z",
+    "valueQuantity": {
+     "value": 5.4,
+     "unit": "%"
+    },
+    "id": "0fe78397-49df-5ef7-8995-8cfecc321a34",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "39156-5",
+       "display": "Body mass index"
+      }
+     ],
+     "text": "Body mass index"
+    },
+    "effectiveDateTime": "2026-04-06T09:00:00Z",
+    "valueQuantity": {
+     "value": 37.0,
+     "unit": "kg/m2"
+    },
+    "id": "b432b3dc-bae4-5dd5-97e5-9d044617fde2",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "4548-4",
+       "display": "Hemoglobin A1c"
+      }
+     ],
+     "text": "Hemoglobin A1c"
+    },
+    "effectiveDateTime": "2025-03-06T09:00:00Z",
+    "valueQuantity": {
+     "value": 7.2,
+     "unit": "%"
+    },
+    "id": "a7a57f6c-45a8-5af4-b434-e5d32d17c902",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "8480-6",
+       "display": "Systolic blood pressure"
+      }
+     ],
+     "text": "Systolic blood pressure"
+    },
+    "effectiveDateTime": "2025-01-08T09:00:00Z",
+    "valueQuantity": {
+     "value": 126.3,
+     "unit": "mm[Hg]"
+    },
+    "id": "2ee77231-1ecf-5250-9468-fc172a8e37de",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "39156-5",
+       "display": "Body mass index"
+      }
+     ],
+     "text": "Body mass index"
+    },
+    "effectiveDateTime": "2024-01-22T09:00:00Z",
+    "valueQuantity": {
+     "value": 38.8,
+     "unit": "kg/m2"
+    },
+    "id": "2aae5816-56c0-565b-aa53-dd63105d999d",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "13457-7",
+       "display": "LDL cholesterol"
+      }
+     ],
+     "text": "LDL cholesterol"
+    },
+    "effectiveDateTime": "2024-08-14T09:00:00Z",
+    "valueQuantity": {
+     "value": 142.3,
+     "unit": "mg/dL"
+    },
+    "id": "af579518-f737-5372-9791-a59984111b24",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "13457-7",
+       "display": "LDL cholesterol"
+      }
+     ],
+     "text": "LDL cholesterol"
+    },
+    "effectiveDateTime": "2026-02-26T09:00:00Z",
+    "valueQuantity": {
+     "value": 120.8,
+     "unit": "mg/dL"
+    },
+    "id": "8fb52308-c933-53f7-be46-3f8b45f6ec21",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "4548-4",
+       "display": "Hemoglobin A1c"
+      }
+     ],
+     "text": "Hemoglobin A1c"
+    },
+    "effectiveDateTime": "2026-05-15T09:00:00Z",
+    "valueQuantity": {
+     "value": 6.3,
+     "unit": "%"
+    },
+    "id": "52f8da98-58c7-511e-8768-adf0fd7459b2",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "39156-5",
+       "display": "Body mass index"
+      }
+     ],
+     "text": "Body mass index"
+    },
+    "effectiveDateTime": "2026-06-04T09:00:00Z",
+    "valueQuantity": {
+     "value": 22.8,
+     "unit": "kg/m2"
+    },
+    "id": "0950d6d6-2461-5401-89b9-47110bceb533",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "2160-0",
+       "display": "Creatinine"
+      }
+     ],
+     "text": "Creatinine"
+    },
+    "effectiveDateTime": "2025-04-24T09:00:00Z",
+    "valueQuantity": {
+     "value": 1.1,
+     "unit": "mg/dL"
+    },
+    "id": "eff950ab-5e3f-5124-9ddf-de490fa61221",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://loinc.org",
+       "code": "8480-6",
+       "display": "Systolic blood pressure"
+      }
+     ],
+     "text": "Systolic blood pressure"
+    },
+    "effectiveDateTime": "2024-11-08T09:00:00Z",
+    "valueQuantity": {
+     "value": 120.4,
+     "unit": "mm[Hg]"
+    },
+    "id": "a8db34bc-2f17-54fa-b206-00ca0992bfe0",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "73562",
+       "display": "X-ray knee, 3 views"
+      }
+     ],
+     "text": "X-ray knee, 3 views"
+    },
+    "performedDateTime": "2026-05-24T10:00:00Z",
+    "id": "fdf1964a-123c-586e-944f-0c21c4568329",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Procedure",
+    "status": "completed",
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "97110",
+       "display": "Therapeutic exercise"
+      }
+     ],
+     "text": "Therapeutic exercise"
+    },
+    "performedPeriod": {
+     "start": "2026-05-08",
+     "end": "2026-09-05"
+    },
+    "id": "b7b67669-578e-5ad2-a7ec-0e2b0ef1607c",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Observation",
+    "status": "final",
+    "code": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "functional-limitation",
+       "display": "Functional limitation assessment"
+      }
+     ],
+     "text": "Functional limitation assessment"
+    },
+    "effectiveDateTime": "2026-09-10T10:00:00Z",
+    "valueCodeableConcept": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "present",
+       "display": "Present"
+      }
+     ],
+     "text": "Present"
+    },
+    "id": "d91c7f44-b363-5886-b90b-97317d27a59f",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "Condition",
+    "code": {
+     "coding": [
+      {
+       "system": "http://hl7.org/fhir/sid/icd-10-cm",
+       "code": "M00.9",
+       "display": "Pyogenic arthritis, unspecified"
+      }
+     ],
+     "text": "Pyogenic arthritis, unspecified"
+    },
+    "verificationStatus": {
+     "coding": [
+      {
+       "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+       "code": "entered-in-error",
+       "display": "entered-in-error"
+      }
+     ],
+     "text": "entered-in-error"
+    },
+    "onsetDateTime": "2026-09-04",
+    "id": "d7c36681-d243-54c2-9345-6f59d672e562",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    }
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "c5405ded-6f33-506d-a422-121ef6cc86fb",
+    "status": "current",
+    "description": "Fax cover sheet",
+    "type": {
+     "text": "Fax cover sheet"
+    },
+    "date": "2026-10-27T08:00:00Z",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    },
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "data": "TWVzYSBWZXJkZSBIZWFsdGggwrcgRmF4IGNvdmVyIHNoZWV0IMK3IFBhdGllbnQ6IFJheW1vbmQgT3J0aXogwrcgRE9CIDE5NDItMDUtMjMgwrcgUGFnZSAxIG9mIDEwClJldmlldyBvZiBzeXN0ZW1zIG90aGVyd2lzZSBuZWdhdGl2ZSBleGNlcHQgYXMgbm90ZWQgaW4gdGhlIEhQSS4gU29jaWFsIGhpc3Rvcnk6IGZvcm1lciBzbW9rZXIsIHF1aXQgMjAwOS4KSGFuZCBvc3Rlb2FydGhyaXRpcyBub3RlZC4KRWxlY3Ryb25pY2FsbHkgc2lnbmVkIGJ5IHRoZSBhdHRlbmRpbmcgY2xpbmljaWFuLiBBYmRvbWVuIHNvZnQsIG5vbnRlbmRlci4gQ29waWVkIGZvcndhcmQgZnJvbSB0aGUgcHJpb3IgdmlzaXQuIEluZmx1ZW56YSBpbmplY3Rpb24gZ2l2ZW4gaW4gdGhlIGZhbGwuIEZvbGxvdyB1cCBpbiBmb3VyIHdlZWtzIG9yIHNvb25lciBpZiB3b3JzZS4gSW5mbHVlbnphIHZhY2NpbmUgb2ZmZXJlZC4gQWxsZXJnaWVzOiBubyBrbm93biBkcnVnIGFsbGVyZ2llcy4gSGVhcnQgcmVndWxhciByYXRlIGFuZCByaHl0aG0uCkxpdmVzIHdpdGggc3BvdXNlIGluIGEgc2luZ2xlLXN0b3J5IGhvbWUuIEZhbGwgcmlzayBzY3JlZW5pbmcgY29tcGxldGVkLiBUaGlzIG5vdGUgd2FzIGRpY3RhdGVkIHVzaW5nIHZvaWNlIHJlY29nbml0aW9uIHNvZnR3YXJlIGFuZCBtYXkgY29udGFpbiBlcnJvcnMuIERlbmllcyBjaGVzdCBwYWluIG9yIHNob3J0bmVzcyBvZiBicmVhdGguIEVsZWN0cm9uaWNhbGx5IHNpZ25lZDogRHIuIE1hcmN1cyBMZWUsIE9ydGhvcGVkaWMgU3VyZ2VyeS4="
+      }
+     }
+    ]
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "cd194e79-e0d4-5ead-be50-e183746c7309",
+    "status": "current",
+    "description": "Prior authorization request",
+    "type": {
+     "text": "Prior authorization request"
+    },
+    "date": "2026-10-27T08:00:00Z",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    },
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "data": "TWVzYSBWZXJkZSBIZWFsdGggwrcgUHJpb3IgYXV0aG9yaXphdGlvbiByZXF1ZXN0IMK3IFBhdGllbnQ6IFJheW1vbmQgT3J0aXogwrcgRE9CIDE5NDItMDUtMjMgwrcgUGFnZSAyIG9mIDEwCkZvbGxvdyB1cCBpbiBmb3VyIHdlZWtzIG9yIHNvb25lciBpZiB3b3JzZS4gUGF0aWVudCB2ZXJiYWxpemVkIHVuZGVyc3RhbmRpbmcgb2YgdGhlIHBsYW4uClJpZ2h0IHNob3VsZGVyIFgtcmF5OiBBQyBqb2ludCBhcnRocm9zaXMuClBoeXNpY2FsIHRoZXJhcHkgZm9yIGxvdyBiYWNrIHBhaW4gaW4gMjAyMS4gRGVuaWVzIGNoZXN0IHBhaW4gb3Igc2hvcnRuZXNzIG9mIGJyZWF0aC4KUmV2aWV3IG9mIHN5c3RlbXMgb3RoZXJ3aXNlIG5lZ2F0aXZlIGV4Y2VwdCBhcyBub3RlZCBpbiB0aGUgSFBJLgpBZHZhbmNlIGRpcmVjdGl2ZSBkaXNjdXNzZWQuClNvY2lhbCBoaXN0b3J5OiBmb3JtZXIgc21va2VyLCBxdWl0IDIwMDkuIEFsbGVyZ2llczogbm8ga25vd24gZHJ1ZyBhbGxlcmdpZXMuIEVsZWN0cm9uaWNhbGx5IHNpZ25lZDogRHIuIE1hcmN1cyBMZWUsIE9ydGhvcGVkaWMgU3VyZ2VyeS4="
+      }
+     }
+    ]
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "dd091e23-27ee-5c52-8033-bd9188652aad",
+    "status": "current",
+    "description": "Imaging report",
+    "type": {
+     "text": "Imaging report"
+    },
+    "date": "2026-10-27T08:00:00Z",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    },
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "data": "TWVzYSBWZXJkZSBIZWFsdGggwrcgSW1hZ2luZyByZXBvcnQgwrcgUGF0aWVudDogUmF5bW9uZCBPcnRpeiDCtyBET0IgMTk0Mi0wNS0yMyDCtyBQYWdlIDMgb2YgMTAKSW5mbHVlbnphIGluamVjdGlvbiBnaXZlbiBpbiB0aGUgZmFsbC4gTHVuZ3MgY2xlYXIgdG8gYXVzY3VsdGF0aW9uLgpHYWl0IHN0ZWFkeTsgbm8gYXNzaXN0aXZlIGRldmljZSBpbiB0aGUgb2ZmaWNlIHRvZGF5LiBOZXVyb2xvZ2ljYWxseSBpbnRhY3QgdG8gbGlnaHQgdG91Y2guClN0YW5kaW5nIEFQL2xhdCBSaWdodCBrbmVlIChNYXkgMjQpOiBzZXZlcmUgbWVkaWFsIGNvbXBhcnRtZW50IG5hcnJvd2luZywgc3ViY2hvbmRyYWwgc2NsZXJvc2lzLgpUaGlzIG5vdGUgd2FzIGRpY3RhdGVkIHVzaW5nIHZvaWNlIHJlY29nbml0aW9uIHNvZnR3YXJlIGFuZCBtYXkgY29udGFpbiBlcnJvcnMuIEhlYXJ0IHJlZ3VsYXIgcmF0ZSBhbmQgcmh5dGhtLgpQYXRpZW50IHZlcmJhbGl6ZWQgdW5kZXJzdGFuZGluZyBvZiB0aGUgcGxhbi4KQ2hlc3QgcmFkaW9ncmFwaDogY2xlYXIuIEVsZWN0cm9uaWNhbGx5IHNpZ25lZDogRHIuIE1hcmN1cyBMZWUsIE9ydGhvcGVkaWMgU3VyZ2VyeS4="
+      }
+     }
+    ]
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "acab5c8c-0287-5bbb-ae77-66e056c8fbe2",
+    "status": "current",
+    "description": "Visit note",
+    "type": {
+     "text": "Visit note"
+    },
+    "date": "2026-10-27T08:00:00Z",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    },
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "data": "TWVzYSBWZXJkZSBIZWFsdGggwrcgVmlzaXQgbm90ZSDCtyBQYXRpZW50OiBSYXltb25kIE9ydGl6IMK3IERPQiAxOTQyLTA1LTIzIMK3IFBhZ2UgNCBvZiAxMApNZWRpY2F0aW9ucyByZXZpZXdlZCBhbmQgcmVjb25jbGxlZC4gQWR2b25jZSBkaXJlY3RpdmUgZGlzY3Vzc2VkLiBJbmZsdWVuemEgaW5qZWN0bG9uIGdpdmVuIGluIHRoZSBmYWxsLiBBbGxlcmdpZXM6IG5vIGtub3duIGRydWcgYWxsZXJnbGVzLiBTa2luIHdhcm0gYW5kIGRyeS4KRGljdDogcmVndWxhci4gTmV1cm8tCmxvZ2ljYWxseSBpbnRhY3QgdDAgbGlnaHQgdG91Y2guIEFETHMgbGltaXRlZCBieSBrbmVlIHBvaW47IHN0b3BwZWQgZ3JvY2VyeSBzaG9wcGluZy4gUDFhbiBkaXNjdXNzZWQgd2l0aCB0aGUgcGF0aWVudCBhbmQgZmFtaWx5LgpSaWdodCBzaG91bGRjciBYLXJheTogQUMgam9pbnQgYXJ0aHJvc2lzLiBFbGVjdHJvbmljYWxseSBzaWduZWQ6IERyLiBNYXJjdXMgTGVlLCBPcnRob3BlZGljIFN1cmdlcnku"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "490bbb70-23fc-5e5d-b9c6-b955eada7e7d",
+    "status": "current",
+    "description": "Insurance and demographics",
+    "type": {
+     "text": "Insurance and demographics"
+    },
+    "date": "2026-10-27T08:00:00Z",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    },
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "data": "TWVzYSBWZXJkZSBIZWFsdGggwrcgSW5zdXJhbmNlIGFuZCBkZW1vZ3JhcGhpY3MgwrcgUGF0aWVudDogUmF5bW9uZCBPcnRpeiDCtyBET0IgMTk0Mi0wNS0yMyDCtyBQYWdlIDUgb2YgMTAKRm9sbG93IHVwIGluIGZvdXIgd2Vla3Mgb3Igc29vbmVyIGlmIHdvcnNlLiBBZHZhbmNlIGRpcmVjdGl2ZSBkaXNjdXNzZWQuIFJpZ2h0IHNob3VsZGVyIFgtcmF5OiBBQyBqb2ludCBhcnRocm9zaXMuCk5ldXJvbG9naWNhbGx5IGludGFjdCB0byBsaWdodCB0b3VjaC4KSGVhcnQgcmVndWxhciByYXRlIGFuZCByaHl0aG0uIEluZmx1ZW56YSB2YWNjaW5lIG9mZmVyZWQuCkNvcGllZCBmb3J3YXJkIGZyb20gdGhlIHByaW9yIHZpc2l0LgpEaWV0OiByZWd1bGFyLiBDaGVzdCByYWRpb2dyYXBoOiBjbGVhci4gTGFicyBvcmRlcmVkIGFzIGJlbG93LgpNZWRpY2F0aW9ucyByZXZpZXdlZCBhbmQgcmVjb25jaWxlZC4KVGhpcyBub3RlIHdhcyBkaWN0YXRlZCB1c2luZyB2b2ljZSByZWNvZ25pdGlvbiBzb2Z0d2FyZSBhbmQgbWF5IGNvbnRhaW4gZXJyb3JzLiBGYWxsIHJpc2sgc2NyZWVuaW5nIGNvbXBsZXRlZC4KRWxlY3Ryb25pY2FsbHkgc2lnbmVkOiBEci4gTWFyY3VzIExlZSwgT3J0aG9wZWRpYyBTdXJnZXJ5Lg=="
+      }
+     }
+    ]
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "01bc18a3-8c7a-5387-b69b-b3447bdb01d9",
+    "status": "current",
+    "description": "Problem list and medications",
+    "type": {
+     "text": "Problem list and medications"
+    },
+    "date": "2026-10-27T08:00:00Z",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    },
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "data": "TWVzYSBWZXJkZSBIZWFsdGggwrcgUHJvYmxlbSBsaXN0IGFuZCBtZWRpY2F0aW9ucyDCtyBQYXRpZW50OiBSYXltb25kIE9ydGl6IMK3IERPQiAxOTQyLTA1LTIzIMK3IFBhZ2UgNiBvZiAxMApTb2NpYWwgaGlzdG9yeTogZm9ybWVyIHNtb2tlciwgcXVpdCAyMDA5LiBHYWl0IHN0ZWFkeTsgbm8gYXNzaXN0aXZlIGRldmljZSBpbiB0aGUgb2ZmaWNlIHRvZGF5LgpDb3BpZWQgZm9yd2FyZCBmcm9tIHRoZSBwcmlvciB2aXNpdC4KUGF0aWVudCB2ZXJiYWxpemVkIHVuZGVyc3RhbmRpbmcgb2YgdGhlIHBsYW4uIFZpdGFsIHNpZ25zOiBCUCAxMzIvNzgsIEhSIDcyLCB0ZW1wZXJhdHVyZSA5OC4yIEYuIEVsZWN0cm9uaWNhbGx5IHNpZ25lZCBieSB0aGUgYXR0ZW5kaW5nIGNsaW5pY2lhbi4KRGVuaWVzIGNoZXN0IHBhaW4gb3Igc2hvcnRuZXNzIG9mIGJyZWF0aC4KUGh5c2ljYWwgdGhlcmFweSBmb3IgbG93IGJhY2sgcGFpbiBpbiAyMDIxLiBSZXZpZXcgb2Ygc3lzdGVtcyBvdGhlcndpc2UgbmVnYXRpdmUgZXhjZXB0IGFzIG5vdGVkIGluIHRoZSBIUEkuIFBsYW4gZGlzY3Vzc2VkIHdpdGggdGhlIHBhdGllbnQgYW5kIGZhbWlseS4gTmV1cm9sb2dpY2FsbHkgaW50YWN0IHRvIGxpZ2h0IHRvdWNoLiBIYW5kIG9zdGVvYXJ0aHJpdGlzIG5vdGVkLiBFbGVjdHJvbmljYWxseSBzaWduZWQ6IERyLiBNYXJjdXMgTGVlLCBPcnRob3BlZGljIFN1cmdlcnku"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "03be0817-afe8-52ec-bfe2-172d87cc24ea",
+    "status": "current",
+    "description": "Laboratory results",
+    "type": {
+     "text": "Laboratory results"
+    },
+    "date": "2026-10-27T08:00:00Z",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    },
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "data": "TWVzYSBWZXJkZSBIZWFsdGggwrcgTGFib3JhdG9yeSByZXN1bHRzIMK3IFBhdGllbnQ6IFJheW1vbmQgT3J0aXogwrcgRE9CIDE5NDItMDUtMjMgwrcgUGFnZSA3IG9mIDEwCkFkdmFuY2UgZGlyZWN0aXZlIGRpc2N1c3NlZC4gUGh5c2ljYWwgdGhlcmFweSBmb3IgbG93IGJhY2sgcGFpbiBpbiAyMDIxLiBMdW5ncyBjbGVhciB0byBhdXNjdWx0YXRpb24uIE5ldXJvbG9naWNhbGx5IGludGFjdCB0byBsaWdodCB0b3VjaC4KTGFicyBvcmRlcmVkIGFzIGJlbG93LiBDaGVzdCByYWRpb2dyYXBoOiBjbGVhci4gQWJkb21lbiBzb2Z0LCBub250ZW5kZXIuCkdhaXQgc3RlYWR5OyBubyBhc3Npc3RpdmUgZGV2aWNlIGluIHRoZSBvZmZpY2UgdG9kYXkuIENvcGllZCBmb3J3YXJkIGZyb20gdGhlIHByaW9yIHZpc2l0LiBFbGVjdHJvbmljYWxseSBzaWduZWQgYnkgdGhlIGF0dGVuZGluZyBjbGluaWNpYW4uIFBhdGllbnQgd2FzIGNvdW5zZWxlZCBvbiB3ZWlnaHQgbWFuYWdlbWVudCBhbmQgYWN0aXZpdHkuCkVsZWN0cm9uaWNhbGx5IHNpZ25lZDogRHIuIE1hcmN1cyBMZWUsIE9ydGhvcGVkaWMgU3VyZ2VyeS4="
+      }
+     }
+    ]
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "dc38b497-1960-5738-93a3-78faecd4d7c2",
+    "status": "current",
+    "description": "Therapy notes",
+    "type": {
+     "text": "Therapy notes"
+    },
+    "date": "2026-10-27T08:00:00Z",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    },
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "data": "TWVzYSBWZXJkZSBIZWFsdGggwrcgVGhlcmFweSBub3RlcyDCtyBQYXRpZW50OiBSYXltb25kIE9ydGl6IMK3IERPQiAxOTQyLTA1LTIzIMK3IFBhZ2UgOCBvZiAxMApLbmVlIHJlaGFiIDIwMjYtMDUtMDggdG8gMDkvMDUvMjAyNiAoMTcgd2tzKSwgcXVhZCBzdHJlbmd0aGVuaW5nLCBwYWluIHBlcnNpc3RzLgpJbmZsdWVuemEgaW5qZWN0aW9uIGdpdmVuIGluIHRoZSBmYWxsLgpQbGFuIGRpc2N1c3NlZCB3aXRoIHRoZSBwYXRpZW50IGFuZCBmYW1pbHkuIEZvbGxvdyB1cCBpbiBmb3VyIHdlZWtzIG9yIHNvb25lciBpZiB3b3JzZS4KU2tpbiB3YXJtIGFuZCBkcnkuIE5ldXJvbG9naWNhbGx5IGludGFjdCB0byBsaWdodCB0b3VjaC4gQ2hlc3QgcmFkaW9ncmFwaDogY2xlYXIuIFBhdGllbnQgdmVyYmFsaXplZCB1bmRlcnN0YW5kaW5nIG9mIHRoZSBwbGFuLiBDb3BpZWQgZm9yd2FyZCBmcm9tIHRoZSBwcmlvciB2aXNpdC4gRGlldDogcmVndWxhci4KUmV2aWV3IG9mIHN5c3RlbXMgb3RoZXJ3aXNlIG5lZ2F0aXZlIGV4Y2VwdCBhcyBub3RlZCBpbiB0aGUgSFBJLiBFbGVjdHJvbmljYWxseSBzaWduZWQ6IERyLiBNYXJjdXMgTGVlLCBPcnRob3BlZGljIFN1cmdlcnku"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "5bf56f67-2f18-56a9-983e-f887854d028f",
+    "status": "current",
+    "description": "Patient questionnaire",
+    "type": {
+     "text": "Patient questionnaire"
+    },
+    "date": "2026-10-27T08:00:00Z",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    },
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "data": "TWVzYSBWZXJkZSBIZWFsdGggwrcgUGF0aWVudCBxdWVzdGlvbm5haXJlIMK3IFBhdGllbnQ6IFJheW1vbmQgT3J0aXogwrcgRE9CIDE5NDItMDUtMjMgwrcgUGFnZSA5IG9mIDEwCkdhaXQgc3RlYWR5OyBubyBhc3Npc3RpdmUgZGV2aWNlIGluIHRoZSBvZmZpY2UgdG9kYXkuIFBhdGllbnQgdmVyYmFsaXplZCB1bmRlcnN0YW5kaW5nIG9mIHRoZSBwbGFuLgpIYW5kIG9zdGVvYXJ0aHJpdGlzIG5vdGVkLgpMaXZlcyB3aXRoIHNwb3VzZSBpbiBhIHNpbmdsZS1zdG9yeSBob21lLiBSZXZpZXcgb2Ygc3lzdGVtcyBvdGhlcndpc2UgbmVnYXRpdmUgZXhjZXB0IGFzIG5vdGVkIGluIHRoZSBIUEkuCkxhYnMgb3JkZXJlZCBhcyBiZWxvdy4gRmFsbCByaXNrIHNjcmVlbmluZyBjb21wbGV0ZWQuCkZvbGxvdyB1cCBpbiBmb3VyIHdlZWtzIG9yIHNvb25lciBpZiB3b3JzZS4gSW5mbHVlbnphIHZhY2NpbmUgb2ZmZXJlZC4gQ2hlc3QgcmFkaW9ncmFwaDogY2xlYXIuIEhlYXJ0IHJlZ3VsYXIgcmF0ZSBhbmQgcmh5dGhtLiBBYmRvbWVuIHNvZnQsIG5vbnRlbmRlci4KQWR2YW5jZSBkaXJlY3RpdmUgZGlzY3Vzc2VkLgpQYXRpZW50IHdhcyBjb3Vuc2VsZWQgb24gd2VpZ2h0IG1hbmFnZW1lbnQgYW5kIGFjdGl2aXR5LgpWaXRhbCBzaWduczogQlAgMTMyLzc4LCBIUiA3MiwgdGVtcGVyYXR1cmUgOTguMiBGLiBDb3BpZWQgZm9yd2FyZCBmcm9tIHRoZSBwcmlvciB2aXNpdC4KRWxlY3Ryb25pY2FsbHkgc2lnbmVkOiBEci4gTWFyY3VzIExlZSwgT3J0aG9wZWRpYyBTdXJnZXJ5Lg=="
+      }
+     }
+    ]
+   }
+  },
+  {
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "2fddb062-8b0a-513b-a394-cf5cdf0a4bd5",
+    "status": "current",
+    "description": "Visit note",
+    "type": {
+     "text": "Visit note"
+    },
+    "date": "2026-10-27T08:00:00Z",
+    "subject": {
+     "reference": "Patient/50b6054e-05be-5d17-9bd5-e26204f6e5c2"
+    },
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "data": "TWVzYSBWZXJkZSBIZWFsdGggwrcgVmlzaXQgbm90ZSDCtyBQYXRpZW50OiBSYXltb25kIE9ydGl6IMK3IERPQiAxOTQyLTA1LTIzIMK3IFBhZ2UgMTAgb2YgMTAKTHVuZ3MgY2xlYXIgdG8gYXVzY3VsdGF0aW9uLiBQYXRpZW50IHdhcyBjb3Vuc2VsZWQgb24gd2VpZ2h0IG1hbmFnZW1lbnQgYW5kIGFjdGl2aXR5LiBUaGlzIG5vdGUgd2FzIGRpY3RhdGVkIHVzaW5nIHZvaWNlIHJlY29nbml0aW9uIHNvZnR3YXJlIGFuZCBtYXkgY29udGFpbiBlcnJvcnMuIE1lZGljYXRpb25zIHJldmlld2VkIGFuZCByZWNvbmNpbGVkLiBJbmZsdWVuemEgaW5qZWN0aW9uIGdpdmVuIGluIHRoZSBmYWxsLiBTa2luIHdhcm0gYW5kIGRyeS4gQ29waWVkIGZvcndhcmQgZnJvbSB0aGUgcHJpb3IgdmlzaXQuIEhhbmQgb3N0ZW9hcnRocml0aXMgbm90ZWQuIEFiZG9tZW4gc29mdCwgbm9udGVuZGVyLiBFbGVjdHJvbmljYWxseSBzaWduZWQ6IERyLiBNYXJjdXMgTGVlLCBPcnRob3BlZGljIFN1cmdlcnku"
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

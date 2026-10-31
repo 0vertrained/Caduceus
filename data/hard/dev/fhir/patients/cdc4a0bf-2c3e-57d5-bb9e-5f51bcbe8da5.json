@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "cdc4a0bf-2c3e-57d5-bb9e-5f51bcbe8da5",
+    "name": [
+     {
+      "given": [
+       "Tomas"
+      ],
+      "family": "Montoya"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1965-04-19"
+   }
+  }
+ ]
+}

@@ -1,0 +1,3034 @@
+[
+ {
+  "id": "HH-001",
+  "patient_id": "697e00d1-70f4-5763-b707-346f74cddf66",
+  "service_line": "lumbar",
+  "criteria_set": "dev-lumbar-mri@2026-09",
+  "service": {
+   "system": "cpt",
+   "code": "72148",
+   "display": "MRI of the lumbar spine without contrast"
+  },
+  "side": null,
+  "as_of": "2026-10-28",
+  "packet": [
+   "40d2402e-93f7-546b-933a-a0399e3e46d5",
+   "dd0f0fcc-d111-5e77-82e3-3d3c7637a983",
+   "bbd0088d-86aa-5f96-8ffc-aebe89fca8ce",
+   "c4cea32f-31e1-58b8-a318-dbd3fc6ecba6",
+   "f7ad05ca-fc7a-5562-ba63-ed875bf48283",
+   "32dfb469-ef59-5b61-b78c-a64f5981140c",
+   "c20fd1c4-0e8f-5fdf-b3a8-03f8e3028e98",
+   "bb9ad58c-fd0a-552e-a991-6cc592a6ccea",
+   "e2dcd034-1a36-5997-b87c-1c0c3c1736ba",
+   "09cff212-0f90-580c-8c40-4ac9ced1da70",
+   "333d77fe-93da-540b-9051-504bad79e925"
+  ],
+  "states": {
+   "lbp_duration": "edge_41_days",
+   "conservative_care": "notes_only",
+   "recent_xray": "missing",
+   "red_flags_excluded": "met"
+  },
+  "expected": {
+   "lbp_duration": "unmet",
+   "conservative_care": "unknown",
+   "recent_xray": "unknown",
+   "red_flags_excluded": "met"
+  },
+  "record": {
+   "lbp_duration": [
+    "Condition M54.50 Low back pain, unspecified: onset 2026-09-17, charted 2026-09-17, clinical status active"
+   ],
+   "conservative_care": [],
+   "recent_xray": [],
+   "red_flags_excluded": [
+    "Observation red-flag-screen Red-flag symptom screen: 2026-10-02, value Negative, status final"
+   ]
+  },
+  "evidence": {
+   "lbp_duration": [
+    {
+     "page": 11,
+     "start": 199,
+     "end": 259,
+     "text": "Back pain onset September 17, 2026 while gardening; no fall."
+    }
+   ],
+   "conservative_care": [
+    {
+     "page": 11,
+     "start": 260,
+     "end": 335,
+     "text": "Reports a prior course of PT elsewhere, about 6 wks, records not available."
+    }
+   ],
+   "red_flags_excluded": [
+    {
+     "page": 11,
+     "start": 445,
+     "end": 490,
+     "text": "Screened for red-flag symptoms; none present."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-002",
+  "patient_id": "cd49b388-222f-53e7-97e6-fadf9854a062",
+  "service_line": "knee",
+  "criteria_set": "dev-knee-arthroplasty@2026-09",
+  "service": {
+   "system": "cpt",
+   "code": "27447",
+   "display": "Total knee arthroplasty"
+  },
+  "side": "right",
+  "as_of": "2026-10-28",
+  "packet": [
+   "28eaa531-a851-56e3-b227-b7e1b6a6e279",
+   "f30fccc6-2ce5-54fc-b061-c5d6e3e7095c",
+   "4535b715-1d22-58ce-9b25-7785530f7c8b",
+   "809aab28-14f2-5a99-b9db-00dd5ade3315",
+   "a51ec2f5-cb2e-57ea-9701-ff9e16c81a70",
+   "4687694c-4a42-5401-9f07-f6fa41359d66",
+   "089c5ab8-e1f9-543e-a0cb-50790e03386a",
+   "7a26e094-4ae0-5658-9a6c-7f27db3b6076",
+   "11332396-1775-512c-985f-773d2c7de9a2",
+   "ad12e21b-7c35-5053-a95d-fb147ba14c0f"
+  ],
+  "states": {
+   "oa_diagnosis": "met",
+   "imaging_narrowing": "met",
+   "conservative_12_weeks": "therapy",
+   "functional_limitation": "met",
+   "no_active_infection": "none"
+  },
+  "expected": {
+   "oa_diagnosis": "met",
+   "imaging_narrowing": "met",
+   "conservative_12_weeks": "met",
+   "functional_limitation": "met",
+   "no_active_infection": "met"
+  },
+  "record": {
+   "oa_diagnosis": [
+    "Condition M17.0 Bilateral primary osteoarthritis of knee: onset 2025-08-13, clinical status active"
+   ],
+   "imaging_narrowing": [
+    "Procedure 73562 X-ray knee, 3 views: 2026-08-01, status completed",
+    "Observation knee-joint-space Knee joint space on radiograph: 2026-08-01, value Narrowed, status final"
+   ],
+   "conservative_12_weeks": [
+    "Procedure 97110 Therapeutic exercise: 2025-07-18 to 2025-11-19, status completed"
+   ],
+   "functional_limitation": [
+    "Observation functional-limitation Functional limitation assessment: 2026-10-04, value Present, status final"
+   ],
+   "no_active_infection": []
+  },
+  "evidence": {
+   "conservative_12_weeks": [
+    {
+     "page": 3,
+     "start": 319,
+     "end": 395,
+     "text": "Knee rehab Jul 18 to 11/19/2025 (17 wks), quad strengthening, pain persists."
+    }
+   ],
+   "functional_limitation": [
+    {
+     "page": 5,
+     "start": 373,
+     "end": 425,
+     "text": "ADLs limited by knee pain; stopped grocery shopping."
+    }
+   ],
+   "imaging_narrowing": [
+    {
+     "page": 8,
+     "start": 170,
+     "end": 274,
+     "text": "Standing AP/lat Right knee (August 1, 2026): scvere medial compartment narrowing, subchondral sclerosis."
+    }
+   ],
+   "oa_diagnosis": [
+    {
+     "page": 10,
+     "start": 244,
+     "end": 300,
+     "text": "End-stage gonarthrosis, right, failed nonoperative care."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-003",
+  "patient_id": "ccb66605-66a3-595c-bed1-d858cb8c05aa",
+  "service_line": "cpap",
+  "criteria_set": "dev-cpap-osa@2026-09",
+  "service": {
+   "system": "hcpcs",
+   "code": "E0601",
+   "display": "CPAP device for obstructive sleep apnea"
+  },
+  "side": null,
+  "as_of": "2026-10-28",
+  "packet": [
+   "da614981-c8b9-5e37-8d01-ccf39ea7a081",
+   "3c7ea618-28b2-532f-ab90-a2edb0aa07ec",
+   "f499c661-13c2-5a6a-87f6-ba101b0f4d66",
+   "241a7a77-2d61-55e4-ab9f-8decb260eb67",
+   "5f333172-5c48-58fe-aed0-2a0e16e16099",
+   "99fb9992-4e5f-51bc-b64d-7ecd847024ef",
+   "0caaaebe-9eac-507b-acc0-dc2b7e39687a",
+   "93f76ae2-1bed-5c54-9c3e-33c322e947f1",
+   "4a49f23c-d6e9-5d61-aa58-bd407f568404"
+  ],
+  "states": {
+   "osa_diagnosis": "missing",
+   "sleep_test": "notes_only",
+   "severity_qualifies": "severe",
+   "face_to_face": "stale"
+  },
+  "expected": {
+   "osa_diagnosis": "unknown",
+   "sleep_test": "unknown",
+   "severity_qualifies": "met",
+   "face_to_face": "unknown"
+  },
+  "record": {
+   "osa_diagnosis": [],
+   "sleep_test": [],
+   "severity_qualifies": [
+    "Observation ahi Apnea-hypopnea index: 2026-07-21, value 35, status final"
+   ],
+   "face_to_face": [
+    "Observation sleep-evaluation Face-to-face sleep evaluation: 2025-09-02, value Completed, status final"
+   ]
+  },
+  "evidence": {
+   "severity_qualifies": [
+    {
+     "page": 7,
+     "start": 262,
+     "end": 307,
+     "text": "HSAT July 21, 2026: REI 35/h, nadir SpO2 88%."
+    }
+   ],
+   "sleep_test": [
+    {
+     "page": 8,
+     "start": 448,
+     "end": 497,
+     "text": "Reports a prior PSG out of state, report pending."
+    }
+   ],
+   "face_to_face": [
+    {
+     "page": 8,
+     "start": 761,
+     "end": 846,
+     "text": "S1eep medicine consult in person Sep 2: snoring, witnessed apneas, morning headaches."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-004",
+  "patient_id": "f1a61b57-745b-5a65-8340-9e9885e23dcb",
+  "service_line": "lumbar",
+  "criteria_set": "dev-lumbar-mri@2026-09",
+  "service": {
+   "system": "cpt",
+   "code": "72148",
+   "display": "MRI of the lumbar spine without contrast"
+  },
+  "side": null,
+  "as_of": "2026-10-28",
+  "packet": [
+   "f68ac1c1-291c-5517-9f5c-bd4e8da90c37",
+   "66eb9159-1402-5030-9295-f3358f26882d",
+   "1fa900ce-5036-5c08-8d36-fbff0bd87b24",
+   "fff0c15e-bb7a-59bc-9587-595a04d2b4ec",
+   "d9da5ff2-fa99-59d8-bd48-43f54de63236",
+   "30e51fe2-e6df-5ce1-a907-dd0592defc56",
+   "7312534a-d284-5b08-9222-cd5cce6215ee",
+   "a5e7c445-fc4f-5ecb-9432-022eaec8f48d",
+   "9641bd8f-a934-5757-b11a-ca3b5c6f5094"
+  ],
+  "states": {
+   "lbp_duration": "retired_code",
+   "conservative_care": "met",
+   "recent_xray": "missing",
+   "red_flags_excluded": "newer_positive"
+  },
+  "expected": {
+   "lbp_duration": "met",
+   "conservative_care": "met",
+   "recent_xray": "unknown",
+   "red_flags_excluded": "unmet"
+  },
+  "record": {
+   "lbp_duration": [
+    "Condition M54.5 Low back pain: onset 2024-03-20, charted 2024-03-20, clinical status active"
+   ],
+   "conservative_care": [
+    "Procedure 97110 Therapeutic exercise: 2026-03-18 to 2026-05-31, status completed"
+   ],
+   "recent_xray": [],
+   "red_flags_excluded": [
+    "Observation red-flag-screen Red-flag symptom screen: 2026-08-11, value Negative, status final",
+    "Observation red-flag-screen Red-flag symptom screen: 2026-10-01, value Positive, status final"
+   ]
+  },
+  "evidence": {
+   "red_flags_excluded": [
+    {
+     "page": 5,
+     "start": 508,
+     "end": 583,
+     "text": "Positive red-flag screen: unintentional 15 lb weight loss and night sweats."
+    }
+   ],
+   "lbp_duration": [
+    {
+     "page": 7,
+     "start": 155,
+     "end": 239,
+     "text": "She describes aching in the lumbar region that began 2 years ago and has not let up."
+    }
+   ],
+   "conservative_care": [
+    {
+     "page": 8,
+     "start": 507,
+     "end": 601,
+     "text": "Rehab summary: physiotherapy 03/18/2026 through 05/31/2026, plateaued, referred back to ortho."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-005",
+  "patient_id": "50b6054e-05be-5d17-9bd5-e26204f6e5c2",
+  "service_line": "knee",
+  "criteria_set": "dev-knee-arthroplasty@2026-09",
+  "service": {
+   "system": "cpt",
+   "code": "27447",
+   "display": "Total knee arthroplasty"
+  },
+  "side": "right",
+  "as_of": "2026-10-28",
+  "packet": [
+   "c5405ded-6f33-506d-a422-121ef6cc86fb",
+   "cd194e79-e0d4-5ead-be50-e183746c7309",
+   "dd091e23-27ee-5c52-8033-bd9188652aad",
+   "acab5c8c-0287-5bbb-ae77-66e056c8fbe2",
+   "490bbb70-23fc-5e5d-b9c6-b955eada7e7d",
+   "01bc18a3-8c7a-5387-b69b-b3447bdb01d9",
+   "03be0817-afe8-52ec-bfe2-172d87cc24ea",
+   "dc38b497-1960-5738-93a3-78faecd4d7c2",
+   "5bf56f67-2f18-56a9-983e-f887854d028f",
+   "2fddb062-8b0a-513b-a394-cf5cdf0a4bd5"
+  ],
+  "states": {
+   "oa_diagnosis": "missing",
+   "imaging_narrowing": "finding_not_charted",
+   "conservative_12_weeks": "therapy",
+   "functional_limitation": "met",
+   "no_active_infection": "entered_in_error"
+  },
+  "expected": {
+   "oa_diagnosis": "unknown",
+   "imaging_narrowing": "unknown",
+   "conservative_12_weeks": "met",
+   "functional_limitation": "met",
+   "no_active_infection": "met"
+  },
+  "record": {
+   "oa_diagnosis": [],
+   "imaging_narrowing": [
+    "Procedure 73562 X-ray knee, 3 views: 2026-05-24, status completed"
+   ],
+   "conservative_12_weeks": [
+    "Procedure 97110 Therapeutic exercise: 2026-05-08 to 2026-09-05, status completed"
+   ],
+   "functional_limitation": [
+    "Observation functional-limitation Functional limitation assessment: 2026-09-10, value Present, status final"
+   ],
+   "no_active_infection": [
+    "Condition M00.9 Pyogenic arthritis, unspecified: onset 2026-09-04, verification entered-in-error"
+   ]
+  },
+  "evidence": {
+   "imaging_narrowing": [
+    {
+     "page": 3,
+     "start": 252,
+     "end": 348,
+     "text": "Standing AP/lat Right knee (May 24): severe medial compartment narrowing, subchondral sclerosis."
+    }
+   ],
+   "functional_limitation": [
+    {
+     "page": 4,
+     "start": 303,
+     "end": 355,
+     "text": "ADLs limited by knee poin; stopped grocery shopping."
+    }
+   ],
+   "conservative_12_weeks": [
+    {
+     "page": 8,
+     "start": 91,
+     "end": 171,
+     "text": "Knee rehab 2026-05-08 to 09/05/2026 (17 wks), quad strengthening, pain persists."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-006",
+  "patient_id": "17ed80d4-4114-51d9-8b41-c6cd48c79c93",
+  "service_line": "cpap",
+  "criteria_set": "dev-cpap-osa@2026-09",
+  "service": {
+   "system": "hcpcs",
+   "code": "E0601",
+   "display": "CPAP device for obstructive sleep apnea"
+  },
+  "side": null,
+  "as_of": "2026-10-28",
+  "packet": [
+   "3cf326d4-cbca-5851-aaf9-0c4fbf6e82b5",
+   "b01c4cb0-1ae8-5048-a03e-213f51655af9",
+   "f6242f4f-9be1-50da-9146-1f4caf4f2705",
+   "7864e877-df29-5f03-8f14-77ce6fe76bc6",
+   "c3621130-e5c9-5104-a201-a142b1e7c301",
+   "a19b7a04-c3d8-51dd-b54b-5c709a4b532d",
+   "c25ebf15-7556-5a86-aec9-9e74c48a096b",
+   "c76bf3fa-26d2-50f5-9bff-7e2ea372259b",
+   "8b0ff0df-19da-5f6a-a266-c881e81573e6",
+   "4e103895-8011-5dbb-9bad-a32f43ef2035",
+   "94cf645d-584c-597c-9b20-49ce78237e11",
+   "1dbac32c-d734-5c30-bf5d-f9a31410faff"
+  ],
+  "states": {
+   "osa_diagnosis": "met",
+   "sleep_test": "notes_only",
+   "severity_qualifies": "severe",
+   "face_to_face": "stale"
+  },
+  "expected": {
+   "osa_diagnosis": "met",
+   "sleep_test": "unknown",
+   "severity_qualifies": "met",
+   "face_to_face": "unknown"
+  },
+  "record": {
+   "osa_diagnosis": [
+    "Condition 78275009 Obstructive sleep apnea syndrome: onset 2026-09-15, clinical status active"
+   ],
+   "sleep_test": [],
+   "severity_qualifies": [
+    "Observation ahi Apnea-hypopnea index: 2026-09-26, value 32, status final"
+   ],
+   "face_to_face": [
+    "Observation sleep-evaluation Face-to-face sleep evaluation: 2025-09-01, value Completed, status final"
+   ]
+  },
+  "evidence": {
+   "severity_qualifies": [
+    {
+     "page": 3,
+     "start": 227,
+     "end": 280,
+     "text": "Attended PSG (09/26/2026) AHI 32, supine predominant."
+    }
+   ],
+   "osa_diagnosis": [
+    {
+     "page": 6,
+     "start": 580,
+     "end": 611,
+     "text": "Assessment: OSA, new diagnosis."
+    }
+   ],
+   "face_to_face": [
+    {
+     "page": 6,
+     "start": 710,
+     "end": 800,
+     "text": "Sleep medicine consult in person 09/01/2025: snoring, witnessed apneas, morning headaches."
+    }
+   ],
+   "sleep_test": [
+    {
+     "page": 11,
+     "start": 131,
+     "end": 180,
+     "text": "Reports a prior PSG out of state, report pending."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-007",
+  "patient_id": "fc2d3c00-cbfb-5239-b748-ab1d7eba7650",
+  "service_line": "lumbar",
+  "criteria_set": "dev-lumbar-mri@2026-09",
+  "service": {
+   "system": "cpt",
+   "code": "72148",
+   "display": "MRI of the lumbar spine without contrast"
+  },
+  "side": null,
+  "as_of": "2026-10-28",
+  "packet": [
+   "d6a0168d-c544-59e9-9b47-855e0e36d19b",
+   "b2f20135-9a90-5052-909e-432bf483e6e4",
+   "70903e01-705b-5688-985b-dbc3bfca137f",
+   "d4226dd1-8c6d-574c-9a5f-a24e5389239f",
+   "d82d9f32-c685-574d-9789-002df362b9e4",
+   "3627c54f-6e3e-5e61-8c70-227460a8f237",
+   "c7bdf497-b497-562b-9766-ac67dbc03f0f",
+   "570fa1e5-35aa-51bd-a4d7-ecc83befbd9c",
+   "873cc895-7700-5b32-8e11-043d4d8bb41b"
+  ],
+  "states": {
+   "lbp_duration": "edge_42_days",
+   "conservative_care": "notes_only",
+   "recent_xray": "other_code",
+   "red_flags_excluded": "positive"
+  },
+  "expected": {
+   "lbp_duration": "met",
+   "conservative_care": "unknown",
+   "recent_xray": "met",
+   "red_flags_excluded": "unmet"
+  },
+  "record": {
+   "lbp_duration": [
+    "Condition M54.50 Low back pain, unspecified: onset 2026-09-16, charted 2026-09-16, clinical status active"
+   ],
+   "conservative_care": [],
+   "recent_xray": [
+    "Procedure 72114 X-ray lumbosacral spine, complete, with bending views: 2026-09-18, status completed"
+   ],
+   "red_flags_excluded": [
+    "Observation red-flag-screen Red-flag symptom screen: 2026-09-05, value Positive, status final"
+   ]
+  },
+  "evidence": {
+   "lbp_duration": [
+    {
+     "page": 5,
+     "start": 160,
+     "end": 211,
+     "text": "Symptoms of lumbar pain date to Sep 16 per patient."
+    }
+   ],
+   "conservative_care": [
+    {
+     "page": 5,
+     "start": 296,
+     "end": 371,
+     "text": "Reports a prior course of PT elsewhere, about 9 wks, records not available."
+    }
+   ],
+   "red_flags_excluded": [
+    {
+     "page": 5,
+     "start": 403,
+     "end": 480,
+     "text": "Positive red-flag screen: unint-\ncntional 15 lb weight loss and night sweats."
+    }
+   ],
+   "recent_xray": [
+    {
+     "page": 8,
+     "start": 118,
+     "end": 200,
+     "text": "XR L-spine 2V (September 18, 2026): facet arthropathy L4-S1, allgnment maintained."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-008",
+  "patient_id": "1b6f05f6-29f7-5dc2-987b-f69a54beb0d3",
+  "service_line": "knee",
+  "criteria_set": "dev-knee-arthroplasty@2026-09",
+  "service": {
+   "system": "cpt",
+   "code": "27447",
+   "display": "Total knee arthroplasty"
+  },
+  "side": "left",
+  "as_of": "2026-10-28",
+  "packet": [
+   "987412ce-e112-51fb-84c8-1ee27dfd3a62",
+   "d4596aee-2ad8-5f69-bc18-cbc11aa28460",
+   "a5da5145-2068-5c6f-92e4-c8d0094563be",
+   "7cdbc95c-7e15-5239-b9d4-1bc7accf3f4c",
+   "bbb7cd64-df06-5378-88f9-c9753b90dfd7",
+   "0e10411b-f04c-5d92-8b89-1b55c850d27e",
+   "a0e2cde0-364d-5b2f-bbbc-fc9e26e7281a",
+   "2238f4c3-5006-5b3b-bfe8-eb4c9133f5a0",
+   "183f83d5-1321-5404-ad8d-d8ae4ad359a6",
+   "49865b94-221a-5ede-8427-4b6f90c7fb5d",
+   "13b4f4b7-292e-5648-824a-a11cd8dd5f9a",
+   "eeacf41d-9402-5396-8102-ba9822005852",
+   "857fcc70-f8c8-5324-8f2f-51c32970dd57"
+  ],
+  "states": {
+   "oa_diagnosis": "unspecified_code",
+   "imaging_narrowing": "met",
+   "conservative_12_weeks": "notes_only",
+   "functional_limitation": "met",
+   "no_active_infection": "resolved"
+  },
+  "expected": {
+   "oa_diagnosis": "met",
+   "imaging_narrowing": "met",
+   "conservative_12_weeks": "unknown",
+   "functional_limitation": "met",
+   "no_active_infection": "met"
+  },
+  "record": {
+   "oa_diagnosis": [
+    "Condition M17.9 Osteoarthritis of knee, unspecified: onset 2025-05-13, clinical status active"
+   ],
+   "imaging_narrowing": [
+    "Procedure 73562 X-ray knee, 3 views: 2026-01-28, status completed",
+    "Observation knee-joint-space Knee joint space on radiograph: 2026-01-28, value Narrowed, status final"
+   ],
+   "conservative_12_weeks": [],
+   "functional_limitation": [
+    "Observation functional-limitation Functional limitation assessment: 2026-09-03, value Present, status final"
+   ],
+   "no_active_infection": [
+    "Condition M00.9 Pyogenic arthritis, unspecified: onset 2025-06-11, clinical status resolved, resolved 2025-08-10"
+   ]
+  },
+  "evidence": {
+   "imaging_narrowing": [
+    {
+     "page": 7,
+     "start": 562,
+     "end": 661,
+     "text": "Standing AP/lat Left knee (01/28/2026): severe medial compartment narrowing, subchondral sclerosis."
+    }
+   ],
+   "no_active_infection": [
+    {
+     "page": 10,
+     "start": 187,
+     "end": 255,
+     "text": "Remote joint infection (2025), completed antibiotics, no recurrence."
+    }
+   ],
+   "oa_diagnosis": [
+    {
+     "page": 11,
+     "start": 495,
+     "end": 550,
+     "text": "End-stage gonarthrosis, left, failed nonoperative care."
+    }
+   ],
+   "conservative_12_weeks": [
+    {
+     "page": 11,
+     "start": 551,
+     "end": 609,
+     "text": "Reports a prior steroid injection elsewhere, date unknown."
+    }
+   ],
+   "functional_limitation": [
+    {
+     "page": 11,
+     "start": 703,
+     "end": 755,
+     "text": "ADLs limited by knee pain; stopped grocery shopping."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-009",
+  "patient_id": "8e37a0b5-316f-5b31-9dac-162330fa9a64",
+  "service_line": "cpap",
+  "criteria_set": "dev-cpap-osa@2026-09",
+  "service": {
+   "system": "hcpcs",
+   "code": "E0601",
+   "display": "CPAP device for obstructive sleep apnea"
+  },
+  "side": null,
+  "as_of": "2026-10-28",
+  "packet": [
+   "385a19c1-cd67-5cbd-a164-6babbf2b8da3",
+   "7c14ed5c-2a7b-5231-9f4c-f63e476bec36",
+   "b533dcc3-bb56-5999-8cf9-48d7f038b47c",
+   "e6e1a1d4-dd30-56f1-8836-0464fb92d2f3",
+   "7c8f3c99-7acd-575a-9e2c-35d49620464f",
+   "bb77ae5d-aa32-566d-b16f-79857319300a",
+   "042af5b6-d878-5913-91bc-15d6c33c9efb",
+   "795a9c01-e46e-52a2-b563-71078689b007",
+   "a3f9ee06-0627-59cf-ada9-e6937ce6cffa",
+   "4f9522ce-d0f5-5960-939a-7ea43cf58bda"
+  ],
+  "states": {
+   "osa_diagnosis": "met",
+   "sleep_test": "other_code",
+   "severity_qualifies": "old_index_only",
+   "face_to_face": "before_test"
+  },
+  "expected": {
+   "osa_diagnosis": "met",
+   "sleep_test": "met",
+   "severity_qualifies": "unknown",
+   "face_to_face": "met"
+  },
+  "record": {
+   "osa_diagnosis": [
+    "Condition G47.33 Obstructive sleep apnea: onset 2026-06-26, clinical status active"
+   ],
+   "sleep_test": [
+    "Procedure 95811 Polysomnography with CPAP titration: 2026-07-28, status completed"
+   ],
+   "severity_qualifies": [
+    "Observation ahi Apnea-hypopnea index: 2025-08-21, value 26, status final"
+   ],
+   "face_to_face": [
+    "Observation sleep-evaluation Face-to-face sleep evaluation: 2026-06-07, value Completed, status final"
+   ]
+  },
+  "evidence": {
+   "osa_diagnosis": [
+    {
+     "page": 4,
+     "start": 303,
+     "end": 334,
+     "text": "Assessment: OSA, new diagn0sis."
+    }
+   ],
+   "severity_qualifies": [
+    {
+     "page": 7,
+     "start": 175,
+     "end": 217,
+     "text": "HSAT 08/21/2025: REI 26/h, nadir SpO2 83%."
+    }
+   ],
+   "face_to_face": [
+    {
+     "page": 9,
+     "start": 200,
+     "end": 292,
+     "text": "Sleep medicine consult in person June 7, 2026: snoring, witnessed apneas, morning headaches."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-010",
+  "patient_id": "f00d5129-e67f-55a5-acb3-501722a8dce7",
+  "service_line": "lumbar",
+  "criteria_set": "dev-lumbar-mri@2026-09",
+  "service": {
+   "system": "cpt",
+   "code": "72148",
+   "display": "MRI of the lumbar spine without contrast"
+  },
+  "side": null,
+  "as_of": "2026-10-28",
+  "packet": [
+   "d3aacc6a-a301-5fdc-b4c1-95c2a5e38ffa",
+   "0e960529-d045-5840-94c4-db89fdc88407",
+   "0e160165-52ea-5e60-bfe3-62e0f23dc34a",
+   "a509d507-6125-5a0e-a39c-37b9b15f502b",
+   "2b013bd0-a3a6-5443-b678-36ee4b6fb231",
+   "ee9b2e7e-1bf7-579f-9340-404bcf651b9d",
+   "8074f24b-596e-5d75-9a65-5381dcc7fb72",
+   "64281f80-30d7-5dd9-b2d6-d2c6903c4217",
+   "5bd08f1a-1671-5924-a0dd-c4337da43ee1",
+   "52422779-d1a3-5d95-a2e4-196bab8c595f",
+   "2a67a73b-08bd-5b48-9d2f-d2aed6e7222b",
+   "37c97acd-b8d4-5b8f-85b6-2c62f700340d"
+  ],
+  "states": {
+   "lbp_duration": "notes_only",
+   "conservative_care": "met",
+   "recent_xray": "wrong_body_part",
+   "red_flags_excluded": "met"
+  },
+  "expected": {
+   "lbp_duration": "unknown",
+   "conservative_care": "met",
+   "recent_xray": "unmet",
+   "red_flags_excluded": "met"
+  },
+  "record": {
+   "lbp_duration": [],
+   "conservative_care": [
+    "Procedure 97110 Therapeutic exercise: 2026-07-14 to 2026-09-19, status completed"
+   ],
+   "recent_xray": [
+    "Procedure 71046 Chest X-ray, 2 views: 2026-10-02, status completed",
+    "Procedure 72100 X-ray lumbosacral spine, 2 or 3 views: 2026-04-23, status completed"
+   ],
+   "red_flags_excluded": [
+    "Observation red-flag-screen Red-flag symptom screen: 2026-10-22, value Negative, status final"
+   ]
+  },
+  "evidence": {
+   "lbp_duration": [
+    {
+     "page": 4,
+     "start": 213,
+     "end": 254,
+     "text": "HPI: 11 weeks of LBP, no inciting trauma."
+    }
+   ],
+   "red_flags_excluded": [
+    {
+     "page": 7,
+     "start": 376,
+     "end": 484,
+     "text": "Cauda equina screen: denies saddle numbness, no bladder or bowel dysfunction, afebrile, no hx of malignancy."
+    }
+   ],
+   "conservative_care": [
+    {
+     "page": 10,
+     "start": 159,
+     "end": 263,
+     "text": "Therapy D/C: 18 visits over 9 wks of PT, core stabilization and McKenzie extension; goals partially met."
+    }
+   ],
+   "recent_xray": [
+    {
+     "page": 12,
+     "start": 94,
+     "end": 172,
+     "text": "XR L-spine 3V (April 23, 2026): facet arthropathy L4-S1, alignment maintained."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-011",
+  "patient_id": "926273c1-f4e8-5a00-bbbc-afa77d312f4f",
+  "service_line": "knee",
+  "criteria_set": "dev-knee-arthroplasty@2026-09",
+  "service": {
+   "system": "cpt",
+   "code": "27447",
+   "display": "Total knee arthroplasty"
+  },
+  "side": "right",
+  "as_of": "2026-10-28",
+  "packet": [
+   "f7d86e06-5864-5a89-a6be-b68abf605738",
+   "acd2663f-9c28-52a5-a75f-95680b54dca2",
+   "6771c2ad-9141-5eb1-b1a2-64ee38e8d0e3",
+   "c6c6c37f-8759-5985-bfeb-89fb6996b6aa",
+   "8d57442c-561c-5843-9f1c-5a999d493b8b",
+   "86d947f0-7ab7-50be-b95d-c12fdf142297",
+   "302ca710-9cc9-5bd6-ac6f-c34382d18df8",
+   "a5e77dd8-32ce-5b69-b194-30ac6f7e50ec",
+   "a11b2675-f0da-5c07-ba07-8bc520d46932",
+   "ed9b3a96-489e-50f5-93e9-5c7fa9143cad"
+  ],
+  "states": {
+   "oa_diagnosis": "met",
+   "imaging_narrowing": "met",
+   "conservative_12_weeks": "therapy_83_days",
+   "functional_limitation": "met",
+   "no_active_infection": "entered_in_error"
+  },
+  "expected": {
+   "oa_diagnosis": "met",
+   "imaging_narrowing": "met",
+   "conservative_12_weeks": "unknown",
+   "functional_limitation": "met",
+   "no_active_infection": "met"
+  },
+  "record": {
+   "oa_diagnosis": [
+    "Condition M17.0 Bilateral primary osteoarthritis of knee: onset 2025-01-13, clinical status active"
+   ],
+   "imaging_narrowing": [
+    "Procedure 73562 X-ray knee, 3 views: 2026-08-24, status completed",
+    "Observation knee-joint-space Knee joint space on radiograph: 2026-08-24, value Narrowed, status final"
+   ],
+   "conservative_12_weeks": [
+    "Procedure 97110 Therapeutic exercise: 2025-11-16 to 2026-02-07, status completed"
+   ],
+   "functional_limitation": [
+    "Observation functional-limitation Functional limitation assessment: 2026-06-03, value Present, status final"
+   ],
+   "no_active_infection": [
+    "Condition M00.9 Pyogenic arthritis, unspecified: onset 2026-08-03, verification entered-in-error"
+   ]
+  },
+  "evidence": {
+   "oa_diagnosis": [
+    {
+     "page": 3,
+     "start": 89,
+     "end": 134,
+     "text": "Impression: DJD right knee, tricompartmental."
+    }
+   ],
+   "functional_limitation": [
+    {
+     "page": 3,
+     "start": 375,
+     "end": 456,
+     "text": "Ambulates with a cane, needs the rail for stairs, cannot get up from a low chair."
+    }
+   ],
+   "conservative_12_weeks": [
+    {
+     "page": 4,
+     "start": 429,
+     "end": 509,
+     "text": "Knee rehab 2025-11-16 to 02/07/2026 (11 wks), quad strengthening, pain persists."
+    }
+   ],
+   "imaging_narrowing": [
+    {
+     "page": 5,
+     "start": 93,
+     "end": 193,
+     "text": "Standing AP/lat Right knee (08/24/2026): severe medial compartment narrowing, subchondral sclerosis."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-012",
+  "patient_id": "493769f1-0ed8-590c-98e5-36751fb06079",
+  "service_line": "cpap",
+  "criteria_set": "dev-cpap-osa@2026-09",
+  "service": {
+   "system": "hcpcs",
+   "code": "E0601",
+   "display": "CPAP device for obstructive sleep apnea"
+  },
+  "side": null,
+  "as_of": "2026-10-28",
+  "packet": [
+   "e17b1357-6951-533f-9e60-0f0a0e7251f1",
+   "06a6012d-9cb7-5175-a3fe-17d9ee658dc7",
+   "a3f0135c-3cbf-53c7-9218-02af6b7e8efb",
+   "6761d5d5-14a2-57c3-a79c-b1ecb79fdd4b",
+   "41d935bd-8ee8-5308-bab4-f343dd8a00cd",
+   "be5c79bb-a528-5b14-9911-bd7b3b6456d6",
+   "9bc1f59d-43ca-5c8d-83a9-55bfa6190c90",
+   "72c5b24f-7d83-55dc-acb7-a56fa5a74b66",
+   "312a264e-14f3-5a58-a5ea-3a3098a7ea7f"
+  ],
+  "states": {
+   "osa_diagnosis": "entered_in_error",
+   "sleep_test": "met",
+   "severity_qualifies": "mild_alone",
+   "face_to_face": "before_test"
+  },
+  "expected": {
+   "osa_diagnosis": "unknown",
+   "sleep_test": "met",
+   "severity_qualifies": "unknown",
+   "face_to_face": "met"
+  },
+  "record": {
+   "osa_diagnosis": [
+    "Condition G47.33 Obstructive sleep apnea: onset 2026-06-01, verification entered-in-error"
+   ],
+   "sleep_test": [
+    "Procedure 95806 Home sleep test: 2026-09-03, status completed"
+   ],
+   "severity_qualifies": [
+    "Observation ahi Apnea-hypopnea index: 2026-09-03, value 7, status final"
+   ],
+   "face_to_face": [
+    "Observation sleep-evaluation Face-to-face sleep evaluation: 2026-07-17, value Completed, status final"
+   ]
+  },
+  "evidence": {
+   "severity_qualifies": [
+    {
+     "page": 4,
+     "start": 233,
+     "end": 285,
+     "text": "Attended PSG (09/03/2026) AHI 7, supine predominant."
+    }
+   ],
+   "face_to_face": [
+    {
+     "page": 8,
+     "start": 85,
+     "end": 171,
+     "text": "Sleep medicine consult in person Jul 17: snoring, witnessed apneas, morning headaches."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-013",
+  "patient_id": "a4a3a464-f0ef-53bc-9d00-59b6f00c3e85",
+  "service_line": "lumbar",
+  "criteria_set": "dev-lumbar-mri@2026-09",
+  "service": {
+   "system": "cpt",
+   "code": "72148",
+   "display": "MRI of the lumbar spine without contrast"
+  },
+  "side": null,
+  "as_of": "2026-10-28",
+  "packet": [
+   "896f2020-d6e9-53e4-81d8-10bde43b1709",
+   "5491088c-281b-5d12-94da-4f0f55ffd230",
+   "170f3f15-6c1b-593e-a705-6a5a3cea0eb3",
+   "c5ac9404-4056-5b54-a214-ce78fe45c982",
+   "f59db23b-a592-50fa-866f-80c342d86e11",
+   "c1bffce4-6722-5014-b1f0-f8c90c0e1b5c",
+   "7a57d3f9-1cdf-5cf2-a282-4fd13d376a2d",
+   "f6233b00-f596-5ef8-aa39-08082f6ca46d",
+   "1c48cdfb-677c-55fe-a44e-88d3c4f25ebf",
+   "bb35d983-c441-5353-ba68-d0fe9fef992b"
+  ],
+  "states": {
+   "lbp_duration": "clear",
+   "conservative_care": "old",
+   "recent_xray": "met",
+   "red_flags_excluded": "newer_positive"
+  },
+  "expected": {
+   "lbp_duration": "met",
+   "conservative_care": "unmet",
+   "recent_xray": "met",
+   "red_flags_excluded": "unmet"
+  },
+  "record": {
+   "lbp_duration": [
+    "Condition M54.16 Radiculopathy, lumbar region: onset 2026-03-13, charted 2026-03-13, clinical status active"
+   ],
+   "conservative_care": [
+    "Procedure 97110 Therapeutic exercise: 2025-02-06 to 2025-04-07, status completed"
+   ],
+   "recent_xray": [
+    "Procedure 72110 X-ray lumbosacral spine, 4 or more views: 2026-08-14, status completed"
+   ],
+   "red_flags_excluded": [
+    "Observation red-flag-screen Red-flag symptom screen: 2026-07-30, value Negative, status final",
+    "Observation red-flag-screen Red-flag symptom screen: 2026-10-24, value Positive, status final"
+   ]
+  },
+  "evidence": {
+   "conservative_care": [
+    {
+     "page": 4,
+     "start": 264,
+     "end": 368,
+     "text": "Therapy D/C: 16 visits over 8 wks of PT, core stabilization and McKenzie extension; goals partially met."
+    }
+   ],
+   "red_flags_excluded": [
+    {
+     "page": 6,
+     "start": 510,
+     "end": 585,
+     "text": "Positive red-flag screen: unintentional 15 lb weight loss and night sweats."
+    }
+   ],
+   "lbp_duration": [
+    {
+     "page": 8,
+     "start": 383,
+     "end": 424,
+     "text": "HPI: 8 months of LBP, no inciting trauma."
+    }
+   ],
+   "recent_xray": [
+    {
+     "page": 10,
+     "start": 224,
+     "end": 310,
+     "text": "Plain films of the lumbosacral spine dated 08/14/2026: mild disc height loss at L5-S1."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-014",
+  "patient_id": "2200163c-d989-5f58-a0f8-dd29a1a0d042",
+  "service_line": "knee",
+  "criteria_set": "dev-knee-arthroplasty@2026-09",
+  "service": {
+   "system": "cpt",
+   "code": "27447",
+   "display": "Total knee arthroplasty"
+  },
+  "side": "right",
+  "as_of": "2026-10-28",
+  "packet": [
+   "22788d65-1f31-560e-8206-5a338f593cc2",
+   "0833b48f-c776-5927-845f-e4c48ae56cc6",
+   "2c503e46-21d8-5467-a570-c8943440e859",
+   "c0167be7-7f52-5725-869f-744c88704e9b",
+   "1c9abde0-3f96-5c23-bb9b-16e83caff1d5",
+   "e511a18d-27fa-5e93-ac55-15e0b0da1887",
+   "5adeb337-d720-5d57-a4a9-36e8fa6fb22c",
+   "1ec34641-bc8d-54e2-957c-7091f54b89ed",
+   "94bc57d5-7dd0-5dd4-abd3-13198a6557eb",
+   "0f7a9aa7-daeb-57dd-8a6e-bdc569b444b4",
+   "f0d61378-98af-5c85-9608-515949d44d7b"
+  ],
+  "states": {
+   "oa_diagnosis": "met",
+   "imaging_narrowing": "met",
+   "conservative_12_weeks": "old_injection",
+   "functional_limitation": "absent",
+   "no_active_infection": "refuted"
+  },
+  "expected": {
+   "oa_diagnosis": "met",
+   "imaging_narrowing": "met",
+   "conservative_12_weeks": "unknown",
+   "functional_limitation": "unmet",
+   "no_active_infection": "met"
+  },
+  "record": {
+   "oa_diagnosis": [
+    "Condition M17.11 Unilateral primary osteoarthritis, right knee: onset 2023-06-12, clinical status active"
+   ],
+   "imaging_narrowing": [
+    "Procedure 73562 X-ray knee, 3 views: 2026-06-18, status completed",
+    "Observation knee-joint-space Knee joint space on radiograph: 2026-06-18, value Narrowed, status final"
+   ],
+   "conservative_12_weeks": [
+    "Procedure 20610 Arthrocentesis or injection, major joint: 2025-07-08, status completed"
+   ],
+   "functional_limitation": [
+    "Observation functional-limitation Functional limitation assessment: 2026-07-24, value Absent, status final"
+   ],
+   "no_active_infection": [
+    "Condition M00.9 Pyogenic arthritis, unspecified: onset 2026-08-04, verification refuted"
+   ]
+  },
+  "evidence": {
+   "imaging_narrowing": [
+    {
+     "page": 4,
+     "start": 149,
+     "end": 249,
+     "text": "Standing AP/lat Right knee (2026-06-18): severe medial compartment narrowing, subchondral sclerosis."
+    }
+   ],
+   "oa_diagnosis": [
+    {
+     "page": 9,
+     "start": 387,
+     "end": 432,
+     "text": "Impression: DJD right knee, tricompartmental."
+    }
+   ],
+   "conservative_12_weeks": [
+    {
+     "page": 9,
+     "start": 555,
+     "end": 630,
+     "text": "S/p intra-articular Kenalog 40 mg right knee Jul 8, transient benefit only."
+    }
+   ],
+   "functional_limitation": [
+    {
+     "page": 9,
+     "start": 700,
+     "end": 764,
+     "text": "Independent with ADLs, walks two miles daily without difficulty."
+    }
+   ],
+   "no_active_infection": [
+    {
+     "page": 9,
+     "start": 765,
+     "end": 818,
+     "text": "Infection workup negative; septic arthritis excluded."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-015",
+  "patient_id": "dae1c146-e2ab-5b56-8e54-042ae914346e",
+  "service_line": "cpap",
+  "criteria_set": "dev-cpap-osa@2026-09",
+  "service": {
+   "system": "hcpcs",
+   "code": "E0601",
+   "display": "CPAP device for obstructive sleep apnea"
+  },
+  "side": null,
+  "as_of": "2026-10-28",
+  "packet": [
+   "2649449b-e84b-58ec-aa55-99498b313bc8",
+   "17c6c3de-5a8a-5344-bde9-732bac118e2c",
+   "eb8e8065-ce6c-5bad-a1ff-d4bd868b20ea",
+   "4375e5b3-3456-51c7-891c-fc8a6d1a954c",
+   "3670a98d-4a05-5d4f-8e9f-93561f4f41d8",
+   "20c7857e-6ff3-5f51-8b3c-01602486c30f",
+   "2e4d37f5-36ee-5a1c-a46a-13143c05a0df",
+   "daea521d-1636-53dc-92d0-b55abb9e85a8",
+   "e167f854-19a3-56ac-a119-5163406615c4",
+   "539906ef-6455-57a4-8382-390b646764c5",
+   "a70a125b-d275-5cec-a912-e1f7a2a8d976"
+  ],
+  "states": {
+   "osa_diagnosis": "met",
+   "sleep_test": "edge_365_days",
+   "severity_qualifies": "severe",
+   "face_to_face": "before_test"
+  },
+  "expected": {
+   "osa_diagnosis": "met",
+   "sleep_test": "met",
+   "severity_qualifies": "met",
+   "face_to_face": "unknown"
+  },
+  "record": {
+   "osa_diagnosis": [
+    "Condition G47.33 Obstructive sleep apnea: onset 2026-08-19, clinical status active"
+   ],
+   "sleep_test": [
+    "Procedure 95810 Polysomnography, attended: 2025-10-28, status completed"
+   ],
+   "severity_qualifies": [
+    "Observation ahi Apnea-hypopnea index: 2025-10-28, value 42, status final"
+   ],
+   "face_to_face": [
+    "Observation sleep-evaluation Face-to-face sleep evaluation: 2025-08-31, value Completed, status final"
+   ]
+  },
+  "evidence": {
+   "severity_qualifies": [
+    {
+     "page": 3,
+     "start": 584,
+     "end": 632,
+     "text": "HSAT October 28, 2025: REI 42/h, nadir SpO2 87%."
+    }
+   ],
+   "face_to_face": [
+    {
+     "page": 4,
+     "start": 89,
+     "end": 179,
+     "text": "Sleep medicine consult in person 2025-08-31: snoring, witnessed apneas, morning headaches."
+    }
+   ],
+   "osa_diagnosis": [
+    {
+     "page": 9,
+     "start": 89,
+     "end": 120,
+     "text": "Assessment: OSA, new diagnosis."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-016",
+  "patient_id": "b6cf3dd1-5919-5dd2-b8a1-917a71e409d5",
+  "service_line": "lumbar",
+  "criteria_set": "dev-lumbar-mri@2026-09",
+  "service": {
+   "system": "cpt",
+   "code": "72148",
+   "display": "MRI of the lumbar spine without contrast"
+  },
+  "side": null,
+  "as_of": "2026-10-28",
+  "packet": [
+   "16588414-745b-50a8-b73c-74b8e25ce36c",
+   "78ca5353-d7cb-5613-b822-d2072ea88229",
+   "84763261-97eb-534d-8791-360c4c672d49",
+   "5b5a9902-022b-5445-b39e-409954cb3daa",
+   "d6c48140-af72-503c-9f4e-fce1d0dd7762",
+   "bed5870c-90bf-5632-9b4c-9833f112372c",
+   "490200da-48ef-5b89-a091-0a784428cfc7",
+   "e2efd28e-205d-5bf4-a3ab-8c65a0caf756",
+   "51797134-6acb-50fa-a490-e44984979282",
+   "c68b23ca-95cb-5bb1-83f7-df82473405cf"
+  ],
+  "states": {
+   "lbp_duration": "clear",
+   "conservative_care": "met",
+   "recent_xray": "edge_90_days",
+   "red_flags_excluded": "newer_negative"
+  },
+  "expected": {
+   "lbp_duration": "met",
+   "conservative_care": "met",
+   "recent_xray": "met",
+   "red_flags_excluded": "met"
+  },
+  "record": {
+   "lbp_duration": [
+    "Condition M54.16 Radiculopathy, lumbar region: onset 2025-11-24, charted 2025-11-24, clinical status active"
+   ],
+   "conservative_care": [
+    "Procedure 97110 Therapeutic exercise: 2026-01-30 to 2026-04-01, status completed"
+   ],
+   "recent_xray": [
+    "Procedure 72100 X-ray lumbosacral spine, 2 or 3 views: 2026-07-30, status completed"
+   ],
+   "red_flags_excluded": [
+    "Observation red-flag-screen Red-flag symptom screen: 2026-08-29, value Positive, status final",
+    "Observation red-flag-screen Red-flag symptom screen: 2026-10-02, value Negative, status final"
+   ]
+  },
+  "evidence": {
+   "conservative_care": [
+    {
+     "page": 3,
+     "start": 443,
+     "end": 547,
+     "text": "Therapy D/C: 16 visits over 8 wks of PT, core stabilization and McKenzie extension; goals partially met."
+    }
+   ],
+   "recent_xray": [
+    {
+     "page": 6,
+     "start": 126,
+     "end": 212,
+     "text": "Plain films of the lumbosacral spine dated 07/30/2026: mild disc height loss at L5-S1."
+    }
+   ],
+   "red_flags_excluded": [
+    {
+     "page": 8,
+     "start": 713,
+     "end": 758,
+     "text": "Screened for red-flog symptoms; none present."
+    },
+    {
+     "page": 10,
+     "start": 651,
+     "end": 725,
+     "text": "Earlier screen flagged fever (UTI), treated; repeat screen today is clear."
+    }
+   ],
+   "lbp_duration": [
+    {
+     "page": 10,
+     "start": 168,
+     "end": 254,
+     "text": "She describes aching in the lumbar region that began 11 months ago and has not let up."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-017",
+  "patient_id": "eca47930-f19e-5e35-b18b-3129a199d131",
+  "service_line": "knee",
+  "criteria_set": "dev-knee-arthroplasty@2026-09",
+  "service": {
+   "system": "cpt",
+   "code": "27447",
+   "display": "Total knee arthroplasty"
+  },
+  "side": "left",
+  "as_of": "2026-10-28",
+  "packet": [
+   "82572edc-154a-5b93-8d6d-c258a65e2c01",
+   "50f73059-8da6-5941-ac5a-8309b5a3d09b",
+   "fbe9c3df-7ebf-5807-8a9c-b17709b24a33",
+   "6ec61182-06d1-56b2-a322-95618f59fb16",
+   "42e17bb0-dd10-5412-a420-6681d5d9fa20",
+   "b1fefa55-bcaa-551c-a203-df89f954b370",
+   "39403504-09fe-5045-9ada-784b2670cbaf",
+   "97ea3642-c854-50d1-adfa-9b1dafc52f70",
+   "7001d8ed-558f-5d3e-8b0e-cbf755729d67",
+   "f38b419f-f8e3-5475-9567-3b7ce4a3b879",
+   "9eb22a50-64d8-5777-ba61-96d5aa8dc482",
+   "0ccecad2-f8a9-5461-932c-abb5e3bab953"
+  ],
+  "states": {
+   "oa_diagnosis": "notes_only",
+   "imaging_narrowing": "met",
+   "conservative_12_weeks": "old_injection",
+   "functional_limitation": "met",
+   "no_active_infection": "none"
+  },
+  "expected": {
+   "oa_diagnosis": "unknown",
+   "imaging_narrowing": "met",
+   "conservative_12_weeks": "unknown",
+   "functional_limitation": "met",
+   "no_active_infection": "met"
+  },
+  "record": {
+   "oa_diagnosis": [],
+   "imaging_narrowing": [
+    "Procedure 73562 X-ray knee, 3 views: 2026-02-10, status completed",
+    "Observation knee-joint-space Knee joint space on radiograph: 2026-02-10, value Narrowed, status final"
+   ],
+   "conservative_12_weeks": [
+    "Procedure 20610 Arthrocentesis or injection, major joint: 2025-05-30, status completed"
+   ],
+   "functional_limitation": [
+    "Observation functional-limitation Functional limitation assessment: 2026-10-15, value Present, status final"
+   ],
+   "no_active_infection": []
+  },
+  "evidence": {
+   "functional_limitation": [
+    {
+     "page": 7,
+     "start": 163,
+     "end": 215,
+     "text": "ADLs limited by knee pain; stopped grocery shopping."
+    }
+   ],
+   "oa_diagnosis": [
+    {
+     "page": 11,
+     "start": 332,
+     "end": 376,
+     "text": "Impression: DJD left knee, tricompartmental."
+    }
+   ],
+   "imaging_narrowing": [
+    {
+     "page": 11,
+     "start": 468,
+     "end": 567,
+     "text": "Standing AP/lat Left knee (02/10/2026): severe medial compartment narrowing, subchondral sclerosis."
+    }
+   ],
+   "conservative_12_weeks": [
+    {
+     "page": 12,
+     "start": 636,
+     "end": 715,
+     "text": "S/p intra-articular Kenalog 40 mg left knee 05/30/2025, transient benefit only."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-018",
+  "patient_id": "3417d6a2-4b3f-526f-9ce1-9a75b222802d",
+  "service_line": "cpap",
+  "criteria_set": "dev-cpap-osa@2026-09",
+  "service": {
+   "system": "hcpcs",
+   "code": "E0601",
+   "display": "CPAP device for obstructive sleep apnea"
+  },
+  "side": null,
+  "as_of": "2026-10-28",
+  "packet": [
+   "637890c6-aa96-56b4-b2a9-bbdea9c45edc",
+   "6571a747-854c-53b7-b1b0-4089066bf199",
+   "61d22daa-94a8-5f24-ac6e-9cad352cc43d",
+   "253c5664-bca3-5448-ae9e-0c057b0859c5",
+   "4a7d2b45-fb1f-540f-aab1-c994af5f1b14",
+   "0ab165e8-5082-5782-8b30-f58639519e40",
+   "c775828b-bea5-5cde-8047-92eda857715c",
+   "6348e044-0085-5f62-9ca9-b22157dd6097",
+   "c25c8235-473c-506e-a67b-b70b74109d0b",
+   "6a177be7-637e-5d29-ab92-df18736e4433"
+  ],
+  "states": {
+   "osa_diagnosis": "missing",
+   "sleep_test": "met",
+   "severity_qualifies": "mild_alone",
+   "face_to_face": "stale"
+  },
+  "expected": {
+   "osa_diagnosis": "unknown",
+   "sleep_test": "met",
+   "severity_qualifies": "unknown",
+   "face_to_face": "unknown"
+  },
+  "record": {
+   "osa_diagnosis": [],
+   "sleep_test": [
+    "Procedure 95810 Polysomnography, attended: 2026-07-18, status completed"
+   ],
+   "severity_qualifies": [
+    "Observation ahi Apnea-hypopnea index: 2026-07-18, value 12, status final"
+   ],
+   "face_to_face": [
+    "Observation sleep-evaluation Face-to-face sleep evaluation: 2025-09-28, value Completed, status final"
+   ]
+  },
+  "evidence": {
+   "face_to_face": [
+    {
+     "page": 6,
+     "start": 483,
+     "end": 573,
+     "text": "Sleep medicine consult in person 09/28/2025: snoring, witnessed apneas, morning headaches."
+    }
+   ],
+   "severity_qualifies": [
+    {
+     "page": 9,
+     "start": 443,
+     "end": 496,
+     "text": "Attended PSG (07/18/2026) AHI 12, supine predomlnant."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-019",
+  "patient_id": "e29c403f-d0ec-591d-8b6a-25680ad4c6bb",
+  "service_line": "lumbar",
+  "criteria_set": "dev-lumbar-mri@2026-09",
+  "service": {
+   "system": "cpt",
+   "code": "72148",
+   "display": "MRI of the lumbar spine without contrast"
+  },
+  "side": null,
+  "as_of": "2026-10-28",
+  "packet": [
+   "5356f1cc-8432-531c-a1c1-1b3f7bc43dca",
+   "96f5bd6d-8106-5a21-89de-2bfb797709e1",
+   "5b0b08e7-5ef4-5bf2-893d-d3a45461e7dd",
+   "afb457d2-9af6-5056-b94c-042258b36ff1",
+   "0c4af717-870f-562a-a4b0-550f4cd71437",
+   "47025823-153a-5942-97c2-8d7116172afa",
+   "ada2e0be-041a-5ef1-ab55-181d5873907d",
+   "72ec3665-f3fd-5932-add0-9abec1f10cc1",
+   "667d0042-7601-5d2b-b5af-ceaa9be6de8e"
+  ],
+  "states": {
+   "lbp_duration": "no_onset_recent",
+   "conservative_care": "stopped",
+   "recent_xray": "edge_91_days",
+   "red_flags_excluded": "missing"
+  },
+  "expected": {
+   "lbp_duration": "unknown",
+   "conservative_care": "unmet",
+   "recent_xray": "unmet",
+   "red_flags_excluded": "unknown"
+  },
+  "record": {
+   "lbp_duration": [
+    "Condition M54.50 Low back pain, unspecified: no onset date, charted 2026-10-02, clinical status active"
+   ],
+   "conservative_care": [
+    "Procedure 97110 Therapeutic exercise: 2026-05-08 to 2026-05-27, status stopped"
+   ],
+   "recent_xray": [
+    "Procedure 72100 X-ray lumbosacral spine, 2 or 3 views: 2026-07-29, status completed"
+   ],
+   "red_flags_excluded": []
+  },
+  "evidence": {
+   "conservative_care": [
+    {
+     "page": 4,
+     "start": 486,
+     "end": 569,
+     "text": "Discharged from PT after 4 sessions for non-attendance; plan of care not completed."
+    }
+   ],
+   "recent_xray": [
+    {
+     "page": 6,
+     "start": 650,
+     "end": 724,
+     "text": "XR L-spine 2V (2026-07-29): facet arthropathy L4-S1, alignment maintained."
+    }
+   ],
+   "lbp_duration": [
+    {
+     "page": 7,
+     "start": 181,
+     "end": 255,
+     "text": "Chronic lumbago going back years; added to the prob1em list at this visit."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-020",
+  "patient_id": "20fdce2c-f494-59bc-a948-3915fa8b0e8a",
+  "service_line": "knee",
+  "criteria_set": "dev-knee-arthroplasty@2026-09",
+  "service": {
+   "system": "cpt",
+   "code": "27447",
+   "display": "Total knee arthroplasty"
+  },
+  "side": "left",
+  "as_of": "2026-10-28",
+  "packet": [
+   "822ac92c-744d-517b-bbc5-6dfbeeb3c6d1",
+   "d7f1e965-76eb-5c82-a34a-2f58f15b0ee7",
+   "49eb949d-dbd2-5025-8df5-f3741adde5c5",
+   "c814c62e-3ea6-596d-ac4b-17b1b10a57bc",
+   "cc877b7c-2702-5103-945f-70d2b4a070d7",
+   "e7d2c20a-a81f-59ee-84ff-b49679c53310",
+   "1d5256c5-7d7c-5df6-ba0a-e89d03d8c6a2",
+   "efb8a763-7167-5619-bcb9-18db6fde94c4",
+   "01993e35-0059-5f9c-8d7e-368a072345e6",
+   "33160249-19d4-5656-991a-1f1d09c4b78a",
+   "01c40e3e-e892-52bc-a73d-6f06457e2cad"
+  ],
+  "states": {
+   "oa_diagnosis": "notes_only",
+   "imaging_narrowing": "finding_not_charted",
+   "conservative_12_weeks": "injection",
+   "functional_limitation": "absent",
+   "no_active_infection": "none"
+  },
+  "expected": {
+   "oa_diagnosis": "unknown",
+   "imaging_narrowing": "unknown",
+   "conservative_12_weeks": "met",
+   "functional_limitation": "unmet",
+   "no_active_infection": "met"
+  },
+  "record": {
+   "oa_diagnosis": [],
+   "imaging_narrowing": [
+    "Procedure 73562 X-ray knee, 3 views: 2026-06-17, status completed"
+   ],
+   "conservative_12_weeks": [
+    "Procedure 20610 Arthrocentesis or injection, major joint: 2026-02-05, status completed"
+   ],
+   "functional_limitation": [
+    "Observation functional-limitation Functional limitation assessment: 2026-08-03, value Absent, status final"
+   ],
+   "no_active_infection": []
+  },
+  "evidence": {
+   "conservative_12_weeks": [
+    {
+     "page": 3,
+     "start": 327,
+     "end": 406,
+     "text": "S/p intra-articular Kenalog 40 mg left knee 02/05/2026, transient benefit only."
+    }
+   ],
+   "functional_limitation": [
+    {
+     "page": 3,
+     "start": 755,
+     "end": 819,
+     "text": "Independent with ADLs, walks two miles daily without difficulty."
+    }
+   ],
+   "oa_diagnosis": [
+    {
+     "page": 10,
+     "start": 240,
+     "end": 295,
+     "text": "End-stage gonarthrosis, left, failed nonoperative care."
+    }
+   ],
+   "imaging_narrowing": [
+    {
+     "page": 10,
+     "start": 436,
+     "end": 538,
+     "text": "Standing AP/lat Left knee (June 17, 2026): severe medial compartment narrowing, subchondral sclerosis."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-021",
+  "patient_id": "ddacaf80-ea03-5ae0-b309-b4a3df0a7af3",
+  "service_line": "cpap",
+  "criteria_set": "dev-cpap-osa@2026-09",
+  "service": {
+   "system": "hcpcs",
+   "code": "E0601",
+   "display": "CPAP device for obstructive sleep apnea"
+  },
+  "side": null,
+  "as_of": "2026-10-28",
+  "packet": [
+   "9b726d52-3e39-5890-9b17-8ccc6c85fc22",
+   "0c2803ee-2007-5f4b-8f90-a2abc6979741",
+   "a8d44421-ef48-516b-aacc-c11193677e97",
+   "28d35b10-e3ec-5100-b53c-4bb26766fdc8",
+   "85e8483f-6515-57d6-a118-83aa47589fe5",
+   "7168793c-cf40-5410-a144-34d56fd450cf",
+   "23096274-1c47-5889-ad41-b952154610e8",
+   "b98930b6-4230-5c67-a59e-20a31666b859",
+   "debf3d8a-3b32-5fe4-80cd-93423f1293d0",
+   "f4743b48-52c6-5fe6-be76-d9e182c4a6fb",
+   "c9523e28-d664-5473-b21c-e7ecdec36e99"
+  ],
+  "states": {
+   "osa_diagnosis": "entered_in_error",
+   "sleep_test": "met",
+   "severity_qualifies": "mild_alone",
+   "face_to_face": "notes_only"
+  },
+  "expected": {
+   "osa_diagnosis": "unknown",
+   "sleep_test": "met",
+   "severity_qualifies": "unknown",
+   "face_to_face": "unknown"
+  },
+  "record": {
+   "osa_diagnosis": [
+    "Condition G47.33 Obstructive sleep apnea: onset 2026-07-18, verification entered-in-error"
+   ],
+   "sleep_test": [
+    "Procedure G0399 Home sleep test, type III: 2026-06-27, status completed"
+   ],
+   "severity_qualifies": [
+    "Observation ahi Apnea-hypopnea index: 2026-06-27, value 11, status final"
+   ],
+   "face_to_face": []
+  },
+  "evidence": {
+   "face_to_face": [
+    {
+     "page": 5,
+     "start": 451,
+     "end": 536,
+     "text": "Prior in-person sleep consultation reported at an outside clinic; note not available."
+    }
+   ],
+   "severity_qualifies": [
+    {
+     "page": 7,
+     "start": 325,
+     "end": 378,
+     "text": "Attended PSG (06/27/2026) AHI 11, supine predominant."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-022",
+  "patient_id": "50fff532-c330-5280-9f6e-7328809bf723",
+  "service_line": "lumbar",
+  "criteria_set": "dev-lumbar-mri@2026-09",
+  "service": {
+   "system": "cpt",
+   "code": "72148",
+   "display": "MRI of the lumbar spine without contrast"
+  },
+  "side": null,
+  "as_of": "2026-10-28",
+  "packet": [
+   "5c2e205a-6667-562a-92aa-05beae072744",
+   "063a72a3-e63a-537f-bc08-84e48b720337",
+   "754ff207-fbf6-5b2e-aad0-6398a3da1ec3",
+   "a479e0d0-30f0-58d7-a34a-9c68e172bade",
+   "05c04af0-9d20-5fa3-9f5a-b5e78eeaeea3",
+   "5b349b38-5bac-579c-8a86-f140b36ac20a",
+   "4cdb6e17-cf0e-5235-a99c-d5c882ee5163",
+   "19dfdcbb-e06c-5af8-84a4-2d1983efa7db",
+   "fb933305-4657-5c69-b3a1-ab4bdfb549a3",
+   "f743cd27-27c9-5d01-bd27-f2914132b871",
+   "0db9c0e1-8bf3-5182-a8e0-22fef9f493a6",
+   "cc6cb651-4c53-5185-ba92-2001041b4642"
+  ],
+  "states": {
+   "lbp_duration": "clear",
+   "conservative_care": "edge_41_days",
+   "recent_xray": "met",
+   "red_flags_excluded": "voided_positive"
+  },
+  "expected": {
+   "lbp_duration": "met",
+   "conservative_care": "unmet",
+   "recent_xray": "met",
+   "red_flags_excluded": "met"
+  },
+  "record": {
+   "lbp_duration": [
+    "Condition M54.16 Radiculopathy, lumbar region: onset 2026-02-19, charted 2026-02-19, clinical status active"
+   ],
+   "conservative_care": [
+    "Procedure 97110 Therapeutic exercise: 2026-05-13 to 2026-06-23, status completed"
+   ],
+   "recent_xray": [
+    "Procedure 72100 X-ray lumbosacral spine, 2 or 3 views: 2026-09-16, status completed"
+   ],
+   "red_flags_excluded": [
+    "Observation red-flag-screen Red-flag symptom screen: 2026-10-13, value Positive, status entered-in-error",
+    "Observation red-flag-screen Red-flag symptom screen: 2026-09-12, value Negative, status final"
+   ]
+  },
+  "evidence": {
+   "recent_xray": [
+    {
+     "page": 7,
+     "start": 122,
+     "end": 198,
+     "text": "XR L-spine 2V (2026-09-16): facet arthr-\nopathy L4-S1, alignment maintained."
+    }
+   ],
+   "conservative_care": [
+    {
+     "page": 9,
+     "start": 528,
+     "end": 627,
+     "text": "Rehab summary: physiotherapy May 13, 2026 through June 23, 2026, plateaued, referred back to ortho."
+    }
+   ],
+   "lbp_duration": [
+    {
+     "page": 10,
+     "start": 169,
+     "end": 254,
+     "text": "She describes aching in the lumbar regi0n that began 8 months ago and has not let up."
+    }
+   ],
+   "red_flags_excluded": [
+    {
+     "page": 10,
+     "start": 508,
+     "end": 553,
+     "text": "Screened for red-f1ag symptoms; none present."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-023",
+  "patient_id": "74096a74-b603-5fc5-a594-e635d16c7c3f",
+  "service_line": "knee",
+  "criteria_set": "dev-knee-arthroplasty@2026-09",
+  "service": {
+   "system": "cpt",
+   "code": "27447",
+   "display": "Total knee arthroplasty"
+  },
+  "side": "left",
+  "as_of": "2026-10-28",
+  "packet": [
+   "4a0680cd-aeb3-5b49-816e-bb4ff5d3bc2b",
+   "4b4b13e3-69e8-5fe6-a18f-cb150b0bcf0a",
+   "de8f6313-4009-56d8-84ca-cb3eea67b0ba",
+   "dc177460-4cad-5e7a-971b-ecf8ec51d4af",
+   "7b5ea42b-8bf6-5242-a9b0-0bceee37452d",
+   "e35be489-f81c-5bb3-a71a-79dd388cdc31",
+   "fde9c067-7ff5-5da9-b40b-40a858b39aee",
+   "e4468c27-de0d-5f45-9fcf-a48121dc860c",
+   "be558a5e-f6dd-5e03-8679-81d8f3c0adff",
+   "9b23e5a2-1eab-5d50-8ba7-e817e5957a04",
+   "cd4eb16d-4726-58c1-9dcd-734bba2e7df9",
+   "c0bb39a9-11bc-55f8-bee4-ea1f8903da1e",
+   "88d067a2-9bdc-545e-9c2e-7a335b31454a"
+  ],
+  "states": {
+   "oa_diagnosis": "met",
+   "imaging_narrowing": "met",
+   "conservative_12_weeks": "therapy_ongoing",
+   "functional_limitation": "met",
+   "no_active_infection": "resolved"
+  },
+  "expected": {
+   "oa_diagnosis": "met",
+   "imaging_narrowing": "met",
+   "conservative_12_weeks": "met",
+   "functional_limitation": "met",
+   "no_active_infection": "met"
+  },
+  "record": {
+   "oa_diagnosis": [
+    "Condition M17.12 Unilateral primary osteoarthritis, left knee: onset 2022-07-18, clinical status active"
+   ],
+   "imaging_narrowing": [
+    "Procedure 73562 X-ray knee, 3 views: 2026-08-11, status completed",
+    "Observation knee-joint-space Knee joint space on radiograph: 2026-08-11, value Narrowed, status final"
+   ],
+   "conservative_12_weeks": [
+    "Procedure 97110 Therapeutic exercise: 2026-07-25 to ongoing, status in-progress"
+   ],
+   "functional_limitation": [
+    "Observation functional-limitation Functional limitation assessment: 2026-07-03, value Present, status final"
+   ],
+   "no_active_infection": [
+    "Condition M00.9 Pyogenic arthritis, unspecified: onset 2024-07-21, clinical status resolved, resolved 2024-09-19"
+   ]
+  },
+  "evidence": {
+   "conservative_12_weeks": [
+    {
+     "page": 3,
+     "start": 391,
+     "end": 464,
+     "text": "Remains in active PT (started July 25, 2026), 13 wks in, attending 2x/wk."
+    }
+   ],
+   "no_active_infection": [
+    {
+     "page": 6,
+     "start": 363,
+     "end": 431,
+     "text": "Remote joint infection (2024), completed antibiotics, no recurrcnce."
+    }
+   ],
+   "imaging_narrowing": [
+    {
+     "page": 7,
+     "start": 237,
+     "end": 336,
+     "text": "Standing AP/lat Left knee (2026-08-11): severe medial compartment narrowing, subchondral sclerosis."
+    }
+   ],
+   "functional_limitation": [
+    {
+     "page": 11,
+     "start": 361,
+     "end": 413,
+     "text": "ADLs limited by knee pain; stopped grocery shopping."
+    }
+   ],
+   "oa_diagnosis": [
+    {
+     "page": 13,
+     "start": 689,
+     "end": 733,
+     "text": "Impression: DJD left knee, tricompartmental."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-024",
+  "patient_id": "eee0bfa5-2a0c-5476-a3e1-8676de2dbd02",
+  "service_line": "cpap",
+  "criteria_set": "dev-cpap-osa@2026-09",
+  "service": {
+   "system": "hcpcs",
+   "code": "E0601",
+   "display": "CPAP device for obstructive sleep apnea"
+  },
+  "side": null,
+  "as_of": "2026-10-28",
+  "packet": [
+   "61655041-b529-57fd-9373-d9c19eceab3f",
+   "e1cd766b-398b-5d1f-b465-31f300cbc089",
+   "c47e13b4-f294-5ed3-9e70-4bd1f5394274",
+   "64ab9e65-7ced-5361-8be0-971ab78a3356",
+   "bd73f2fd-a752-5225-9139-5033e796f6ef",
+   "c92612b6-9a13-5367-842d-44efe1a04007",
+   "cf2edd7b-d91b-50c8-8499-1cb152926341",
+   "06d62dd3-6133-5bd0-b545-21f5d50511f7",
+   "805491b7-6119-5efc-a3d0-2bd64fc91642",
+   "2f39fd30-2849-502a-bc3e-41d9ef1fa4fe",
+   "d25c0542-e9ab-5372-a7d7-68c3845dcd16",
+   "5a2abb8c-ae2c-5010-93e7-6800ca6f0b05"
+  ],
+  "states": {
+   "osa_diagnosis": "met",
+   "sleep_test": "other_code",
+   "severity_qualifies": "mild_with_sleepiness",
+   "face_to_face": "before_test"
+  },
+  "expected": {
+   "osa_diagnosis": "met",
+   "sleep_test": "met",
+   "severity_qualifies": "met",
+   "face_to_face": "met"
+  },
+  "record": {
+   "osa_diagnosis": [
+    "Condition G47.33 Obstructive sleep apnea: onset 2026-08-28, clinical status active"
+   ],
+   "sleep_test": [
+    "Procedure 95811 Polysomnography with CPAP titration: 2026-02-16, status completed"
+   ],
+   "severity_qualifies": [
+    "Observation ahi Apnea-hypopnea index: 2026-02-16, value 5, status final",
+    "Observation excessive-daytime-sleepiness Excessive daytime sleepiness: 2026-06-10, value Present, status final"
+   ],
+   "face_to_face": [
+    "Observation sleep-evaluation Face-to-face sleep evaluation: 2026-01-13, value Completed, status final"
+   ]
+  },
+  "evidence": {
+   "face_to_face": [
+    {
+     "page": 3,
+     "start": 91,
+     "end": 181,
+     "text": "Sleep medicine consult in person 2026-01-13: snoring, witnessed apneas, morning headaches."
+    }
+   ],
+   "severity_qualifies": [
+    {
+     "page": 5,
+     "start": 130,
+     "end": 182,
+     "text": "Attended PSG (02/16/2026) AHI 5, supine predominant."
+    },
+    {
+     "page": 12,
+     "start": 475,
+     "end": 524,
+     "text": "ESS 12/24; dozes off while driving at red lights."
+    }
+   ],
+   "osa_diagnosis": [
+    {
+     "page": 10,
+     "start": 111,
+     "end": 142,
+     "text": "Assessment: OSA, ncw diagnosis."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-025",
+  "patient_id": "356c9fe9-4f8b-5606-843d-a5280fffffe4",
+  "service_line": "lumbar",
+  "criteria_set": "dev-lumbar-mri@2026-09",
+  "service": {
+   "system": "cpt",
+   "code": "72148",
+   "display": "MRI of the lumbar spine without contrast"
+  },
+  "side": null,
+  "as_of": "2026-10-28",
+  "packet": [
+   "a91bf43c-697c-570f-b85b-ea2c2fb4e94e",
+   "b7db6a3f-d751-59f2-bc63-e35e31deaa9b",
+   "0ae7f788-ee32-539d-bd83-b3882c028fec",
+   "3b51ab1b-7810-5202-8f5c-0eb558b463c5",
+   "cfe4dc8b-5801-584c-b163-f4a559037f9e",
+   "9a970c8d-2ac9-5af9-b4e2-4903569b2da6",
+   "e379ee89-24ed-50d9-a622-497e1c0b6090",
+   "7309c1d6-3f32-54df-991e-7c8716a36e52",
+   "9442851d-4249-5d91-981e-8f9b131018a2",
+   "8d64a6bb-11df-5ddf-aa3c-38e1b47861a0",
+   "d76d0bbb-90c2-52d7-8cd4-346a72875dcb"
+  ],
+  "states": {
+   "lbp_duration": "short",
+   "conservative_care": "notes_only",
+   "recent_xray": "wrong_body_part",
+   "red_flags_excluded": "voided_positive"
+  },
+  "expected": {
+   "lbp_duration": "unmet",
+   "conservative_care": "unknown",
+   "recent_xray": "unmet",
+   "red_flags_excluded": "met"
+  },
+  "record": {
+   "lbp_duration": [
+    "Condition M54.50 Low back pain, unspecified: onset 2026-10-06, charted 2026-10-06, clinical status active"
+   ],
+   "conservative_care": [],
+   "recent_xray": [
+    "Procedure 71046 Chest X-ray, 2 views: 2026-10-14, status completed",
+    "Procedure 72100 X-ray lumbosacral spine, 2 or 3 views: 2026-03-09, status completed"
+   ],
+   "red_flags_excluded": [
+    "Observation red-flag-screen Red-flag symptom screen: 2026-10-14, value Positive, status entered-in-error",
+    "Observation red-flag-screen Red-flag symptom screen: 2026-08-21, value Negative, status final"
+   ]
+  },
+  "evidence": {
+   "lbp_duration": [
+    {
+     "page": 3,
+     "start": 463,
+     "end": 509,
+     "text": "Back pain is new, roughly 3 weeks in duration."
+    }
+   ],
+   "recent_xray": [
+    {
+     "page": 4,
+     "start": 160,
+     "end": 246,
+     "text": "Plain films of the lumbosacral spine dated 2026-03-09: mild disc height loss at L5-S1."
+    }
+   ],
+   "conservative_care": [
+    {
+     "page": 6,
+     "start": 89,
+     "end": 165,
+     "text": "Reports a prior course of PT elsewhere, about 10 wks, records not available."
+    }
+   ],
+   "red_flags_excluded": [
+    {
+     "page": 6,
+     "start": 482,
+     "end": 590,
+     "text": "Cauda equina screen: denies saddle numbness, no bladder or bowel dysfunction, afebrile, no hx of malignancy."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-026",
+  "patient_id": "ac0320ad-69b1-522e-bc6d-ef12384c91be",
+  "service_line": "knee",
+  "criteria_set": "dev-knee-arthroplasty@2026-09",
+  "service": {
+   "system": "cpt",
+   "code": "27447",
+   "display": "Total knee arthroplasty"
+  },
+  "side": "right",
+  "as_of": "2026-10-28",
+  "packet": [
+   "bcf0ec57-3612-5a19-9b0e-1227380d2bc0",
+   "93dd5646-1f77-5f08-a17f-c03c95907ef5",
+   "eaeca157-0c45-5909-a67b-c3e4a57aebbe",
+   "dcc42f19-ebb9-5aab-8a59-a3e164dc6a33",
+   "135092b3-ece6-5b0b-ac93-1b2ae78f245e",
+   "9e676541-c01d-544f-9693-6887c326b81c",
+   "14c8ef4d-1799-51a3-b0d1-ca081ea9c0a4",
+   "e3ac8aa5-1c56-56ec-a13c-f7a3cee79a9a",
+   "4343e243-ab15-5a60-9c9a-391dfd73fed9",
+   "027c1665-d748-5510-8831-eabef48b3752",
+   "902a4801-eb27-5f44-8c3b-9d8ff1765ce2",
+   "1f59d1f1-ad3d-5ab3-919c-e45bf3ddf03c"
+  ],
+  "states": {
+   "oa_diagnosis": "other_knee",
+   "imaging_narrowing": "met",
+   "conservative_12_weeks": "injection",
+   "functional_limitation": "met",
+   "no_active_infection": "refuted"
+  },
+  "expected": {
+   "oa_diagnosis": "unmet",
+   "imaging_narrowing": "met",
+   "conservative_12_weeks": "met",
+   "functional_limitation": "met",
+   "no_active_infection": "met"
+  },
+  "record": {
+   "oa_diagnosis": [
+    "Condition M17.12 Unilateral primary osteoarthritis, left knee: onset 2022-10-09, clinical status active"
+   ],
+   "imaging_narrowing": [
+    "Procedure 73562 X-ray knee, 3 views: 2026-02-21, status completed",
+    "Observation knee-joint-space Knee joint space on radiograph: 2026-02-21, value Narrowed, status final"
+   ],
+   "conservative_12_weeks": [
+    "Procedure 20610 Arthrocentesis or injection, major joint: 2026-08-06, status completed"
+   ],
+   "functional_limitation": [
+    "Observation functional-limitation Functional limitation assessment: 2026-07-14, value Present, status final"
+   ],
+   "no_active_infection": [
+    "Condition M00.9 Pyogenic arthritis, unspecified: onset 2026-08-10, verification refuted"
+   ]
+  },
+  "evidence": {
+   "conservative_12_weeks": [
+    {
+     "page": 3,
+     "start": 218,
+     "end": 302,
+     "text": "S/p intra-articular Kenalog 40 mg right knee August 6, 2026, transient benefit only."
+    }
+   ],
+   "no_active_infection": [
+    {
+     "page": 3,
+     "start": 554,
+     "end": 607,
+     "text": "Infection workup negative; septic arthritis excluded."
+    }
+   ],
+   "oa_diagnosis": [
+    {
+     "page": 8,
+     "start": 308,
+     "end": 377,
+     "text": "OA confined to the left knee per prior films; right knee exam benign."
+    }
+   ],
+   "functional_limitation": [
+    {
+     "page": 8,
+     "start": 418,
+     "end": 470,
+     "text": "ADLs limited by knee pain; stopped grocery shopping."
+    }
+   ],
+   "imaging_narrowing": [
+    {
+     "page": 9,
+     "start": 196,
+     "end": 296,
+     "text": "Standing AP/lat Right knee (02/21/2026): severe medial compartment narrowing, subchondral sclerosis."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-027",
+  "patient_id": "74b382df-e9d2-571c-abb2-d4e5b2c2ca5f",
+  "service_line": "cpap",
+  "criteria_set": "dev-cpap-osa@2026-09",
+  "service": {
+   "system": "hcpcs",
+   "code": "E0601",
+   "display": "CPAP device for obstructive sleep apnea"
+  },
+  "side": null,
+  "as_of": "2026-10-28",
+  "packet": [
+   "143fcd83-780f-5a27-a8ae-71edab7d512d",
+   "9fa79108-1129-5aff-8f69-a07c4ff008ce",
+   "9e9bba60-d616-5f03-80aa-57955fb126aa",
+   "1822a408-775b-51fb-8036-c7019df2ad5a",
+   "eb18b983-25c5-52f4-b22d-32e8de9f4ed5",
+   "b5226749-6b8a-569a-ab17-46c0d7f55b88",
+   "7f4c75eb-cd27-5cbb-90cd-c2521a632cc9",
+   "6ea21888-0903-5932-ba41-0559800f35dc",
+   "349a9a49-29fd-54f8-9159-1952de297456",
+   "9ca32746-b876-5724-88ad-8a9a16cd3068",
+   "c2ad24fe-4387-523b-a5cb-7bf27a09cd84"
+  ],
+  "states": {
+   "osa_diagnosis": "missing",
+   "sleep_test": "met",
+   "severity_qualifies": "old_index_only",
+   "face_to_face": "notes_only"
+  },
+  "expected": {
+   "osa_diagnosis": "unknown",
+   "sleep_test": "met",
+   "severity_qualifies": "unknown",
+   "face_to_face": "unknown"
+  },
+  "record": {
+   "osa_diagnosis": [],
+   "sleep_test": [
+    "Procedure 95810 Polysomnography, attended: 2026-01-12, status completed"
+   ],
+   "severity_qualifies": [
+    "Observation ahi Apnea-hypopnea index: 2025-08-26, value 24, status final"
+   ],
+   "face_to_face": []
+  },
+  "evidence": {
+   "severity_qualifies": [
+    {
+     "page": 4,
+     "start": 330,
+     "end": 368,
+     "text": "HSAT Aug 26: REI 24/h, nadir SpO2 79%."
+    }
+   ],
+   "face_to_face": [
+    {
+     "page": 8,
+     "start": 295,
+     "end": 380,
+     "text": "Prior in-person sleep consultation reported at an outside clinic; note not available."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-028",
+  "patient_id": "feb4c5b2-a0b2-5886-8abb-3f3f106c8bc0",
+  "service_line": "lumbar",
+  "criteria_set": "dev-lumbar-mri@2026-09",
+  "service": {
+   "system": "cpt",
+   "code": "72148",
+   "display": "MRI of the lumbar spine without contrast"
+  },
+  "side": null,
+  "as_of": "2026-10-28",
+  "packet": [
+   "ca47d329-b8e8-58bf-a913-72ac004565f4",
+   "9c6a5c97-1d57-5fa9-b2b9-f65db27b2a52",
+   "499d0d0c-5816-5135-bd0d-2e3073d08631",
+   "1ef0ad37-d9e3-55c0-a5d3-2d6d49e209a9",
+   "1cc4fb36-e2ec-5e55-9955-878322f046ac",
+   "0e02c576-3f7c-51ac-8400-714307fbce97",
+   "f5aea1b5-b720-58cc-a4ba-0fec92f51d59",
+   "c09c10f6-588f-5f01-91fb-b4a29b6406a8",
+   "d0ebd06b-bc69-52ff-a3cd-45a22d08fdac"
+  ],
+  "states": {
+   "lbp_duration": "clear",
+   "conservative_care": "sessions",
+   "recent_xray": "notes_only",
+   "red_flags_excluded": "met"
+  },
+  "expected": {
+   "lbp_duration": "met",
+   "conservative_care": "met",
+   "recent_xray": "unknown",
+   "red_flags_excluded": "met"
+  },
+  "record": {
+   "lbp_duration": [
+    "Condition M54.16 Radiculopathy, lumbar region: onset 2025-06-03, charted 2025-06-03, clinical status active"
+   ],
+   "conservative_care": [
+    "Procedure 97110 Therapeutic exercise: 2026-07-07, status completed",
+    "Procedure 97110 Therapeutic exercise: 2026-07-12, status completed",
+    "Procedure 97110 Therapeutic exercise: 2026-07-16, status completed",
+    "Procedure 97110 Therapeutic exercise: 2026-07-21, status completed",
+    "Procedure 97110 Therapeutic exercise: 2026-07-25, status completed",
+    "Procedure 97110 Therapeutic exercise: 2026-07-30, status completed",
+    "Procedure 97110 Therapeutic exercise: 2026-08-03, status completed",
+    "Procedure 97110 Therapeutic exercise: 2026-08-08, status completed",
+    "Procedure 97110 Therapeutic exercise: 2026-08-12, status completed",
+    "Procedure 97110 Therapeutic exercise: 2026-08-17, status completed",
+    "Procedure 97110 Therapeutic exercise: 2026-08-21, status completed",
+    "Procedure 97110 Therapeutic exercise: 2026-08-26, status completed",
+    "Procedure 97110 Therapeutic exercise: 2026-08-30, status completed",
+    "Procedure 97110 Therapeutic exercise: 2026-09-04, status completed",
+    "Procedure 97110 Therapeutic exercise: 2026-09-08, status completed",
+    "Procedure 97110 Therapeutic exercise: 2026-09-13, status completed"
+   ],
+   "recent_xray": [],
+   "red_flags_excluded": [
+    "Observation red-flag-screen Red-flag symptom screen: 2026-09-21, value Negative, status final"
+   ]
+  },
+  "evidence": {
+   "lbp_duration": [
+    {
+     "page": 3,
+     "start": 526,
+     "end": 568,
+     "text": "HPI: 17 months of LBP, no inciting trauma."
+    }
+   ],
+   "conservative_care": [
+    {
+     "page": 7,
+     "start": 191,
+     "end": 263,
+     "text": "PT treatment note #6/16, therapeutic ex 97110 x 3 units, tolerated well."
+    },
+    {
+     "page": 7,
+     "start": 491,
+     "end": 564,
+     "text": "PT treatment note #13/16, therapeutic ex 97110 x 3 units, tolerated well."
+    }
+   ],
+   "recent_xray": [
+    {
+     "page": 9,
+     "start": 87,
+     "end": 164,
+     "text": "Pt states L-spine films wcre done at an outside facility, no report enclosed."
+    }
+   ],
+   "red_flags_excluded": [
+    {
+     "page": 9,
+     "start": 340,
+     "end": 449,
+     "text": "Cauda equina screen: denies saddle nurnbness, no bladder or bowel dysfunction, afebri1e, no hx of malignancy."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-029",
+  "patient_id": "0473e089-4d8d-5968-bf28-8d8c8fb020df",
+  "service_line": "knee",
+  "criteria_set": "dev-knee-arthroplasty@2026-09",
+  "service": {
+   "system": "cpt",
+   "code": "27447",
+   "display": "Total knee arthroplasty"
+  },
+  "side": "left",
+  "as_of": "2026-10-28",
+  "packet": [
+   "d6dc2c54-bfe6-5dbb-862b-6318ebaabee5",
+   "00f4eacc-71d7-5f81-808c-2c21d360f299",
+   "3d4dfa90-235e-503c-bc4f-18bcfad39e2d",
+   "748be50b-3a59-56ae-8eb7-5962e88d349e",
+   "3b98d7a7-6644-57ae-910f-ab99216aa126",
+   "8247f814-7188-5c00-a3a0-b38421f0f1f0",
+   "05067071-fdaf-5303-a951-191e45dfdeda",
+   "f79fef28-20ca-5453-961e-f62394f58dcd",
+   "03dec972-8990-54a8-99d7-d5ef83186607",
+   "0cab0b2d-a8a7-5efe-9db0-3ab679ccdc88"
+  ],
+  "states": {
+   "oa_diagnosis": "met",
+   "imaging_narrowing": "finding_not_charted",
+   "conservative_12_weeks": "therapy",
+   "functional_limitation": "stale",
+   "no_active_infection": "resolved"
+  },
+  "expected": {
+   "oa_diagnosis": "met",
+   "imaging_narrowing": "unknown",
+   "conservative_12_weeks": "met",
+   "functional_limitation": "unknown",
+   "no_active_infection": "met"
+  },
+  "record": {
+   "oa_diagnosis": [
+    "Condition M17.12 Unilateral primary osteoarthritis, left knee: onset 2024-11-01, clinical status active"
+   ],
+   "imaging_narrowing": [
+    "Procedure 73562 X-ray knee, 3 views: 2026-04-23, status completed"
+   ],
+   "conservative_12_weeks": [
+    "Procedure 97110 Therapeutic exercise: 2025-09-02 to 2026-01-19, status completed"
+   ],
+   "functional_limitation": [
+    "Observation functional-limitation Functional limitation assessment: 2025-12-20, value Present, status final"
+   ],
+   "no_active_infection": [
+    "Condition M00.9 Pyogenic arthritis, unspecified: onset 2025-07-10, clinical status resolved, resolved 2025-09-08"
+   ]
+  },
+  "evidence": {
+   "conservative_12_weeks": [
+    {
+     "page": 3,
+     "start": 573,
+     "end": 656,
+     "text": "Knee rehab September 2, 2025 to Jan 19 (19 wks), quad strengthening, pain persist5."
+    }
+   ],
+   "no_active_infection": [
+    {
+     "page": 5,
+     "start": 250,
+     "end": 318,
+     "text": "Remote joint infection (2025), completed antibiotics, no recurrence."
+    }
+   ],
+   "imaging_narrowing": [
+    {
+     "page": 6,
+     "start": 269,
+     "end": 368,
+     "text": "Standing AP/lat Left knee (2026-04-23): severe medial compartment narrowing, subchondral sclerosis."
+    }
+   ],
+   "functional_limitation": [
+    {
+     "page": 9,
+     "start": 90,
+     "end": 142,
+     "text": "ADLs limlted by knee pain; stopped grocery shopping."
+    }
+   ],
+   "oa_diagnosis": [
+    {
+     "page": 10,
+     "start": 157,
+     "end": 201,
+     "text": "Impression: DJD left knee, tricompartmental."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-030",
+  "patient_id": "4de72dd7-f4a0-5219-8599-17e8f840fcd0",
+  "service_line": "cpap",
+  "criteria_set": "dev-cpap-osa@2026-09",
+  "service": {
+   "system": "hcpcs",
+   "code": "E0601",
+   "display": "CPAP device for obstructive sleep apnea"
+  },
+  "side": null,
+  "as_of": "2026-10-28",
+  "packet": [
+   "003129be-43ca-554c-a3c5-1ae8062ad343",
+   "b73ffd8c-cbcc-5bea-a865-61506ead36ee",
+   "f8da6cb6-13a3-5c7a-9474-04386e17ff77",
+   "c8c8e23f-19ab-5d8a-9c00-f7fc11bc0f82",
+   "993e39a0-bcaf-52eb-93d1-40e023330a16",
+   "7a0d561d-48d2-5388-95d7-02addb337e25",
+   "f1a9b173-5572-5b5c-9eef-def75e310d79",
+   "ed33217b-2327-53ee-aeaf-4f63982dd40d",
+   "3924eb2c-3fe9-53d6-bf67-a8476d6cc1ca",
+   "ae5a6d36-3364-5fbf-b518-caa537be6871"
+  ],
+  "states": {
+   "osa_diagnosis": "met",
+   "sleep_test": "edge_365_days",
+   "severity_qualifies": "index_15",
+   "face_to_face": "before_test"
+  },
+  "expected": {
+   "osa_diagnosis": "met",
+   "sleep_test": "met",
+   "severity_qualifies": "met",
+   "face_to_face": "unknown"
+  },
+  "record": {
+   "osa_diagnosis": [
+    "Condition 78275009 Obstructive sleep apnea syndrome: onset 2026-06-17, clinical status active"
+   ],
+   "sleep_test": [
+    "Procedure 95810 Polysomnography, attended: 2025-10-28, status completed"
+   ],
+   "severity_qualifies": [
+    "Observation ahi Apnea-hypopnea index: 2025-10-28, value 15, status final"
+   ],
+   "face_to_face": [
+    "Observation sleep-evaluation Face-to-face sleep evaluation: 2025-09-11, value Completed, status final"
+   ]
+  },
+  "evidence": {
+   "face_to_face": [
+    {
+     "page": 3,
+     "start": 312,
+     "end": 402,
+     "text": "Sleep medicine consult in person 09/11/2025: snoring, witnessed apneas, morning headaches."
+    }
+   ],
+   "severity_qualifies": [
+    {
+     "page": 4,
+     "start": 197,
+     "end": 235,
+     "text": "HSAT Oct 28: REI 15/h, nadir SpO2 83%."
+    }
+   ],
+   "osa_diagnosis": [
+    {
+     "page": 7,
+     "start": 223,
+     "end": 254,
+     "text": "Assessment: OSA, new diagnosis."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-031",
+  "patient_id": "654c7117-e221-58ad-89c7-12e6decfce9f",
+  "service_line": "lumbar",
+  "criteria_set": "dev-lumbar-mri@2026-09",
+  "service": {
+   "system": "cpt",
+   "code": "72148",
+   "display": "MRI of the lumbar spine without contrast"
+  },
+  "side": null,
+  "as_of": "2026-10-28",
+  "packet": [
+   "ff2b6c05-e785-5dfb-8485-28c04ba1c2fa",
+   "43ed9854-dce3-5115-a6f8-b7520e78dcf7",
+   "9f037f93-e87d-5063-b550-d0b974374fa6",
+   "6f7f9edc-d018-5372-ad74-1a70afa79913",
+   "6366585c-676b-5578-90be-07c1537df3f2",
+   "2d564f53-69a9-58ff-b521-307529c0282a",
+   "9a1d71f5-9675-5218-be9c-f4938aeefa79",
+   "d5599450-bf69-5acb-8113-6a88cda3d674",
+   "b48140b1-f89f-5f8f-8dac-bb2116ae15f8",
+   "1714ec39-80aa-5841-8387-7deeeb93d430",
+   "e14977a3-b2c1-57ce-826c-df9d12aa1b1a",
+   "66d124bf-e8ba-5d2e-ae21-77e100431880"
+  ],
+  "states": {
+   "lbp_duration": "clear",
+   "conservative_care": "met",
+   "recent_xray": "wrong_body_part",
+   "red_flags_excluded": "met"
+  },
+  "expected": {
+   "lbp_duration": "met",
+   "conservative_care": "met",
+   "recent_xray": "unmet",
+   "red_flags_excluded": "met"
+  },
+  "record": {
+   "lbp_duration": [
+    "Condition M54.50 Low back pain, unspecified: onset 2026-07-28, charted 2026-07-28, clinical status active"
+   ],
+   "conservative_care": [
+    "Procedure 97110 Therapeutic exercise: 2026-07-27 to 2026-09-10, status completed"
+   ],
+   "recent_xray": [
+    "Procedure 71046 Chest X-ray, 2 views: 2026-10-04, status completed",
+    "Procedure 72100 X-ray lumbosacral spine, 2 or 3 views: 2026-04-16, status completed"
+   ],
+   "red_flags_excluded": [
+    "Observation red-flag-screen Red-flag symptom screen: 2026-10-17, value Negative, status final"
+   ]
+  },
+  "evidence": {
+   "lbp_duration": [
+    {
+     "page": 3,
+     "start": 417,
+     "end": 502,
+     "text": "She describes aching in the lumbar region that began 13 weeks ago and has not let up."
+    }
+   ],
+   "conservative_care": [
+    {
+     "page": 7,
+     "start": 91,
+     "end": 181,
+     "text": "Rehab summary: physiotherapy 07/27/2026 through Sep 10, plateaued, referred back to ortho."
+    }
+   ],
+   "recent_xray": [
+    {
+     "page": 8,
+     "start": 574,
+     "end": 664,
+     "text": "Plain films of the lumbosacral spine dated April 16, 2026: mild disc height loss at L5-S1."
+    }
+   ],
+   "red_flags_excluded": [
+    {
+     "page": 10,
+     "start": 383,
+     "end": 428,
+     "text": "Screened for red-flag symptoms; none present."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-032",
+  "patient_id": "2f2f352b-7282-5e4c-8dd9-79ad842ced7e",
+  "service_line": "knee",
+  "criteria_set": "dev-knee-arthroplasty@2026-09",
+  "service": {
+   "system": "cpt",
+   "code": "27447",
+   "display": "Total knee arthroplasty"
+  },
+  "side": "right",
+  "as_of": "2026-10-28",
+  "packet": [
+   "3baaab22-a2d5-598f-aba8-2055988f9bd7",
+   "474ab43a-ad47-56ac-80ec-9293af5ed4be",
+   "17e00836-05e3-5246-9d23-bd2919a88f3d",
+   "b17a4f1a-bc97-57a5-9e73-67b43768aa0b",
+   "8e1efe69-c935-5ca6-b5f8-81822654417c",
+   "251a7366-a3a3-51f4-b1fb-22e3a9c7424e",
+   "5018b4a3-ed6e-5481-9171-92991b09373e",
+   "d75675b0-077f-59a6-8fa9-842a260474ec",
+   "3f3a9226-e75e-59a2-a3b8-c2b734525715",
+   "6d6141fe-21d0-54ef-bb14-1dbbf62b3629",
+   "568345aa-ee2f-517b-8e18-098042e0da12"
+  ],
+  "states": {
+   "oa_diagnosis": "missing",
+   "imaging_narrowing": "met",
+   "conservative_12_weeks": "injection",
+   "functional_limitation": "met",
+   "no_active_infection": "refuted"
+  },
+  "expected": {
+   "oa_diagnosis": "unknown",
+   "imaging_narrowing": "met",
+   "conservative_12_weeks": "met",
+   "functional_limitation": "met",
+   "no_active_infection": "met"
+  },
+  "record": {
+   "oa_diagnosis": [],
+   "imaging_narrowing": [
+    "Procedure 73562 X-ray knee, 3 views: 2026-07-30, status completed",
+    "Observation knee-joint-space Knee joint space on radiograph: 2026-07-30, value Narrowed, status final"
+   ],
+   "conservative_12_weeks": [
+    "Procedure 20610 Arthrocentesis or injection, major joint: 2026-01-22, status completed"
+   ],
+   "functional_limitation": [
+    "Observation functional-limitation Functional limitation assessment: 2026-08-29, value Present, status final"
+   ],
+   "no_active_infection": [
+    "Condition M00.9 Pyogenic arthritis, unspecified: onset 2026-09-28, verification refuted"
+   ]
+  },
+  "evidence": {
+   "no_active_infection": [
+    {
+     "page": 5,
+     "start": 243,
+     "end": 296,
+     "text": "Infection workup negotive; septic arthritis excluded."
+    }
+   ],
+   "conservative_12_weeks": [
+    {
+     "page": 6,
+     "start": 348,
+     "end": 428,
+     "text": "S/p intra-articular Kenal0g 40 mg right knee 01/22/2026, transient benefit only."
+    }
+   ],
+   "imaging_narrowing": [
+    {
+     "page": 8,
+     "start": 133,
+     "end": 229,
+     "text": "Standing AP/lat Right knee (Jul 30): severe medial compartment narrowing, subchondral sclerosis."
+    }
+   ],
+   "functional_limitation": [
+    {
+     "page": 9,
+     "start": 259,
+     "end": 340,
+     "text": "Ambulates with a cane, needs the rail for stairs, cannot get up from a low chair."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-033",
+  "patient_id": "0c801a4a-b588-5a0f-b008-c9570250c3e1",
+  "service_line": "cpap",
+  "criteria_set": "dev-cpap-osa@2026-09",
+  "service": {
+   "system": "hcpcs",
+   "code": "E0601",
+   "display": "CPAP device for obstructive sleep apnea"
+  },
+  "side": null,
+  "as_of": "2026-10-28",
+  "packet": [
+   "cd63ff5f-03fb-50dc-a68f-716f08d5b012",
+   "43c55a3b-8dfd-558b-b0ff-5a6de848ed26",
+   "f3f5957e-13cd-5324-9b9a-b1bcdb9f250d",
+   "8306e358-b192-5b0e-a240-239e80c22670",
+   "d18d7a1c-9700-5ea7-b209-92fe15b79316",
+   "3a8b5203-ddeb-5230-ac7b-a16fa1f38c86",
+   "1fa5b048-61b3-5a44-aeb8-43d7bc287837",
+   "8f44a8ad-a728-5a35-adb9-5a07f1e765fa",
+   "0b74d01b-601f-50d5-8f42-48ec4e24c36d",
+   "57e03d15-0cde-5025-8386-1e5bb2c20401",
+   "1af048e1-a42f-52c4-83e2-035f34292d4f"
+  ],
+  "states": {
+   "osa_diagnosis": "missing",
+   "sleep_test": "other_code",
+   "severity_qualifies": "mild_with_hypertensive_heart_disease",
+   "face_to_face": "stale"
+  },
+  "expected": {
+   "osa_diagnosis": "unknown",
+   "sleep_test": "met",
+   "severity_qualifies": "met",
+   "face_to_face": "unknown"
+  },
+  "record": {
+   "osa_diagnosis": [],
+   "sleep_test": [
+    "Procedure 95811 Polysomnography with CPAP titration: 2026-08-15, status completed"
+   ],
+   "severity_qualifies": [
+    "Observation ahi Apnea-hypopnea index: 2026-08-15, value 7, status final",
+    "Condition I11.9 Hypertensive heart disease without heart failure: onset 2023-08-03, clinical status active"
+   ],
+   "face_to_face": [
+    "Observation sleep-evaluation Face-to-face sleep evaluation: 2025-09-25, value Completed, status final"
+   ]
+  },
+  "evidence": {
+   "severity_qualifies": [
+    {
+     "page": 3,
+     "start": 504,
+     "end": 546,
+     "text": "Hyper-\ntensive heart disease, LVH on echo."
+    },
+    {
+     "page": 11,
+     "start": 666,
+     "end": 703,
+     "text": "HSAT Aug 15: REI 7/h, nadir SpO2 79%."
+    }
+   ],
+   "face_to_face": [
+    {
+     "page": 8,
+     "start": 351,
+     "end": 441,
+     "text": "Sleep medicine consult in person 2025-09-25: snoring, witnessed apneas, morning headaches."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-034",
+  "patient_id": "733af194-ac6c-55d8-a6ad-41a39a255ed9",
+  "service_line": "lumbar",
+  "criteria_set": "dev-lumbar-mri@2026-09",
+  "service": {
+   "system": "cpt",
+   "code": "72148",
+   "display": "MRI of the lumbar spine without contrast"
+  },
+  "side": null,
+  "as_of": "2026-10-28",
+  "packet": [
+   "05d362c4-ac72-5c6d-ac79-b499d4f270d8",
+   "415f1f95-6557-5d43-a148-8ba2cfe52827",
+   "3cdf9f03-24a8-5e23-846c-bb0d5c7fef43",
+   "96e21228-6fe7-5fe4-8be2-36015b2b4ef0",
+   "64eeb635-b380-5a23-8340-5c5ef6545821",
+   "b54d37e6-467b-54cc-9b8a-a51b0ab666ce",
+   "76b70c28-134c-5a34-8dbb-6e4ff9902a3f",
+   "c6ec7671-8484-54fe-978d-3811461bc46e",
+   "88d32e77-926f-5161-bd7b-b5322bc627fe"
+  ],
+  "states": {
+   "lbp_duration": "edge_42_days",
+   "conservative_care": "old",
+   "recent_xray": "met",
+   "red_flags_excluded": "met"
+  },
+  "expected": {
+   "lbp_duration": "met",
+   "conservative_care": "unmet",
+   "recent_xray": "met",
+   "red_flags_excluded": "met"
+  },
+  "record": {
+   "lbp_duration": [
+    "Condition M54.50 Low back pain, unspecified: onset 2026-09-16, charted 2026-09-16, clinical status active"
+   ],
+   "conservative_care": [
+    "Procedure 97110 Therapeutic exercise: 2025-03-26 to 2025-05-25, status completed"
+   ],
+   "recent_xray": [
+    "Procedure 72110 X-ray lumbosacral spine, 4 or more views: 2026-09-16, status completed"
+   ],
+   "red_flags_excluded": [
+    "Observation red-flag-screen Red-flag symptom screen: 2026-08-10, value Negative, status final"
+   ]
+  },
+  "evidence": {
+   "recent_xray": [
+    {
+     "page": 3,
+     "start": 567,
+     "end": 661,
+     "text": "Plain films of the lumbosacral spine dated September 16, 2026: mild disc height loss at L5-S1."
+    }
+   ],
+   "conservative_care": [
+    {
+     "page": 6,
+     "start": 256,
+     "end": 346,
+     "text": "Rehab summary: physiotherapy 03/26/2025 through May 25, plateaued, referred back to ortho."
+    }
+   ],
+   "lbp_duration": [
+    {
+     "page": 8,
+     "start": 299,
+     "end": 362,
+     "text": "Symptoms of lumbar pain date to September 16, 2026 per patient."
+    }
+   ],
+   "red_flags_excluded": [
+    {
+     "page": 8,
+     "start": 445,
+     "end": 490,
+     "text": "Screened for red-flag symptoms; none present."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-035",
+  "patient_id": "18269f2c-61ff-5c61-99d5-f8694798b8ab",
+  "service_line": "knee",
+  "criteria_set": "dev-knee-arthroplasty@2026-09",
+  "service": {
+   "system": "cpt",
+   "code": "27447",
+   "display": "Total knee arthroplasty"
+  },
+  "side": "left",
+  "as_of": "2026-10-28",
+  "packet": [
+   "641ec0f1-8b97-55b2-9b77-78dcc5c397fe",
+   "129d73c2-b30b-57b6-a867-98b1882173ce",
+   "a7d5738b-bdf1-522a-9019-1d1e706ce892",
+   "ce1cf979-e4ad-58c9-8e3c-5d169abc7b94",
+   "15da291e-50b6-5313-9a07-2807cdd28c14",
+   "caff04f7-da72-52f2-b44d-cfefcc64ab45",
+   "9041e390-c090-5d6a-a76d-640724c87fcc",
+   "a233f9ba-5eed-5f1d-8cda-004cac4aaeef",
+   "76d2965b-4d2f-5834-b14b-c1828f64031b",
+   "f72ae7e5-8502-5fc6-a0d2-dcff323e6c98"
+  ],
+  "states": {
+   "oa_diagnosis": "other_knee",
+   "imaging_narrowing": "met",
+   "conservative_12_weeks": "therapy_83_days",
+   "functional_limitation": "absent",
+   "no_active_infection": "none"
+  },
+  "expected": {
+   "oa_diagnosis": "unmet",
+   "imaging_narrowing": "met",
+   "conservative_12_weeks": "unknown",
+   "functional_limitation": "unmet",
+   "no_active_infection": "met"
+  },
+  "record": {
+   "oa_diagnosis": [
+    "Condition M17.11 Unilateral primary osteoarthritis, right knee: onset 2025-11-25, clinical status active"
+   ],
+   "imaging_narrowing": [
+    "Procedure 73562 X-ray knee, 3 views: 2026-04-25, status completed",
+    "Observation knee-joint-space Knee joint space on radiograph: 2026-04-25, value Narrowed, status final"
+   ],
+   "conservative_12_weeks": [
+    "Procedure 97110 Therapeutic exercise: 2026-04-17 to 2026-07-09, status completed"
+   ],
+   "functional_limitation": [
+    "Observation functional-limitation Functional limitation assessment: 2026-07-04, value Absent, status final"
+   ],
+   "no_active_infection": []
+  },
+  "evidence": {
+   "conservative_12_weeks": [
+    {
+     "page": 5,
+     "start": 316,
+     "end": 387,
+     "text": "Knee rehab Apr 17 to Jul 9 (11 wks), quad strengthening, pain persists."
+    }
+   ],
+   "oa_diagnosis": [
+    {
+     "page": 6,
+     "start": 255,
+     "end": 324,
+     "text": "OA confined to the right knee per prior films; left knee exam benign."
+    }
+   ],
+   "functional_limitation": [
+    {
+     "page": 7,
+     "start": 87,
+     "end": 153,
+     "text": "Indep-\nendent with ADLs, walks two miles daily with0ut difficulty."
+    }
+   ],
+   "imaging_narrowing": [
+    {
+     "page": 9,
+     "start": 160,
+     "end": 263,
+     "text": "Standing AP/lat Left knee (April 25, 2026): severe medial compartment narrowing, subchondral sclerosis."
+    }
+   ]
+  }
+ },
+ {
+  "id": "HH-036",
+  "patient_id": "15ed2810-3daf-5227-9d19-93e935e09a6d",
+  "service_line": "cpap",
+  "criteria_set": "dev-cpap-osa@2026-09",
+  "service": {
+   "system": "hcpcs",
+   "code": "E0601",
+   "display": "CPAP device for obstructive sleep apnea"
+  },
+  "side": null,
+  "as_of": "2026-10-28",
+  "packet": [
+   "d65d937e-b661-5794-ab62-fdbdabf0afff",
+   "a7825ebf-2716-58bc-bb4b-057aee7e2a66",
+   "155e9cc1-e428-5ec7-a38a-c2ec1b2ada45",
+   "27af6dc8-a3f1-5c48-82e7-452cd2e3cf07",
+   "1402c613-a907-553d-89b1-ff98bd5f6035",
+   "688efd42-710f-5875-ae52-4eafa9672f46",
+   "9af1d549-875d-5b8f-8e17-054dcb75fa8e",
+   "dab31c90-5e33-57d1-b890-d54b7557016c",
+   "6ca1c357-f6b5-557d-8e7e-25a022f2d1f5",
+   "99d74c07-28d8-55a2-8692-ae2719ec7be3",
+   "dae0cf00-3327-56d2-8a0c-ded91f261b83",
+   "01bcf5a6-cc80-5ff8-864a-be85f97a9691"
+  ],
+  "states": {
+   "osa_diagnosis": "met",
+   "sleep_test": "met",
+   "severity_qualifies": "index_15",
+   "face_to_face": "before_test"
+  },
+  "expected": {
+   "osa_diagnosis": "met",
+   "sleep_test": "met",
+   "severity_qualifies": "met",
+   "face_to_face": "met"
+  },
+  "record": {
+   "osa_diagnosis": [
+    "Condition 78275009 Obstructive sleep apnea syndrome: onset 2026-09-10, clinical status active"
+   ],
+   "sleep_test": [
+    "Procedure G0399 Home sleep test, type III: 2026-03-14, status completed"
+   ],
+   "severity_qualifies": [
+    "Observation ahi Apnea-hypopnea index: 2026-03-14, value 15, status final"
+   ],
+   "face_to_face": [
+    "Observation sleep-evaluation Face-to-face sleep evaluation: 2026-03-01, value Completed, status final"
+   ]
+  },
+  "evidence": {
+   "osa_diagnosis": [
+    {
+     "page": 5,
+     "start": 358,
+     "end": 390,
+     "text": "Assessrnent: OSA, new diagnosis."
+    }
+   ],
+   "face_to_face": [
+    {
+     "page": 9,
+     "start": 259,
+     "end": 344,
+     "text": "Sleep medicine consult in person Mar 1: snoring, witnessed apneas, morning headaches."
+    }
+   ],
+   "severity_qualifies": [
+    {
+     "page": 11,
+     "start": 547,
+     "end": 589,
+     "text": "HSAT 03/14/2026: REI 15/h, nadir SpO2 89%."
+    }
+   ]
+  }
+ }
+]

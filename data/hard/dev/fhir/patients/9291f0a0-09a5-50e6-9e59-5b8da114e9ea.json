@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "9291f0a0-09a5-50e6-9e59-5b8da114e9ea",
+    "name": [
+     {
+      "given": [
+       "Carmen"
+      ],
+      "family": "Quintana"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1951-07-04"
+   }
+  }
+ ]
+}
