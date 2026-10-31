@@ -9,6 +9,9 @@ moment you seed, so there is always a mix of urgent, due-today and later work.
 
 Stop the API server before seeding: seeding replaces the database file, and SQLite refuses writes from a
 connection whose file has been replaced underneath it.
+
+With CADUCEUS_DATABASE_URL set, the cases go into Postgres instead, and only while it holds none: its audit log is
+append-only, so a Postgres database cannot be started over in place. To start over, seed a new database.
 """
 
 from __future__ import annotations
@@ -84,9 +87,28 @@ def clone_demo_services(template: Services, now: datetime, seeded_at: datetime) 
     return services
 
 
+def seed_postgres(settings: Settings, if_missing: bool) -> None:
+    """Seed the Postgres database the settings name, if it holds no cases or faxes yet."""
+    services = build_services(settings)
+    try:
+        if services.cases.all() or (services.workflow.faxes and services.workflow.faxes.all()):
+            if if_missing:
+                print("The database already holds cases; leaving it as it is.")
+                return
+            raise SystemExit("The database already holds cases, and its audit log cannot be cleared. Seed a new, "
+                             "empty database instead.")
+        ids = seed(services, by_fax=True)
+        print(f"Seeded {len(ids)} cases into Postgres; audit chain verified: {services.audit.verify()} events")
+    finally:
+        services.close()
+
+
 def main(argv: list[str] | None = None) -> None:
     args = sys.argv[1:] if argv is None else argv
     settings = Settings(auth_mode="dev")  # seeding signs no one in; the server chooses its own sign-in mode
+    if settings.database_url:
+        seed_postgres(settings, if_missing="--if-missing" in args)
+        return
     db = Path(settings.db_path)
     if db.exists():
         if "--if-missing" in args:

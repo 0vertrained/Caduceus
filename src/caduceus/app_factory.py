@@ -8,7 +8,7 @@ import secrets
 import sqlite3
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from zoneinfo import ZoneInfo
 
 from caduceus.audit.log import AuditLog
@@ -29,8 +29,11 @@ from caduceus.router.providers import (
     Provider,
     StubProvider,
 )
-from caduceus.storage import AuditStore, CaseStore
+from caduceus.storage import AuditStore, CaseStore, DocumentStore, FaxStore
 from caduceus.workflow import Workflow
+
+if TYPE_CHECKING:
+    from caduceus.postgres import PostgresStore
 
 
 def _env(name: str, default: str | None = None):
@@ -52,6 +55,10 @@ class Settings:
 
     data_dir: Path = field(default_factory=lambda: Path(os.environ.get("CADUCEUS_DATA_DIR", "data")))
     db_path: str = _env("CADUCEUS_DB", "var/caduceus.sqlite3")
+    # postgresql://user:password@host:port/database. When set, cases and the audit log live in Postgres and db_path
+    # is not used (docs/postgres.md). Left out of the settings' repr, since it can hold a password.
+    database_url: str | None = field(default_factory=lambda: os.environ.get("CADUCEUS_DATABASE_URL") or None,
+                                     repr=False)
     clinic_tz: str = _env("CADUCEUS_CLINIC_TZ", "America/Denver")
     auth_mode: str = _env("CADUCEUS_AUTH_MODE", "oidc")
     oidc_jwks_url: str | None = _env("CADUCEUS_OIDC_JWKS_URL")
@@ -99,6 +106,12 @@ class Settings:
         if self.auth_mode == "demo" and self.external_api_key and self.external_provider not in FIXED_QUOTA:
             raise InsecureConfiguration("The public demo must not hold a metered model API key: anyone could spend "
                                         "it. Use a key with a fixed quota (Ollama Cloud).")
+        if self.database_url:
+            if self.auth_mode == "demo":
+                raise InsecureConfiguration("The public demo keeps each visitor's copy of the cases in memory, never "
+                                            "in a database: unset CADUCEUS_DATABASE_URL.")
+            if not self.database_url.startswith(("postgresql://", "postgres://")):
+                raise InsecureConfiguration("CADUCEUS_DATABASE_URL must be a postgresql:// URL.")
         if self.auth_mode == "oidc":
             if not self.deid_key or len(self.deid_key.encode()) < 32:
                 raise InsecureConfiguration("Set CADUCEUS_DEID_KEY (at least 32 bytes) outside development.")
@@ -118,16 +131,34 @@ class Services:
     authenticator: Authenticator
     router: Router | None
     conn: sqlite3.Connection | None = None
+    database: PostgresStore | None = None  # its connection pool, when the settings chose Postgres
+
+    def close(self) -> None:
+        """Give back the Postgres connections. A SQLite connection stays open for whoever holds it, as before."""
+        if self.database is not None:
+            self.database.close()
 
 
 def build_services(settings: Settings | None = None, conn: sqlite3.Connection | None = None) -> Services:
+    """`conn` is a SQLite connection to use (the demo's copies, the tests, the evals). Without one, the settings
+    choose: Postgres when CADUCEUS_DATABASE_URL is set, otherwise the SQLite file at CADUCEUS_DB."""
     s = settings or Settings()
     s.check()
-    if conn is None:
-        if s.db_path != ":memory:":
-            Path(s.db_path).parent.mkdir(parents=True, exist_ok=True)
-        conn = sqlite3.connect(s.db_path, check_same_thread=False)
-    audit, cases, filed = AuditLog(conn), CaseRepository(conn), DocumentRepository(conn)
+    database: PostgresStore | None = None
+    audit: AuditStore
+    cases: CaseStore
+    filed: DocumentStore
+    faxes: FaxStore
+    if conn is None and s.database_url:
+        from caduceus.postgres import connect  # the driver loads only when a deployment asks for Postgres
+        database = connect(s.database_url)
+        audit, cases, filed, faxes = database.audit, database.cases, database.documents, database.faxes
+    else:
+        if conn is None:
+            if s.db_path != ":memory:":
+                Path(s.db_path).parent.mkdir(parents=True, exist_ok=True)
+            conn = sqlite3.connect(s.db_path, check_same_thread=False)
+        audit, cases, filed, faxes = AuditLog(conn), CaseRepository(conn), DocumentRepository(conn), FaxRepository(conn)
     record: FhirStore = (HapiFhirStore(s.fhir_base_url) if s.fhir_base_url
                          else LocalBundleStore(*s.scenario_dirs()))
     store = WithFiledDocuments(record, filed)
@@ -150,10 +181,10 @@ def build_services(settings: Settings | None = None, conn: sqlite3.Connection | 
     workflow = Workflow(cases, audit, store, library, engine, Drafter(router, deid),
                         MockPayer(published={c.key: c.content_sha256() for c in current.values()},
                                   review_seconds=float(s.payer_review_seconds)),
-                        faxes=FaxRepository(conn), catalog=_catalog(*s.scenario_dirs(), current=current),
+                        faxes=faxes, catalog=_catalog(*s.scenario_dirs(), current=current),
                         fax_dir=s.data_dir / "faxes", tz=tz, filed=filed)
     auth = Authenticator(s.auth_mode, s.oidc_jwks_url, s.oidc_issuer, s.oidc_audience)
-    return Services(s, tz, audit, cases, store, workflow, auth, router, conn)
+    return Services(s, tz, audit, cases, store, workflow, auth, router, conn, database)
 
 
 # Where each ordering clinician works: the clinic a faxed referral names on its "From:" line. The fax cover sheets
