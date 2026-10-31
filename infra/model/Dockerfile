@@ -10,9 +10,10 @@
 
 # The same Wolfi base, at the same digest, in both stages: newer apks on an older base can fail on glibc.
 FROM cgr.dev/chainguard/wolfi-base:latest@sha256:88a20e2d017bd20cdc0cb3910de603e7bea9512a6c351a8dd3c9df212ab03d73 AS build
-RUN apk add --no-cache build-base cmake
-# llama.cpp v0.8.0; for a Git source the checksum is the commit the tag must resolve to.
-ADD --checksum=8642541b255bfb5dc39cd351a178be09013a55d6 https://github.com/ggml-org/llama.cpp.git#v0.8.0 /src
+RUN apk add --no-cache build-base cmake git
+# llama.cpp v0.8.0, refused unless the tag resolves to this commit (a moved tag fails the build).
+RUN git clone --depth 1 --branch v0.8.0 https://github.com/ggml-org/llama.cpp /src \
+ && test "$(git -C /src rev-parse HEAD)" = 8642541b255bfb5dc39cd351a178be09013a55d6
 # Every CPU variant, chosen at start for the machine it runs on; nothing reaches the network while it builds.
 RUN --network=none cmake -S /src -B /build -DCMAKE_BUILD_TYPE=Release \
       -DGGML_NATIVE=OFF -DGGML_BACKEND_DL=ON -DGGML_CPU_ALL_VARIANTS=ON -DGGML_OPENMP=OFF -DGGML_RPC=OFF \
