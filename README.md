@@ -145,6 +145,14 @@ Hybrid retrieval over long packets (ADR 5). The Postgres repository, then Tempor
 UI: the API side is done and tested. HAPI FHIR and Keycloak in compose. An AWS apply. Judge-scored draft quality.
 The full red-team corpus. Expedited (72-hour) requests.
 
+## Incidents
+
+Two from building the public demo, written up as blameless postmortems:
+[a deploy that failed at startup](docs/incidents/2026-10-30-deploy-failed-at-startup.md) when the demo drafted live
+with a slow reasoning model, and
+[a de-identification false positive](docs/incidents/2026-10-30-deid-false-positive.md) that a model repeated into a
+letter.
+
 ## Decisions
 
 [docs/adr](docs/adr): PHI-aware routing; policy as code; MCP as the integration boundary; state machine first,
