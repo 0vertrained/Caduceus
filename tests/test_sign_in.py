@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 
 from caduceus.api import SECURITY_HEADERS, create_app
 from caduceus.app_factory import InsecureConfiguration, Settings, build_services
+from caduceus.ratelimit import DemoLimits, Window
 from tests.conftest import DATA, TEST_KEY
 
 ISSUER = "https://login.mesaverde.example/realms/mesaverde"
@@ -31,6 +32,17 @@ def directives(policy: str) -> dict[str, str]:
 def test_development_and_the_demo_say_only_which_sign_in_they_use():
     assert client(auth_mode="dev").get("/api/auth-config").json() == {"mode": "dev"}
     assert client(auth_mode="demo").get("/api/auth-config").json() == {"mode": "demo"}
+
+
+def test_asking_how_to_sign_in_does_not_count_toward_the_demos_limits():
+    """Every page load asks it first: counting it would spend a visitor's allowance on nothing."""
+    demo = client(auth_mode="demo")
+    demo.app.state.demo_limits = DemoLimits(per_visitor=Window(5, 300))
+    for _ in range(10):
+        assert demo.get("/api/auth-config").status_code == 200
+    for _ in range(5):
+        assert demo.get("/api/demo").status_code == 200  # the whole allowance is still there
+    assert demo.get("/api/demo").status_code == 429  # and it still holds for everything else
 
 
 def test_with_oidc_the_browser_learns_what_a_public_client_needs_and_nothing_else():
