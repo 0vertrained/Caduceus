@@ -113,3 +113,22 @@ def test_a_labelled_record_number_needs_a_digit_so_prose_after_a_label_survives(
                           PatientContext(names=[]))
     assert "policy sentence" in out.text and "HX4471209" not in out.text and "AB12345" not in out.text
     assert out.removed["RECORD_NUMBER"] == 2
+
+
+def test_the_fixed_text_prompts_are_built_from_loses_nothing():
+    """Over-removal: words that carry no PHI (the facts' labels, every criterion and policy sentence) must reach the
+    model as written. The leakage suite checks the opposite direction; this is the one a regex false positive fails
+    (docs/incidents/2026-10-30-deid-false-positive.md)."""
+    from caduceus.criteria.loader import load_library
+    from caduceus.deid.safe_harbor import PatientContext, SafeHarborDeidentifier
+    from tests.conftest import DATA
+
+    labels = ["Patient:", "Requested service:", "Criteria:", "Source:", "Payer:", "Payer's reason for denial:",
+              "Criterion the payer cited:", "Coverage policy sentence:", "What the record shows:",
+              "awaiting clinician attestation", "met.", "not met."]
+    library = load_library(DATA / "policies")
+    texts = labels + [t for s in library.values() for c in s.criteria
+                      for t in (c.text, c.policy_sentence, c.attestation_question or "")]
+    deid = SafeHarborDeidentifier(b"k" * 32)
+    removed = {t: dict(out.removed) for t in texts if (out := deid.deidentify(t, PatientContext(names=[]))).removed}
+    assert removed == {}
