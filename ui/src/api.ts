@@ -149,6 +149,7 @@ export interface CaseView {
   status: Status;
   patient: { name: string; birth_date: string; age: number };
   service: { system: string; code: string; display: string; short: string };
+  side: "right" | "left" | null;
   urgency: "standard" | "expedited";
   urgency_reason: string | null;
   payer: { name: string; member_id_last4: string };

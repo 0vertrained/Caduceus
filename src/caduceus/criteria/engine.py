@@ -246,7 +246,7 @@ class Engine:
         other = [(d, r) for d, r in found if side_of(r) not in (None, side, "bilateral")]
         if other:
             return RuleOutcome(Status.UNMET, f"{display(other[0][1])} is charted, but the request is for the {side} "
-                               "side. Check that the request names the right side.",
+                               "side. Check which side the clinic meant.",
                                [_evidence(r, d) for d, r in other])
         return RuleOutcome(Status.UNKNOWN, f"{display(found[0][1])} is charted without a side, and the request is "
                            f"for the {side} side.", [_evidence(r, d) for d, r in found])

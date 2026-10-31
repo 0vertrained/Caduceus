@@ -76,6 +76,14 @@ def status(case: Case) -> dict[str, str]:
 ACTIVE = {State.REVIEW, State.PENDED, State.DENIED}
 
 
+def sided(service: str, side: str | None) -> str:
+    """The service with its side first, as a clinician says it: "Right total knee replacement"."""
+    if not side:
+        return service
+    lowered = service[:1].lower() + service[1:] if service[1:2].islower() else service
+    return f"{side.capitalize()} {lowered}"
+
+
 def payer_clock(case: Case, now: datetime, tz: ZoneInfo) -> dict[str, Any] | None:
     """The payer's decision deadline under the CMS prior authorization rule, once the request has reached it."""
     plan = (case.requirements or {}).get("plan_type")
@@ -114,7 +122,7 @@ class Presenter:
     def row(self, case: Case, now: datetime) -> dict[str, Any]:
         p = self.patient(case)
         return {"id": case.id, "patient": {"name": patient_name(p), "age": age_on(p, date.fromisoformat(case.as_of))},
-                "service": case.service["short"] + (f", {case.side}" if case.side else ""),
+                "service": sided(case.service["short"], case.side),
                 "payer": case.payer["name"], "due": due(case.due_at, now, self.tz), "status": status(case),
                 "expedited": case.urgency == "expedited"}
 
