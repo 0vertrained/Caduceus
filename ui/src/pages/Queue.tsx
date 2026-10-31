@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import type { FaxRow, Me, Queue as QueueData, QueueRow } from "../api";
+import type { FaxRow, Me, Queue as QueueData, QueueRow, SmartInfo } from "../api";
+import { EhrEntry } from "../components/EhrEntry";
 import { CheckCircle, Clock, Triangle } from "../components/Icons";
 import { Seal } from "../components/Seal";
 import { searchTerm } from "../components/Header";
 import { StatusWord } from "../components/Status";
 import { countWords, glue, useResource, useTitle } from "../hooks";
+import { useSmartInfo } from "../smart";
 
 function helperKey(me: Me) {
   return `caduceus.helperHidden.${me.id}`;
@@ -70,7 +72,7 @@ function Row({ row }: { row: QueueRow }) {
   );
 }
 
-function ClearDesk({ data }: { data: QueueData }) {
+function ClearDesk({ data, smart }: { data: QueueData; smart: SmartInfo }) {
   return (
     <div className="clear">
       <section className="clear__main" aria-labelledby="clear-title">
@@ -80,6 +82,7 @@ function ClearDesk({ data }: { data: QueueData }) {
           Nothing needs you right now. When a clinician signs or a payer replies, the case comes back to the top of
           your queue.
         </p>
+        <EhrEntry info={smart} compact />
       </section>
       <Waiting data={data} />
     </div>
@@ -147,6 +150,7 @@ function FaxInbox() {
 
 export function QueuePage({ me }: { me: Me }) {
   const { data, error } = useResource<QueueData>("/api/queue", 15000);
+  const smart = useSmartInfo();
   const [laterOpen, setLaterOpen] = useState(false);
   const term = searchTerm(useLocation().state);
   const q = term.trim().toLowerCase();
@@ -154,7 +158,7 @@ export function QueuePage({ me }: { me: Me }) {
   useTitle(q ? "Search results" : data ? `Your queue (${data.counts.open})` : "Your queue");
 
   if (error) return <div className="page"><p role="alert" className="alert">{error.message}</p></div>;
-  if (!data) return <div className="page"><p className="muted" role="status">Loading your queue.</p></div>;
+  if (!data || !smart) return <div className="page"><p className="muted" role="status">Loading your queue.</p></div>;
 
   if (q) {
     const rows = data.groups.flatMap((g) => g.cases)
@@ -172,7 +176,7 @@ export function QueuePage({ me }: { me: Me }) {
   }
 
   if (data.counts.open === 0) {
-    return <div className="page"><ClearDesk data={data} /></div>;
+    return <div className="page"><ClearDesk data={data} smart={smart} /></div>;
   }
 
   const n = data.counts.open;
@@ -188,6 +192,7 @@ export function QueuePage({ me }: { me: Me }) {
               ? `${countWords(data.counts.due_today)} ${data.counts.due_today === 1 ? "is" : "are"} due today. They are at the top, soonest first.`
               : "Nothing is due today."}
           </p>
+          <EhrEntry info={smart} compact />
         </div>
         <div className="seal-block">
           <Seal count={data.counts.approved_today} />

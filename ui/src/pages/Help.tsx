@@ -1,9 +1,20 @@
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { EhrEntry } from "../components/EhrEntry";
 import { Clock, Triangle } from "../components/Icons";
 import { StatusWord } from "../components/Status";
 import { useTitle } from "../hooks";
+import { useSmartInfo } from "../smart";
 
 export function HelpPage() {
   useTitle("Help");
+  const { hash } = useLocation();
+  const smart = useSmartInfo();
+  useEffect(() => {
+    // A link to one section ("/help#ehr") opens at it, as it would on a page loaded from the server.
+    if (hash && smart) document.getElementById(hash.slice(1))?.scrollIntoView();
+  }, [hash, smart]);
+  if (!smart) return <div className="page"><p className="muted" role="status">Opening the help.</p></div>;
   return (
     <div className="page help">
       <h1 className="page-title">Help</h1>
@@ -33,6 +44,10 @@ export function HelpPage() {
             <li key={k} className="waiting__item"><StatusWord statusKey={k} word={w} /><span className="muted">{d}</span></li>
           ))}
         </ul>
+      </section>
+      <section className="help__section" aria-labelledby="ehr">
+        <h2 id="ehr" className="section-title">Open from an EHR</h2>
+        <EhrEntry info={smart} />
       </section>
       <section className="help__section" aria-labelledby="faxes">
         <h2 id="faxes" className="section-title">Faxed referrals</h2>

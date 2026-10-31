@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
-import { api, currentUser, setCurrentUser, type Me } from "./api";
+import { api, currentUser, setCurrentUser, type DemoInfo, type Me } from "./api";
 import { DemoBanner } from "./components/DemoBanner";
 import { Header } from "./components/Header";
 import { AttestListPage, AttestPage } from "./pages/Attest";
@@ -12,6 +12,11 @@ import { IntakePage } from "./pages/Intake";
 import { OutcomesPage } from "./pages/Outcomes";
 import { AdminPage } from "./pages/Admin";
 import { PoliciesPage } from "./pages/Policies";
+import { EhrRecordPage, SmartCallbackPage, SmartLaunchPage } from "./pages/Smart";
+
+/** In the public demo, whoever opens Caduceus from the EHR acts as its prior-authorization specialist. */
+const DEMO_SPECIALIST = "dolores";
+const launching = () => window.location.pathname.startsWith("/smart/");
 
 export function App() {
   const [me, setMe] = useState<Me | null>(null);
@@ -19,6 +24,13 @@ export function App() {
   const navigate = useNavigate();
 
   const load = async () => {
+    if (launching() && currentUser() !== DEMO_SPECIALIST) {
+      try {
+        if ((await api<DemoInfo>("/api/demo")).demo) setCurrentUser(DEMO_SPECIALIST);
+      } catch {
+        /* the server could not say: sign in as usual */
+      }
+    }
     if (!currentUser()) {
       setMe(null);
       setChecked(true);
@@ -37,7 +49,8 @@ export function App() {
 
   const signIn = (user: string) => {
     setCurrentUser(user);
-    void load().then(() => navigate("/"));
+    // Signing in part-way through a launch from the EHR carries on with it; anywhere else starts at the queue.
+    void load().then(() => navigate(launching() ? window.location.pathname + window.location.search : "/"));
   };
   // A new identity starts from a clean page, so nothing loaded as the previous person stays on screen.
   const switchTo = (user: string, path: string | null) => {
@@ -71,6 +84,9 @@ export function App() {
             <Route path="/policies" element={me.role === "clinician" ? <Navigate to="/" replace /> : <PoliciesPage />} />
             <Route path="/admin" element={me.role === "admin" ? <AdminPage /> : <Navigate to="/" replace />} />
             <Route path="/help" element={<HelpPage />} />
+            <Route path="/smart/launch" element={<SmartLaunchPage />} />
+            <Route path="/smart/callback" element={<SmartCallbackPage />} />
+            <Route path="/smart/record/:key" element={<EhrRecordPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         )}
