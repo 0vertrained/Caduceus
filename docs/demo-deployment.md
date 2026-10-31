@@ -76,7 +76,8 @@ with the list of offered models if none matches. Run the deploy-demo workflow af
   A demo that is visited now and then fits in the free tier. Set a budget alert on the project anyway.
 - Each visitor gets 300 requests and 60 changes per five minutes, and all visitors together get 5,000 requests per
   five minutes.
-- The demo refuses to start with a model API key configured, so a public page can never spend model credits.
+- The demo refuses to start with a metered model API key (one billed per token, such as Anthropic's), so a public
+  page can never run up a bill. It may hold a fixed-quota key, such as Ollama Cloud's.
 - Netlify gives proxied requests 26 seconds; the API answers in well under one.
 
 ## Taking it down
