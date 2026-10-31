@@ -186,8 +186,9 @@ def knee(o: Overlay, variant: str, synthea_oa: bool) -> dict:
     s1 = "Right knee pain for several years, now limiting walking to one block and making stairs difficult."
     visit, _ = o.note("visit", "Visit note", d(20), clin["name"], ["Orthopedic consultation.", s1,
                       "Exam shows crepitus and reduced range of motion."])
-    if not synthea_oa:
-        o.condition("oa", ICD10, "M17.11", "Unilateral primary osteoarthritis, right knee", 900, visit, s1)
+    # The orthopedist charts the knee with its side, even when the problem list (Synthea) says only "knee": a
+    # knee replacement is for one knee, and the criteria check that the diagnosis is on that side.
+    o.condition("oa", ICD10, "M17.11", "Unilateral primary osteoarthritis, right knee", 900, visit, s1)
     labels = {"oa_diagnosis": "met"}
 
     s2 = "Medial joint-space narrowing with osteophytes, consistent with moderate to severe osteoarthritis."
@@ -383,6 +384,7 @@ def main() -> None:
         cases.append({
             "id": case_id, "patient_id": p["id"], "service_line": service, "variant": variant,
             "service": {k: svc[k] for k in ("system", "code", "display", "short")},
+            **({"side": "right"} if service == "knee" else {}),
             "criteria_set": svc["criteria_set"], "as_of": AS_OF.isoformat(),
             "payer": {"name": payer, "member_id_last4": str(int(rid(case_id, "member")[:8], 16) % 10000).zfill(4)},
             "ordering_clinician": meta["clinician"], "packet": overlay.pages,
