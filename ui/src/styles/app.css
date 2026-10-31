@@ -632,10 +632,20 @@ mark { background: var(--mark); color: var(--ink); padding: 0.05em 0.15em; margi
 .choice input { width: 24px; height: 24px; margin: 0; accent-color: var(--seal); }
 .attest__done { padding-top: var(--space-7); display: flex; flex-direction: column; align-items: center; gap: 18px; text-align: center; }
 
-.signin { max-width: 640px; margin: 0 auto; padding: var(--space-7) var(--space-5); display: flex; flex-direction: column; gap: var(--space-5); }
+.signin { width: 100%; max-width: 640px; margin: 0 auto; padding: var(--space-7) var(--space-5); display: flex; flex-direction: column; gap: var(--space-5); }
 .signin__list { display: flex; flex-direction: column; gap: var(--space-3); }
 .signin__user { justify-content: space-between; width: 100%; }
 .signin__role { font-weight: 400; }
+.signin__go { align-self: flex-start; }
+/* Why the sign-in page is showing: a problem and what to do (caution), news (seal), or a wait */
+.signin__notice { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-control); background: var(--caution-tint); color: var(--ink); }
+.signin__notice svg { flex: none; margin-top: 3px; color: var(--caution); }
+.signin__notice--done { background: var(--seal-tint); }
+.signin__notice--done svg { color: var(--seal); }
+.signin__notice--wait { background: var(--paper); border: 1px solid var(--hairline); }
+.signin__notice--wait svg { color: var(--ink-2); }
+.signin__notice:focus { outline: var(--focus-ring); outline-offset: 3px; }
 
 .help > * { max-width: 664px; }
 .help__steps { grid-template-columns: minmax(0, 1fr); }
@@ -717,4 +727,5 @@ mark { background: var(--mark); color: var(--ink); padding: 0.05em 0.15em; margi
   .decision-bar__inner { padding: var(--space-3) var(--space-4); }
   .decision-bar__actions { flex: 1 1 100%; }
   .decision-bar__actions .btn { flex: 1 1 100%; }
+  .signin__go { align-self: stretch; }
 }

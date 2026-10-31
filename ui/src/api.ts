@@ -1,5 +1,6 @@
-// Thin client for the Caduceus API. Development sign-in sends the chosen roster user in a header;
-// the deployed system sends an OIDC bearer token instead (same endpoints).
+// Thin client for the Caduceus API. Development sign-in (and the public demo) sends the chosen roster user in a
+// header; with OIDC it sends the access token instead (auth.ts). The endpoints are the same.
+import { accessToken, authConfig, endSession } from "./auth";
 
 const USER_KEY = "caduceus.devUser";
 
@@ -77,12 +78,21 @@ export class ApiError extends Error {
 
 export async function api<T>(path: string, init: RequestInit = {}, as: "json" | "blob" = "json"): Promise<T> {
   const headers = new Headers(init.headers);
-  const user = currentUser();
-  if (user) headers.set("X-Caduceus-User", user);
-  headers.set("X-Caduceus-Sandbox", sandboxId());
+  const oidc = (await authConfig().catch(() => null))?.mode === "oidc";
+  const token = oidc ? await accessToken() : null;
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  } else if (!oidc) {
+    const user = currentUser();
+    if (user) headers.set("X-Caduceus-User", user);
+    headers.set("X-Caduceus-Sandbox", sandboxId());
+  }
   if (init.body) headers.set("Content-Type", "application/json");
   const res = await fetch(path, { ...init, headers, cache: "no-store" });
   if (!res.ok) {
+    // The API refused the token, or there was none left to send: it ran out, was revoked, or was never good. The
+    // session ends in this tab too. (Signed out, the UI asks the API nothing that needs signing in.)
+    if (oidc && res.status === 401) await endSession("ended");
     let message = "Something went wrong. Try again in a moment.";
     let refusal: Refusal = {};
     try {
