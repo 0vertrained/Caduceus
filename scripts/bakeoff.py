@@ -26,6 +26,17 @@ JUDGES = ["qwen3.5", "mistral-large-3", "deepseek-v3.1"]
 TOKEN = re.compile(r"\[[A-Z_]+_\d+\]")
 NUMBER = re.compile(r"(?<![\w\[])\d+(?:\.\d+)?(?![\w\]])")
 WORDS = {"draft_request": (90, 140), "draft_appeal": (120, 180)}
+# Models write typographic hyphens, dashes and quotes ("apnea\u2011hypopnea", \u201c...\u201d). Compare plain forms,
+# or a faithful quote is scored as missing.
+PLAIN = str.maketrans({c: "-" for c in "\u2010\u2011\u2012\u2013\u2014\u2015\u2212"}
+                      | {c: '"' for c in "\u201c\u201d\u201e"} | {c: "'" for c in "\u2018\u2019"}
+                      | {c: " " for c in "\u00a0\u202f\u2009"})
+
+
+def plain(text: str) -> str:
+    return text.translate(PLAIN)
+
+
 JUDGE_SYSTEM = (
     "You check a paragraph against the facts it was written from. List every claim in the paragraph that the facts "
     "do not support: an added diagnosis, date, number, test result, treatment or opinion. Placeholders such as "
@@ -63,7 +74,7 @@ def capture(out: Path) -> None:
 
 
 def rules(req: dict, text: str) -> dict:
-    facts = req["user"]
+    facts, text = plain(req["user"]), plain(text)
     words = len(text.split())
     lo, hi = WORDS.get(req["task"], (0, 10_000))
     invented_tokens = sorted(set(TOKEN.findall(text)) - set(TOKEN.findall(facts)))
@@ -80,6 +91,8 @@ def rules(req: dict, text: str) -> dict:
            "criteria_mentioned": f"{sum(mentioned(c) for c in criteria)}/{len(criteria)}"}
     if "awaiting clinician attestation" in facts:
         out["pending_stated"] = bool(re.search(r"attest|confirm|awaiting|pending", text, re.I))
+    from caduceus.drafting import contradicts
+    out["misstates_criteria"] = bool(req["task"] == "draft_request" and contradicts(facts, text))
     if req["task"] == "draft_appeal":
         reason = re.search(r"Payer's reason for denial: (.*)", facts)
         policy = re.search(r'Coverage policy sentence: "(.*)"', facts)
@@ -149,18 +162,22 @@ def run(requests_path: Path, out_dir: Path) -> None:
 def summary(models: list[str], judge: str | None, rows: list[dict], requests: list[dict]) -> str:
     lines = [f"Judge: {judge or 'none available'}. Requests: {len(requests)}.", "",
              "| Model | Answered | Median seconds | Length within instructions | Invented placeholders | "
-             "Numbers not in the facts | Judge: replies with unsupported claims | Judge: clarity (1-5) |",
-             "|---|---|---|---|---|---|---|---|"]
+             "Numbers not in the facts | Says every criterion is met when one is not | "
+             "Appeal quotes reason and policy | Judge: replies with unsupported claims | Judge: clarity (1-5) |",
+             "|---|---|---|---|---|---|---|---|---|---|"]
     for m in models:
         mine = [r for r in rows if r["model"] == m]
         ok = [r for r in mine if "text" in r]
         judged = [r for r in ok if "unsupported" in r.get("judge", {})]
         clarity = [r["judge"]["clarity"] for r in judged if isinstance(r["judge"].get("clarity"), (int, float))]
+        appeals = [r for r in ok if r["task"] == "draft_appeal"]
+        quoted = sum(bool(r["rules"].get("quotes_reason") and r["rules"].get("quotes_policy")) for r in appeals)
         lines.append(
             f"| {m} | {len(ok)}/{len(mine)} | {statistics.median([r['seconds'] for r in ok]) if ok else '-'} | "
             f"{sum(r['rules']['length_ok'] for r in ok)}/{len(ok)} | "
             f"{sum(bool(r['rules']['invented_placeholders']) for r in ok)} | "
             f"{sum(bool(r['rules']['invented_numbers']) for r in ok)} | "
+            f"{sum(bool(r['rules'].get('misstates_criteria')) for r in ok)} | {quoted}/{len(appeals)} | "
             f"{sum(bool(r['judge']['unsupported']) for r in judged)}/{len(judged)} | "
             f"{round(statistics.mean(clarity), 2) if clarity else '-'} |")
     return "\n".join(lines)
