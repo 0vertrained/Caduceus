@@ -735,7 +735,9 @@ def approve_blocked_reason(case: Case) -> str | None:
     if case.state != State.REVIEW:
         return "This case is not waiting for your review."
     if c["unmet"]:
-        return f"{c['unmet']} criterion is not met." if c["unmet"] == 1 else f"{c['unmet']} criteria are not met."
+        # What to do next: the clinic can correct the request or add what is missing.
+        return (f"{c['unmet']} criterion is not met" if c["unmet"] == 1 else f"{c['unmet']} criteria are not met") + \
+            f". Return it to {case.ordering_clinician['name']} for correction."
     if case.requirements and not case.requirements.get("matches"):
         return (f"{case.payer['name']} publishes a different version of this policy than the one approved here. "
                 "Have the policy reviewed before approving.")
