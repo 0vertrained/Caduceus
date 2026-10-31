@@ -228,3 +228,13 @@ def criterion_query(criterion) -> str:
     parts = [criterion.text, criterion.policy_sentence, criterion.attestation_question or "",
              criterion.attestation_help or ""]
     return " ".join(p for p in parts if p)
+
+
+def where_to_look(pages: Sequence[str], criteria_set, criterion, k: int = 3) -> list[Hit]:
+    """The passages "where to look" offers for one criterion: the best k that clear the floor. What the service itself
+    names is on every page, so it does not make a passage relevant, unless this criterion names it too ("Obstructive
+    sleep apnea is diagnosed")."""
+    named = set(words(criterion.text))
+    about = " ".join([criteria_set.title] + [c.display or "" for c in criteria_set.service_codes])
+    background = " ".join(w for w in words(about) if w not in named)
+    return search(pages, criterion_query(criterion), k, floor=True, background=background)

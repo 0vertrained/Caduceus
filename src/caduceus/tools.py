@@ -29,7 +29,7 @@ from caduceus.fhir.record import (
     procedure_period,
 )
 from caduceus.fhir.store import FhirStore, document_text
-from caduceus.retrieval import criterion_query, search, words
+from caduceus.retrieval import where_to_look
 
 
 class ToolForbidden(Exception):
@@ -158,15 +158,9 @@ def build_gateway(audit: AuditLog, store: FhirStore, library: dict[str, Criteria
         criteria = library[criteria_set]
         criterion = next(c for c in criteria.criteria if c.id == criterion_id)
         pages = [document_text(store.document(d) or {}) for d in packet]
-        # What the service itself names is on every page, so it does not make a passage relevant, unless this
-        # criterion names it too ("Obstructive sleep apnea is diagnosed").
-        named = set(words(criterion.text))
-        about = " ".join([criteria.title] + [c.display or "" for c in criteria.service_codes])
-        service = " ".join(w for w in words(about) if w not in named)
         return [{"doc_id": packet[h.passage.page - 1], "page": h.passage.page, "text": h.passage.text,
                  "start": h.passage.start, "end": h.passage.end}
-                for h in search(pages, criterion_query(criterion), max(1, min(k, 10)), floor=True,
-                                background=service)]
+                for h in where_to_look(pages, criteria, criterion, max(1, min(k, 10)))]
 
     gw.register(ToolSpec("documents.list_packet", "documents", READ, list_packet, "Pages of a referral packet."))
     gw.register(ToolSpec("documents.search_packet", "documents", READ, search_packet,
