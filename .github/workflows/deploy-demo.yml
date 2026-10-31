@@ -108,13 +108,15 @@ jobs:
       - name: Deploy
         # One instance at most: the demo keeps its cases in memory, and one instance bounds the bill.
         # Request-based billing and no minimum instances: idle costs nothing, and a cold start reseeds.
+        # The demo adds the three showcase cases, and its payer takes 30 seconds to decide (15 when expedited), so a
+        # visitor sees a request under review before the decision comes back.
         run: |
           secrets="CADUCEUS_PROXY_SIGNING_KEY=caduceus-proxy-signing-key:latest"
           if [ "${MODEL_KEY:-}" = 1 ]; then secrets="$secrets,CADUCEUS_EXTERNAL_API_KEY=$MODEL_SECRET:latest"; fi
           gcloud run deploy "$SERVICE" --project "$PROJECT" --region "$REGION" --image "$IMAGE" \
             --service-account "$RUNTIME_SA" --port 8000 --cpu 1 --memory 1Gi --concurrency 40 \
             --min-instances 0 --max-instances 1 --allow-unauthenticated \
-            --set-env-vars "CADUCEUS_AUTH_MODE=demo,CADUCEUS_DEMO_RESET_HOURS=6,CADUCEUS_EXTERNAL_PROVIDER=ollama,CADUCEUS_EXTERNAL_MODEL=$EXTERNAL_MODEL,CADUCEUS_EXTERNAL_TIMEOUT=20" \
+            --set-env-vars "CADUCEUS_AUTH_MODE=demo,CADUCEUS_DEMO_RESET_HOURS=6,CADUCEUS_SHOWCASE=1,CADUCEUS_PAYER_REVIEW_SECONDS=30,CADUCEUS_EXTERNAL_PROVIDER=ollama,CADUCEUS_EXTERNAL_MODEL=$EXTERNAL_MODEL,CADUCEUS_EXTERNAL_TIMEOUT=20" \
             --set-secrets "$secrets" \
             --quiet
       - name: The API is up, and refuses requests that did not come through Netlify
