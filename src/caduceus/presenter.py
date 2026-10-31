@@ -109,8 +109,8 @@ class Presenter:
     def row(self, case: Case, now: datetime) -> dict[str, Any]:
         p = self.patient(case)
         return {"id": case.id, "patient": {"name": patient_name(p), "age": age_on(p, date.fromisoformat(case.as_of))},
-                "service": case.service["short"], "payer": case.payer["name"], "due": due(case.due_at, now, self.tz),
-                "status": status(case)}
+                "service": case.service["short"] + (f", {case.side}" if case.side else ""),
+                "payer": case.payer["name"], "due": due(case.due_at, now, self.tz), "status": status(case)}
 
     def queue(self, cases: list[Case], now: datetime, approved_today: int) -> dict[str, Any]:
         active = sorted((c for c in cases if c.state in ACTIVE), key=lambda c: c.due_at)
@@ -198,6 +198,7 @@ class Presenter:
             "reply": self.reply(case, now),
             "appeal": self.appeal(case),
             "payer_clock": payer_clock(case, now, self.tz),
+            "side": case.side,
             "requirements": case.requirements and {
                 "matches": case.requirements.get("matches"), "plan_type": case.requirements.get("plan_type"),
                 "checked_at": clock(datetime.fromisoformat(case.requirements["checked_at"]), self.tz)},

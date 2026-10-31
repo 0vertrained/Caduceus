@@ -89,7 +89,8 @@ class Workflow:
                            service_code=case.service["code"], policy=case.criteria_set)
 
         record = self.store.record(case.patient_id, case.id)
-        det = self.engine.evaluate(self.library[case.criteria_set], record, date.fromisoformat(case.as_of))
+        det = self.engine.evaluate(self.library[case.criteria_set], record, date.fromisoformat(case.as_of),
+                                   side=case.side)
         case.determination, case.checked_at = det.to_dict(), self.now()
         # The payer's published policy must be the one approved here; if the payer changed it, a person reviews it.
         case.requirements = required | {"matches": required["policy"]["sha256"] == det.content_sha256,
@@ -384,6 +385,7 @@ class Workflow:
                    "waiting_on_clinic": "This fax is waiting on the clinic. Mark that they sent it, then finish "
                                         "checking it."}
             raise ActionRefused(why.get(fax.status, "Caduceus has not read this fax yet."))
+        side = str(values.get("side") or "").strip().lower()
         values = {key: str(values.get(key) or "").strip() for key, _ in LABELS}
         service = self.catalog["services"].get(values["service_code"])
         values["service"] = service["display"] if service else ""
@@ -395,8 +397,9 @@ class Workflow:
             if p["key"] in ("service_code", "service"):
                 raise ActionRefused(f"Check the requested service: {p['problem']}", field="service_code")
             raise ActionRefused(f"Check the {mid_sentence(p['label'])}: {p['problem']}", field=p["key"])
-        fields = self.intake_form(fax)["fields"]
-        missed = unchecked(fields, values, checked or [])
+        fields = [f for f in self.intake_form(fax)["fields"]
+                  if f["key"] != "side" or (service or {}).get("needs_side")]
+        missed = unchecked(fields, values | {"side": side}, checked or [])
         if missed:
             raise ActionRefused(f"Check the {mid_sentence(missed[0]['label'])} against the fax, then tick "
                                 "“Matches the fax”, or correct it.", field=missed[0]["key"])
@@ -424,9 +427,13 @@ class Workflow:
                                 self.intake_form(fax)["clinic"])
             self.filed.save(cover)
             packet = [cover["id"], *packet]
+        side = side if service.get("needs_side") else None
+        if service.get("needs_side") and side not in ("right", "left"):
+            raise ActionRefused("Say which side the request is for: the criteria check that the diagnosis is on "
+                                "that side.", field="side")
         case = Case(id=values["referral"], patient_id=patient_id,
                     service={k: service[k] for k in ("system", "code", "display", "short")},
-                    criteria_set=service["criteria_set"], as_of=fax.as_of,
+                    criteria_set=service["criteria_set"], side=side, as_of=fax.as_of,
                     payer={"name": values["payer"], "member_id_last4": values["member_id"][-4:]},
                     ordering_clinician=self.catalog["clinicians"][values["clinician"]], packet=packet,
                     received_at=fax.received_at, due_at=fax.received_at + timedelta(hours=fax.due_in_hours))

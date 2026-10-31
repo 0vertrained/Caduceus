@@ -219,6 +219,20 @@ def service_label(service: dict) -> str:
     return f"{service['display']} ({service['system'].upper()} {service['code']})"
 
 
+def side_field(diagnosis: dict[str, Any], for_services: list[str]) -> dict[str, Any]:
+    """Which side a sided request is for (a knee replacement is for one knee). The fax has no box for it, so it is
+    read from the diagnosis ("M17.11 Primary osteoarthritis, right knee"); when the diagnosis names no side, a person
+    must choose one. The field counts only when the chosen service needs a side."""
+    read = diagnosis.get("value", "")
+    found = re.search(r"\b(right|left)\b", read, re.IGNORECASE)
+    return {"key": "side", "label": "Side", "kind": "select", "read_as": read,
+            "initial": found.group(1).lower() if found else "",
+            "problem": None if found else "The diagnosis does not say which side.",
+            "confidence": diagnosis.get("confidence", 0.0), "box": diagnosis.get("box"),
+            "options": [{"value": "right", "label": "Right"}, {"value": "left", "label": "Left"}],
+            "for_services": for_services}
+
+
 def form(reading: dict[str, Any], catalog: dict[str, Any]) -> dict[str, Any]:
     """What a person checks, in the order the cover sheet gives it: each field with what was read, any reason to check
     it, and the value the form starts with. The health plan, the clinician and the service are chosen from the ones on
@@ -251,6 +265,10 @@ def form(reading: dict[str, Any], catalog: dict[str, Any]) -> dict[str, Any]:
                      "problem": f.get("problem") or name.get("problem"),
                      "confidence": min(f["confidence"], name["confidence"]), "box": _box([f["box"], name["box"]])}
         fields.append(item)
+        if key == "service_code":
+            sided = sorted(code for code, s in catalog["services"].items() if s.get("needs_side"))
+            if sided:
+                fields.append(side_field(by.get("diagnosis") or {}, sided))
     return {"fields": fields, "clinic": clinic, "sender": {"read_as": sender["value"], "box": sender["box"]},
             "choices": {
                 "payers": sorted(catalog["payers"]),
