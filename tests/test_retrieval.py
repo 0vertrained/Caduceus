@@ -1,6 +1,6 @@
 """Packet retrieval: clinical shorthand, OCR damage, and the queries criteria sets produce."""
 
-from caduceus.retrieval import Passage, normalize, passages, search
+from caduceus.retrieval import Passage, normalize, passages, search, where_to_look
 
 PAGES = [
     "Fax cover sheet. Pages: 4. Confidential health information enclosed.",
@@ -68,3 +68,12 @@ def test_the_floor_hides_passages_that_share_only_what_every_page_says():
     query = "A clinician evaluated the patient in person for sleep apnea before the sleep test."
     shown = [h.passage.page for h in search(pages, query, floor=True, background="CPAP device sleep apnea")]
     assert shown == [2]  # the service line names sleep apnea on every page; a duration names nothing
+
+
+def test_where_to_look_skips_a_passage_that_only_names_what_the_service_is_about(library):
+    cpap = library["cpap-osa@2026-11"]
+    severity = next(c for c in cpap.criteria if c.id == "severity_qualifies")
+    pages = ["Requested service: CPAP device for sleep apnea (HCPCS E0601).",
+             "Diagnosis: G47.33, obstructive sleep apnea.", "Apnea-hypopnea index 9 events per hour."]
+    # The criterion names sleep apnea, so it is not background; but a passage sharing nothing else names the request.
+    assert [h.passage.page for h in where_to_look(pages, cpap, severity)] == [3]

@@ -177,17 +177,21 @@ def _ranks(scores: list[float]) -> list[int | None]:
     return ranks
 
 
-def relevant(passage: Passage, query: str, background: str = "") -> bool:
+def relevant(passage: Passage, query: str, background: str = "", subject: str = "") -> bool:
     """Enough in common with the query to show a person: a shared concept ("physical therapy", "apnea-hypopnea
     index"), or at least two shared words. What the background names (the service itself, which every page of its
-    packet mentions) does not count. Ranking alone always fills a list; this keeps weak matches out of it."""
+    packet mentions) does not count. Nor is the subject enough on its own: a passage that shares only what the
+    service is about ("Diagnosis: obstructive sleep apnea") names the request; it does not answer a criterion of it.
+    Ranking alone always fills a list; this keeps weak matches out of it."""
     shared = (set(words(passage.text)) & set(words(query))) - set(words(background)) - _UNITS
+    if subject and not shared - set(words(subject)):
+        return False
     return bool(shared & _CONCEPT_TOKENS) or len(shared) >= 2
 
 
 def search(pages: Sequence[str], query: str, k: int = 5, channels: Sequence[str] = ("words", "trigrams"),
            embed: Callable[[list[str]], list[list[float]]] | None = None, rrf_k: int = 60,
-           floor: bool = False, background: str = "") -> list[Hit]:
+           floor: bool = False, background: str = "", subject: str = "") -> list[Hit]:
     """The k passages most likely to bear on the query, best first. With `floor`, only passages relevant enough
     to show a person (see `relevant`)."""
     ps = passages(pages)
@@ -211,7 +215,7 @@ def search(pages: Sequence[str], query: str, k: int = 5, channels: Sequence[str]
     seen, unique = set(), []
     for h in fused:  # a line copied forward onto many pages takes one place in the results, not several
         key = " ".join(words(h.passage.text))
-        if key not in seen and (not floor or relevant(h.passage, query, background)):
+        if key not in seen and (not floor or relevant(h.passage, query, background, subject)):
             seen.add(key)
             unique.append(h)
     return unique[:k]
@@ -233,8 +237,8 @@ def criterion_query(criterion) -> str:
 def where_to_look(pages: Sequence[str], criteria_set, criterion, k: int = 3) -> list[Hit]:
     """The passages "where to look" offers for one criterion: the best k that clear the floor. What the service itself
     names is on every page, so it does not make a passage relevant, unless this criterion names it too ("Obstructive
-    sleep apnea is diagnosed")."""
+    sleep apnea is diagnosed"), and even then not on its own."""
     named = set(words(criterion.text))
     about = " ".join([criteria_set.title] + [c.display or "" for c in criteria_set.service_codes])
     background = " ".join(w for w in words(about) if w not in named)
-    return search(pages, criterion_query(criterion), k, floor=True, background=background)
+    return search(pages, criterion_query(criterion), k, floor=True, background=background, subject=about)
