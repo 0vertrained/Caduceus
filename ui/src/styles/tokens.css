@@ -1,6 +1,7 @@
 /* Design system: Attestation. Names match the Design system tab of the Caduceus doc.
    Contrast ratios (on paper / mist): ink 15.8/13.9, ink-2 7.6/6.7, seal 7.9/7.0, urgent 7.4/6.6,
-   caution 6.7 on caution-tint, seal 6.7 on seal-tint, field-border 4.2/3.7 (non-text), disabled 4.8.
+   caution 6.7 on caution-tint, seal 6.7 on seal-tint, urgent 6.4 on urgent-tint, field-border 4.2/3.7 (non-text),
+   disabled 4.8.
    Hairlines and shadows are decoration only: nothing depends on seeing them. */
 :root {
   color-scheme: light;
@@ -13,6 +14,7 @@
   --seal-tint: #e4efe9;
   --seal-wash: #f3f8f5;
   --urgent: #9e2b25;
+  --urgent-tint: #f8ebe9;
   --caution: #7a4e00;
   --caution-tint: #fbf6ea;
   --mark: #ffe9a8;

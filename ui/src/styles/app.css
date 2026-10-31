@@ -172,6 +172,7 @@ p .link-button { min-height: 24px; vertical-align: baseline; }
 .tag { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: var(--radius-sheet);
   font-size: var(--text-small); font-weight: 600; line-height: 1.5; }
 .tag--seal { background: var(--seal-tint); color: var(--seal); }
+.tag--urgent { background: var(--urgent-tint); color: var(--urgent); }
 
 /* Disclosure: a chevron that turns, so "More details" reads as something that opens */
 .details { border-top: 1px solid var(--rule-soft); padding-top: 6px; }
@@ -238,6 +239,7 @@ details[open] > .details__summary::before { transform: rotate(45deg); margin-bot
 .row { padding: 22px 26px; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-6); }
 .row + .row { border-top: 1px solid var(--rule-soft); }
 .row__who { flex: 1 1 300px; display: flex; flex-direction: column; gap: 2px; }
+.row__title { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); }
 .row__name { font-family: var(--font-serif); font-size: var(--text-title-s); font-weight: 500; line-height: 1.2; }
 .row__due { display: flex; flex-direction: column; min-width: 9.5em; }
 .row__due-words { font-weight: 600; }
@@ -277,6 +279,12 @@ details[open] > .details__summary::before { transform: rotate(45deg); margin-bot
 .facts__term { color: var(--ink-2); font-size: var(--text-small); }
 .facts__value { font-weight: 600; }
 .facts__value--urgent { color: var(--urgent); font-weight: 700; }
+/* Urgency: standard, or expedited with its reason, and the form that changes it */
+.urgency { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); }
+.urgency__word { color: var(--urgent); font-weight: 700; }
+.urgency__reason { font-weight: 400; }
+.urgency__form { width: 100%; max-width: var(--measure); margin-top: var(--space-2); display: flex; flex-direction: column;
+  gap: var(--space-2); font-weight: 400; }
 .details .facts { margin-top: 6px; }
 .details .facts__value { font-weight: 400; }
 

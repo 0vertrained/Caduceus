@@ -182,7 +182,9 @@ class Presenter:
                    # someone else's approval): it can still be recalled until the outbox sends it.
                    "can_recall": case.state == State.SUBMITTED and not (case.submission or {}).get("sent")
                    and undo is None,
-                   "can_resubmit": case.state == State.RETURNED}
+                   "can_resubmit": case.state == State.RETURNED,
+                   # Until it is approved: the request goes to the payer marked expedited, or not.
+                   "can_set_urgency": case.state in (State.REVIEW, State.AWAITING_ATTESTATION, State.RETURNED)}
         waiting = self.clinician_wait(case, now)
         actions["can_remind"] = bool(waiting and waiting["next_reminder_at"] is None)
         return {
