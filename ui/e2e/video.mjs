@@ -56,10 +56,11 @@ async function as(page, label) {
   await page.waitForLoadState("networkidle");
 }
 const status = (page, text) => page.getByRole("status").filter({ hasText: text });
-// Waits between clips, unrecorded: ask the API, as Dolores in this copy, until the case reaches a state.
+// Waits between clips, unrecorded: ask the API, as Dolores in this copy, until the case reaches a state. Every
+// 3 seconds, so the waits stay well inside the visitor's 300 requests per five minutes that the pages also use.
 async function until(caseId, states, ms = 120_000) {
   const headers = { "X-Caduceus-User": "dolores", "X-Caduceus-Sandbox": SANDBOX };
-  for (const start = Date.now(); Date.now() - start < ms; await pause(1000)) {
+  for (const start = Date.now(); Date.now() - start < ms; await pause(3000)) {
     const c = await (await fetch(`${base}/api/cases/${caseId}`, { headers })).json();
     if (states.includes(c.state) && !(c.state === "submitted" && !c.submission?.sent)) return c;
   }
@@ -171,6 +172,7 @@ await page.close();
 await until("2026-1043", ["submitted", "pended"]);
 page = await context.newPage();
 await page.goto(base + "/cases/2026-1043");
+await page.getByRole("heading", { name: "Coverage criteria" }).waitFor();  // loaded, so the check below is not early
 if (await status(page, "Its decision is expected by").isVisible().catch(() => false)) {
   await say(page, "Humana is reviewing it, and said when it would decide. Caduceus asks again only then.", 3800);
   await page.close();
@@ -178,7 +180,7 @@ if (await status(page, "Its decision is expected by").isVisible().catch(() => fa
   page = await context.newPage();
   await page.goto(base + "/cases/2026-1043");
 }
-await page.getByRole("heading", { name: /asked a question$/ }).waitFor({ timeout: 60_000 });
+await page.getByRole("heading", { name: /asked a question$/ }).waitFor({ timeout: 90_000 });
 await still(page, "payer-question");
 await say(page, "Humana pended it: it wants the clinical note behind Dr. Reyes's answer. Caduceus never writes that note for her.", 4400);
 await page.getByRole("button", { name: /^Ask Dr\. Ana Reyes for the note$/ }).click();
