@@ -1,0 +1,319 @@
+{
+ "split": "heldout",
+ "engine": {
+  "cases": 36,
+  "criteria": 156,
+  "agreement": 0.9423,
+  "errors_by_cost": {
+   "needless question": 7,
+   "unsafe": 2
+  },
+  "errors_by_state": {
+   "sleep_test: other_code": 3,
+   "oa_diagnosis: other_knee": 2,
+   "lbp_duration: retired_code": 1,
+   "recent_xray: other_code": 1,
+   "oa_diagnosis: unspecified_code": 1,
+   "severity_qualifies: mild_with_hypertensive_heart_disease": 1
+  },
+  "confusion": {
+   "met->met": 88,
+   "met->unknown": 7,
+   "unknown->unknown": 43,
+   "unmet->met": 2,
+   "unmet->unmet": 16
+  },
+  "errors": [
+   {
+    "case": "HH-004",
+    "criterion": "lbp_duration",
+    "state": "retired_code",
+    "expected": "met",
+    "engine": "unknown",
+    "cost": "needless question"
+   },
+   {
+    "case": "HH-007",
+    "criterion": "recent_xray",
+    "state": "other_code",
+    "expected": "met",
+    "engine": "unknown",
+    "cost": "needless question"
+   },
+   {
+    "case": "HH-008",
+    "criterion": "oa_diagnosis",
+    "state": "unspecified_code",
+    "expected": "met",
+    "engine": "unknown",
+    "cost": "needless question"
+   },
+   {
+    "case": "HH-009",
+    "criterion": "sleep_test",
+    "state": "other_code",
+    "expected": "met",
+    "engine": "unknown",
+    "cost": "needless question"
+   },
+   {
+    "case": "HH-024",
+    "criterion": "sleep_test",
+    "state": "other_code",
+    "expected": "met",
+    "engine": "unknown",
+    "cost": "needless question"
+   },
+   {
+    "case": "HH-026",
+    "criterion": "oa_diagnosis",
+    "state": "other_knee",
+    "expected": "unmet",
+    "engine": "met",
+    "cost": "unsafe"
+   },
+   {
+    "case": "HH-033",
+    "criterion": "sleep_test",
+    "state": "other_code",
+    "expected": "met",
+    "engine": "unknown",
+    "cost": "needless question"
+   },
+   {
+    "case": "HH-033",
+    "criterion": "severity_qualifies",
+    "state": "mild_with_hypertensive_heart_disease",
+    "expected": "met",
+    "engine": "unknown",
+    "cost": "needless question"
+   },
+   {
+    "case": "HH-035",
+    "criterion": "oa_diagnosis",
+    "state": "other_knee",
+    "expected": "unmet",
+    "engine": "met",
+    "cost": "unsafe"
+   }
+  ]
+ },
+ "retrieval": {
+  "variants": {
+   "plain_bm25": {
+    "queries": 129,
+    "recall_at_1": 0.403,
+    "recall_at_5": 0.512,
+    "mrr": 0.455,
+    "text_only": {
+     "queries": 15,
+     "recall_at_5": 0.2
+    }
+   },
+   "words": {
+    "queries": 129,
+    "recall_at_1": 0.605,
+    "recall_at_5": 0.806,
+    "mrr": 0.694,
+    "text_only": {
+     "queries": 15,
+     "recall_at_5": 0.667
+    }
+   },
+   "words_and_trigrams": {
+    "queries": 129,
+    "recall_at_1": 0.496,
+    "recall_at_5": 0.899,
+    "mrr": 0.669,
+    "text_only": {
+     "queries": 15,
+     "recall_at_5": 0.933
+    }
+   }
+  },
+  "misses_at_5": [
+   {
+    "case": "HH-002",
+    "criterion": "imaging_narrowing",
+    "state": "met",
+    "rank": 6,
+    "gold": [
+     "Standing AP/lat Right knee (August 1, 2026): scvere medial compartment narrowing, subchondral sclerosis."
+    ],
+    "top": [
+     "Chest radiograph: clear.",
+     "Patient was counseled on weight management and activity.",
+     "Right shoulder X-ray: AC joint arthrosis."
+    ]
+   },
+   {
+    "case": "HH-005",
+    "criterion": "conservative_12_weeks",
+    "state": "therapy",
+    "rank": 6,
+    "gold": [
+     "Knee rehab 2026-05-08 to 09/05/2026 (17 wks), quad strengthening, pain persists."
+    ],
+    "top": [
+     "Physical therapy for low back pain in 2021.",
+     "Influenza injection given in the fall.",
+     "Follow up in four weeks or sooner if worse."
+    ]
+   },
+   {
+    "case": "HH-008",
+    "criterion": "imaging_narrowing",
+    "state": "met",
+    "rank": 7,
+    "gold": [
+     "Standing AP/lat Left knee (01/28/2026): severe medial compartment narrowing, subchondral sclerosis."
+    ],
+    "top": [
+     "Chest radiograph: clear.",
+     "Right shouldcr X-ray: AC joint arthrosis.",
+     "Right shoulder X-ray: AC joint arthrosis."
+    ]
+   },
+   {
+    "case": "HH-008",
+    "criterion": "conservative_12_weeks",
+    "state": "notes_only",
+    "rank": 7,
+    "gold": [
+     "Reports a prior steroid injection elsewhere, date unknown."
+    ],
+    "top": [
+     "Influenza injection given in the fal1.",
+     "Physical therapy for low back pain in 2021.",
+     "Influenza injection given in the fall."
+    ]
+   },
+   {
+    "case": "HH-014",
+    "criterion": "imaging_narrowing",
+    "state": "met",
+    "rank": 7,
+    "gold": [
+     "Standing AP/lat Right knee (2026-06-18): severe medial compartment narrowing, subchondral sclerosis."
+    ],
+    "top": [
+     "Chest radiograph: clear.",
+     "Chest radiograph: c1ear.",
+     "Patient was counseled on weight management and activity."
+    ]
+   },
+   {
+    "case": "HH-014",
+    "criterion": "conservative_12_weeks",
+    "state": "old_injection",
+    "rank": 8,
+    "gold": [
+     "S/p intra-articular Kenalog 40 mg right knee Jul 8, transient benefit only."
+    ],
+    "top": [
+     "Physical therapy for low back pain in 2021.",
+     "Physical therapy for l0w back pain in 2021.",
+     "Physical therapy for low bock pain in 2021."
+    ]
+   },
+   {
+    "case": "HH-017",
+    "criterion": "imaging_narrowing",
+    "state": "met",
+    "rank": 6,
+    "gold": [
+     "Standing AP/lat Left knee (02/10/2026): severe medial compartment narrowing, subchondral sclerosis."
+    ],
+    "top": [
+     "Chest radiograph: clear.",
+     "Patient was counseled on weight management and activity.",
+     "Patient was counselcd on weight manag- ement and activity."
+    ]
+   },
+   {
+    "case": "HH-020",
+    "criterion": "conservative_12_weeks",
+    "state": "injection",
+    "rank": 7,
+    "gold": [
+     "S/p intra-articular Kenalog 40 mg left knee 02/05/2026, transient benefit only."
+    ],
+    "top": [
+     "Physical therapy for low back pain in 2021.",
+     "Influenza injection given in the fall.",
+     "Independent with ADLs, walks two miles daily without difficulty."
+    ]
+   },
+   {
+    "case": "HH-023",
+    "criterion": "imaging_narrowing",
+    "state": "met",
+    "rank": 8,
+    "gold": [
+     "Standing AP/lat Left knee (2026-08-11): severe medial compartment narrowing, subchondral sclerosis."
+    ],
+    "top": [
+     "Chest radiograph: clear.",
+     "Patient was counseled on weight management and activity.",
+     "Chest radiograph: c1ear."
+    ]
+   },
+   {
+    "case": "HH-026",
+    "criterion": "imaging_narrowing",
+    "state": "met",
+    "rank": 6,
+    "gold": [
+     "Standing AP/lat Right knee (02/21/2026): severe medial compartment narrowing, subchondral sclerosis."
+    ],
+    "top": [
+     "Chest radiograph: clear.",
+     "Patient was counseled on weight management and activity.",
+     "Che5t radiograph: clear."
+    ]
+   },
+   {
+    "case": "HH-032",
+    "criterion": "conservative_12_weeks",
+    "state": "injection",
+    "rank": null,
+    "gold": [
+     "S/p intra-articular Kenal0g 40 mg right knee 01/22/2026, transient benefit only."
+    ],
+    "top": [
+     "Influenza injection given in the fall.",
+     "Physical therapy for low back pain in 2021.",
+     "Physical therapy for low back paln in 2021."
+    ]
+   },
+   {
+    "case": "HH-032",
+    "criterion": "imaging_narrowing",
+    "state": "met",
+    "rank": 9,
+    "gold": [
+     "Standing AP/lat Right knee (Jul 30): severe medial compartment narrowing, subchondral sclerosis."
+    ],
+    "top": [
+     "Chest radiograph: clear.",
+     "Patient was counseled on weight management and actlvity.",
+     "Right shoulder X-ray: AC joint arthro5is."
+    ]
+   },
+   {
+    "case": "HH-035",
+    "criterion": "imaging_narrowing",
+    "state": "met",
+    "rank": 8,
+    "gold": [
+     "Standing AP/lat Left knee (April 25, 2026): severe medial compartment narrowing, subchondral sclerosis."
+    ],
+    "top": [
+     "Chest radiograph: clear.",
+     "Right shoulder X-ray: AC joint arthrosis.",
+     "Patient was counseled on weight management and activity."
+    ]
+   }
+  ]
+ }
+}

@@ -25,7 +25,9 @@ from caduceus.fhir.record import (
     PatientRecord,
     codings,
     condition_is_active,
+    condition_is_voided,
     condition_onset,
+    condition_onset_is_known,
     display,
     observation_date,
     procedure_period,
@@ -187,7 +189,7 @@ class Engine:
         found = []
         for r in record.of_type("Condition"):
             onset = condition_onset(r)
-            if not _matches(r, rule.codes) or (onset and onset > as_of):
+            if not _matches(r, rule.codes) or (onset and onset > as_of) or condition_is_voided(r):
                 continue
             if rule.active_only and not condition_is_active(r, as_of):
                 continue
@@ -202,6 +204,13 @@ class Engine:
         if onset is None:
             return RuleOutcome(Status.UNKNOWN, f"{display(earliest)} is recorded without a start date.", evidence)
         days = (as_of - onset).days
+        if not condition_onset_is_known(earliest):
+            # Only the charting date is known: the problem has lasted at least this long, perhaps much longer.
+            if days >= rule.min_duration_days:
+                return RuleOutcome(Status.MET, f"Charted {_span(days)} ago, on {_when(onset)}, with no onset date; "
+                                   f"it has lasted at least that long.", evidence)
+            return RuleOutcome(Status.UNKNOWN, f"Charted {_span(days)} ago with no onset date, so the record cannot "
+                               f"say whether it has lasted {_span(rule.min_duration_days)}.", evidence)
         if days >= rule.min_duration_days:
             return RuleOutcome(Status.MET, f"Documented for {_span(days)}, since {_when(onset)}.", evidence)
         return RuleOutcome(
@@ -213,9 +222,11 @@ class Engine:
     def _procedure(self, rule: ProcedureRule, record: PatientRecord, as_of: date) -> RuleOutcome:
         any_match, in_window = [], []
         for r in record.of_type("Procedure"):
-            if not _matches(r, rule.codes) or r.get("status") in {"not-done", "entered-in-error"}:
+            if not _matches(r, rule.codes) or r.get("status") in {"not-done", "entered-in-error", "preparation"}:
                 continue
             start, end = procedure_period(r)
+            if r.get("status") == "in-progress" and not (r.get("performedPeriod") or {}).get("end"):
+                end = as_of  # still going: it counts up to the as-of date
             if start is None or start > as_of:
                 continue
             any_match.append((start, end, r))

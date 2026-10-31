@@ -110,3 +110,44 @@ def test_absence_as_met_only_for_reviewed_exclusions(library):
 def test_deterministic(engine, library, store):
     case = CASES[0]
     assert evaluate(engine, library, store, case).to_dict() == evaluate(engine, library, store, case).to_dict()
+
+
+def _knee_record(*resources):
+    return PatientRecord(patient={"resourceType": "Patient", "id": "p", "birthDate": "1950-01-01"},
+                         resources=[{"id": f"r{i}", **r} for i, r in enumerate(resources)])
+
+
+def _status(engine, library, key, criterion, record, as_of=date(2026, 10, 28)):
+    det = engine.evaluate(library[key], record, as_of)
+    return next(r for r in det.results if r.criterion_id == criterion)
+
+
+ICD = "http://hl7.org/fhir/sid/icd-10-cm"
+VER = "http://terminology.hl7.org/CodeSystem/condition-ver-status"
+
+
+@pytest.mark.parametrize("verification", ["refuted", "entered-in-error"])
+def test_a_ruled_out_or_voided_diagnosis_does_not_count(engine, library, verification):
+    infection = {"resourceType": "Condition", "code": {"coding": [{"system": ICD, "code": "M00.9"}]},
+                 "onsetDateTime": "2026-09-01", "verificationStatus": {"coding": [{"system": VER,
+                                                                                   "code": verification}]}}
+    result = _status(engine, library, "dev-knee-arthroplasty@2026-09", "no_active_infection", _knee_record(infection))
+    assert result.status == Status.MET  # the exclusion is not triggered by a diagnosis that is not real
+
+
+def test_therapy_still_in_progress_counts_up_to_today(engine, library):
+    pt = {"resourceType": "Procedure", "status": "in-progress",
+          "code": {"coding": [{"system": "http://www.ama-assn.org/go/cpt", "code": "97110"}]},
+          "performedPeriod": {"start": "2026-07-01"}}
+    result = _status(engine, library, "dev-lumbar-mri@2026-09", "conservative_care", _knee_record(pt))
+    assert result.status == Status.MET and "October 28, 2026" in result.explanation
+
+
+def test_a_problem_charted_recently_without_an_onset_is_unknown_not_unmet(engine, library):
+    def lbp(recorded):
+        return {"resourceType": "Condition", "code": {"coding": [{"system": ICD, "code": "M54.50"}]},
+                "clinicalStatus": {"coding": [{"code": "active"}]}, "recordedDate": recorded}
+
+    key = "dev-lumbar-mri@2026-09"
+    assert _status(engine, library, key, "lbp_duration", _knee_record(lbp("2026-10-10"))).status == Status.UNKNOWN
+    assert _status(engine, library, key, "lbp_duration", _knee_record(lbp("2026-06-01"))).status == Status.MET
