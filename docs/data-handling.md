@@ -26,8 +26,12 @@ real data.
 
 1. The agent reads the record through MCP tools. Every call is role-checked, allowed only in the current workflow
    step, and written to the audit log.
-2. Tasks that need the identifiable record (reading notes, summarizing the chart) go to the in-VPC model only. If
-   it is down, the work waits. There is no fallback to an outside model.
+2. Tasks that need the identifiable record (summarizing the chart for the clinician) go to the in-VPC model only,
+   in the background. If it is down or absent, the summary is written from the record's facts without a model.
+   There is no fallback to an outside model. In the public demo this model runs in the same Cloud Run instance as
+   the API ([infra/model](../infra/model/Dockerfile)): it listens on 127.0.0.1, has no HTTPS client, serves
+   weights baked into its image, and runs with `--offline`. In a production deployment it runs in the VPC's private
+   subnet with no outbound route.
 3. Drafting gets de-identified facts. The de-identification service replaces identifiers with tokens, stamps the
    result with an HMAC, and the router checks the stamp and re-scans for known identifiers before the text leaves.
    The returned draft is re-identified inside the VPC.
