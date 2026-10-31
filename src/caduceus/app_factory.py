@@ -15,7 +15,7 @@ from caduceus.audit.log import AuditLog
 from caduceus.auth import Authenticator
 from caduceus.cases import CaseRepository, DocumentRepository, FaxRepository
 from caduceus.criteria.engine import Engine
-from caduceus.criteria.loader import load_library, load_lock
+from caduceus.criteria.loader import active, load_library, load_lock, needs_side
 from caduceus.deid.safe_harbor import SafeHarborDeidentifier
 from caduceus.drafting import Drafter
 from caduceus.fhir.store import FhirStore, HapiFhirStore, LocalBundleStore, WithFiledDocuments
@@ -120,7 +120,9 @@ def build_services(settings: Settings | None = None, conn: sqlite3.Connection | 
     record: FhirStore = HapiFhirStore(s.fhir_base_url) if s.fhir_base_url else LocalBundleStore(s.data_dir)
     store = WithFiledDocuments(record, filed)
     policies = s.data_dir / "policies"
-    library, engine = load_library(policies), Engine(load_lock(policies))
+    lock = load_lock(policies)
+    library, engine = load_library(policies), Engine(lock)
+    current = active(library, lock)  # the set each service runs under now
 
     key = s.deid_key.encode() if s.deid_key else secrets.token_bytes(32)  # dev: a fresh key per process
     deid = SafeHarborDeidentifier(key)
@@ -134,8 +136,9 @@ def build_services(settings: Settings | None = None, conn: sqlite3.Connection | 
 
     tz = ZoneInfo(s.clinic_tz)
     workflow = Workflow(cases, audit, store, library, engine, Drafter(router, deid),
-                        MockPayer(published=load_lock(policies)), faxes=FaxRepository(conn),
-                        catalog=_catalog(s.data_dir), fax_dir=s.data_dir / "faxes", tz=tz, filed=filed)
+                        MockPayer(published={c.key: c.content_sha256() for c in current.values()}),
+                        faxes=FaxRepository(conn), catalog=_catalog(s.data_dir, current),
+                        fax_dir=s.data_dir / "faxes", tz=tz, filed=filed)
     auth = Authenticator(s.auth_mode, s.oidc_jwks_url, s.oidc_issuer, s.oidc_audience)
     return Services(s, tz, audit, cases, store, workflow, auth, router, conn)
 
@@ -146,7 +149,7 @@ CLINICS = {"pract-patel": "Mesa Verde Sleep Center", "pract-lee": "Mesa Verde Or
            "pract-reyes": "Mesa Verde Orthopedics, Santa Fe"}
 
 
-def _catalog(data_dir: Path) -> dict[str, Any]:
+def _catalog(data_dir: Path, current: dict | None = None) -> dict[str, Any]:
     """The services, payers and ordering clinicians a referral may name, from the scenario data, and the clinic each
     clinician works at."""
     path = data_dir / "cases" / "cases.json"
@@ -157,7 +160,12 @@ def _catalog(data_dir: Path) -> dict[str, Any]:
     plans: dict[str, set[tuple[str, str]]] = {}
     for c in cases:
         plans.setdefault(c["patient_id"], set()).add((c["payer"]["name"], c["payer"]["member_id_last4"]))
-    return {"services": {c["service"]["code"]: c["service"] | {"criteria_set": c["criteria_set"]} for c in cases},
+    def service(c: dict) -> dict:
+        now = (current or {}).get(c["service"]["code"])
+        return c["service"] | {"criteria_set": now.key if now else c["criteria_set"],
+                               "needs_side": bool(now and needs_side(now))}
+
+    return {"services": {c["service"]["code"]: service(c) for c in cases},
             "clinicians": clinicians,
             "clinics": {name: CLINICS[c["id"]] for name, c in clinicians.items() if c["id"] in CLINICS},
             "payers": {c["payer"]["name"] for c in cases},

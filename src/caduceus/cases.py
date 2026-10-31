@@ -7,7 +7,7 @@ import sqlite3
 import threading
 from datetime import datetime
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -45,6 +45,7 @@ class Case(BaseModel):
     patient_id: str
     service: dict[str, str]
     criteria_set: str
+    side: Literal["right", "left"] | None = None  # the side the request is for, when the service has one
     as_of: str
     payer: dict[str, str]
     ordering_clinician: dict[str, str]

@@ -42,8 +42,12 @@ def seed(services: Services, now: datetime | None = None, by_fax: bool = False) 
                                              due_in_hours=c["due_in_hours"] + 24))
             services.audit.append("intake", "agent_runtime", "fax.received", fax_id, {"pages": len(c["packet"]) + 1})
             continue
-        case = Case(id=c["id"], patient_id=c["patient_id"], service=c["service"], criteria_set=c["criteria_set"],
-                    as_of=c["as_of"], payer=c["payer"], ordering_clinician=c["ordering_clinician"],
+        # A new case runs under the criteria set its service uses now; the scenario names the one its labels were
+        # written for, which the eval gate checks separately.
+        criteria_set = services.workflow.catalog.get("services", {}).get(c["service"]["code"], {}).get(
+            "criteria_set", c["criteria_set"])
+        case = Case(id=c["id"], patient_id=c["patient_id"], service=c["service"], criteria_set=criteria_set,
+                    side=c.get("side"), as_of=c["as_of"], payer=c["payer"], ordering_clinician=c["ordering_clinician"],
                     packet=c["packet"], received_at=now - timedelta(days=1),
                     due_at=now + timedelta(hours=c["due_in_hours"]))
         services.cases.save(case)
