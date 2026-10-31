@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "8ee4bbc5-a5cb-5552-8de9-1ca58224ec4e",
+    "name": [
+     {
+      "given": [
+       "Raymond"
+      ],
+      "family": "Vigil"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1963-09-27"
+   }
+  }
+ ]
+}

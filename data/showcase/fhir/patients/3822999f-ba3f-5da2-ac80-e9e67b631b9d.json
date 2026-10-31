@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "3822999f-ba3f-5da2-ac80-e9e67b631b9d",
+    "name": [
+     {
+      "given": [
+       "Esther"
+      ],
+      "family": "Maestas"
+     }
+    ],
+    "gender": "female",
+    "birthDate": "1960-02-03"
+   }
+  }
+ ]
+}
