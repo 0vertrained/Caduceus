@@ -143,7 +143,9 @@ class Engine:
         """`approved` maps criteria-set key (id@version) to the sha256 a reviewer approved."""
         self._approved = approved
 
-    def evaluate(self, criteria_set: CriteriaSet, record: PatientRecord, as_of: date) -> Determination:
+    def evaluate(self, criteria_set: CriteriaSet, record: PatientRecord, as_of: date,
+                 side: str | None = None) -> Determination:
+        """`side` is the side the request names ("right" or "left"), for criteria that must match it."""
         digest = criteria_set.content_sha256()
         if criteria_set.status != "approved":
             raise UnapprovedCriteriaSet(f"{criteria_set.key} is a draft; only approved sets are evaluated")
@@ -151,13 +153,13 @@ class Engine:
             raise UnapprovedCriteriaSet(
                 f"{criteria_set.key} does not match its approved content hash; it was changed after approval"
             )
-        results = [self._criterion(c, record, as_of) for c in criteria_set.criteria]
+        results = [self._criterion(c, record, as_of, side) for c in criteria_set.criteria]
         return Determination(criteria_set.key, digest, as_of.isoformat(), results)
 
     # Criterion level: applies exclusion inversion and the when_absent policy ---------------------------
 
-    def _criterion(self, c: Criterion, record: PatientRecord, as_of: date) -> CriterionResult:
-        outcome = self._rule(c.rule, record, as_of)
+    def _criterion(self, c: Criterion, record: PatientRecord, as_of: date, side: str | None) -> CriterionResult:
+        outcome = self._rule(c.rule, record, as_of, side)
         status, explanation = outcome.status, outcome.detail
         if c.kind == "exclusion":
             if outcome.status == Status.MET:
@@ -172,20 +174,21 @@ class Engine:
 
     # Rule level ---------------------------------------------------------------------------------------
 
-    def _rule(self, rule, record: PatientRecord, as_of: date) -> RuleOutcome:
+    def _rule(self, rule, record: PatientRecord, as_of: date, side: str | None = None) -> RuleOutcome:
         if isinstance(rule, ConditionRule):
-            return self._condition(rule, record, as_of)
+            return self._condition(rule, record, as_of, side)
         if isinstance(rule, ProcedureRule):
             return self._procedure(rule, record, as_of)
         if isinstance(rule, ObservationRule):
             return self._observation(rule, record, as_of)
         if isinstance(rule, AnyOf):
-            return self._any_of(rule, record, as_of)
+            return self._any_of(rule, record, as_of, side)
         if isinstance(rule, AllOf):
-            return self._all_of(rule, record, as_of)
+            return self._all_of(rule, record, as_of, side)
         raise TypeError(f"unsupported rule {type(rule).__name__}")
 
-    def _condition(self, rule: ConditionRule, record: PatientRecord, as_of: date) -> RuleOutcome:
+    def _condition(self, rule: ConditionRule, record: PatientRecord, as_of: date,
+                   side: str | None = None) -> RuleOutcome:
         found = []
         for r in record.of_type("Condition"):
             onset = condition_onset(r)
@@ -196,6 +199,11 @@ class Engine:
             found.append((onset, r))
         if not found:
             return RuleOutcome(Status.UNKNOWN, f"No matching {rule.label} was found in the record.")
+        if rule.same_side:
+            sided = self._same_side(rule, found, side)
+            if isinstance(sided, RuleOutcome):
+                return sided
+            found = sided
         found.sort(key=lambda t: t[0] or as_of)
         onset, earliest = found[0]
         evidence = [_evidence(r, d) for d, r in found]
@@ -218,6 +226,27 @@ class Engine:
             f"Documented for {_span(days)}; the policy requires at least {_span(rule.min_duration_days)}.",
             evidence,
         )
+
+    @staticmethod
+    def _same_side(rule: ConditionRule, found: list, side: str | None) -> list | RuleOutcome:
+        """Keep the diagnoses on the requested side. A diagnosis charted only on the other side is not met: it
+        may be a wrong-side request. One charted without a side cannot answer, so the clinician is asked."""
+        sides = {(c.uri, c.code): c.side for c in rule.codes}
+        def side_of(r: dict) -> str | None:
+            return next((sides[p] for p in codings(r) if p in sides and sides[p]), None)
+        if side is None:
+            return RuleOutcome(Status.UNKNOWN, f"The request does not say which side, so the {rule.label} "
+                               "cannot be matched to it.", [_evidence(r, d) for d, r in found])
+        same = [(d, r) for d, r in found if side_of(r) in (side, "bilateral")]
+        if same:
+            return same
+        other = [(d, r) for d, r in found if side_of(r) not in (None, side, "bilateral")]
+        if other:
+            return RuleOutcome(Status.UNMET, f"{display(other[0][1])} is charted, but the request is for the {side} "
+                               "side. Check that the request names the right side.",
+                               [_evidence(r, d) for d, r in other])
+        return RuleOutcome(Status.UNKNOWN, f"{display(found[0][1])} is charted without a side, and the request is "
+                           f"for the {side} side.", [_evidence(r, d) for d, r in found])
 
     def _procedure(self, rule: ProcedureRule, record: PatientRecord, as_of: date) -> RuleOutcome:
         any_match, in_window = [], []
@@ -277,6 +306,11 @@ class Engine:
             found.append((when, r))
         if not found:
             return RuleOutcome(Status.UNKNOWN, f"No {rule.label} was found in the record.")
+        if rule.before_procedure:
+            ordered = self._before(rule, record, as_of, found)
+            if isinstance(ordered, RuleOutcome):
+                return ordered
+            found = ordered
         when, latest = max(found, key=lambda t: t[0])
         evidence = [_evidence(latest, when)]
         if rule.value_code is not None:
@@ -296,8 +330,31 @@ class Engine:
         note = f"{display(latest)} was {value:g} on {_when(when)}" + (f"; required: {bounds}." if bounds else ".")
         return RuleOutcome(verdict, note, evidence)
 
-    def _any_of(self, rule: AnyOf, record: PatientRecord, as_of: date) -> RuleOutcome:
-        outcomes = [self._rule(r, record, as_of) for r in rule.rules]
+    def _before(self, rule: ObservationRule, record: PatientRecord, as_of: date, found: list) -> list | RuleOutcome:
+        """Keep the findings dated on or before the most recent qualifying procedure in the window."""
+        wanted = rule.before_procedure or []
+        days = []
+        for r in record.of_type("Procedure"):
+            if not _matches(r, wanted) or r.get("status") in {"not-done", "entered-in-error", "preparation"}:
+                continue
+            start, end = procedure_period(r)
+            if start is not None and start <= as_of and (rule.within_days is None
+                                                         or (as_of - start).days <= rule.within_days):
+                days.append(start)
+        if not days:
+            return RuleOutcome(Status.UNKNOWN, f"{_cap(rule.before_label)} is not in the record, so the order of the "
+                               f"{rule.label} cannot be checked.", [_evidence(r, d) for d, r in found])
+        test = max(days)
+        before = [(d, r) for d, r in found if d <= test]
+        if before:
+            return before
+        when, first = min(found, key=lambda t: t[0])
+        return RuleOutcome(Status.UNMET, f"The {rule.label} on record is dated {_when(when)}, after "
+                           f"{rule.before_label} on {_when(test)}; the policy requires it before.",
+                           [_evidence(first, when)])
+
+    def _any_of(self, rule: AnyOf, record: PatientRecord, as_of: date, side: str | None = None) -> RuleOutcome:
+        outcomes = [self._rule(r, record, as_of, side) for r in rule.rules]
         met = [o for o in outcomes if o.status == Status.MET]
         if met:
             return RuleOutcome(Status.MET, " ".join(o.detail for o in met), [e for o in met for e in o.evidence])
@@ -306,8 +363,8 @@ class Engine:
             return RuleOutcome(Status.UNMET, " ".join(o.detail for o in outcomes), everything)
         return RuleOutcome(Status.UNKNOWN, " ".join(o.detail for o in outcomes), everything)
 
-    def _all_of(self, rule: AllOf, record: PatientRecord, as_of: date) -> RuleOutcome:
-        outcomes = [self._rule(r, record, as_of) for r in rule.rules]
+    def _all_of(self, rule: AllOf, record: PatientRecord, as_of: date, side: str | None = None) -> RuleOutcome:
+        outcomes = [self._rule(r, record, as_of, side) for r in rule.rules]
         everything = [e for o in outcomes for e in o.evidence]
         detail = " ".join(o.detail for o in outcomes)
         if any(o.status == Status.UNMET for o in outcomes):

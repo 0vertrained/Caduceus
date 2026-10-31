@@ -151,3 +151,86 @@ def test_a_problem_charted_recently_without_an_onset_is_unknown_not_unmet(engine
     key = "dev-lumbar-mri@2026-09"
     assert _status(engine, library, key, "lbp_duration", _knee_record(lbp("2026-10-10"))).status == Status.UNKNOWN
     assert _status(engine, library, key, "lbp_duration", _knee_record(lbp("2026-06-01"))).status == Status.MET
+
+
+KNEE = {"system": "icd10", "code": "M17.11", "side": "right"}
+
+
+def _knee_set(**rule_extra):
+    from caduceus.criteria.dsl import CriteriaSet as CS
+    return CS.model_validate({
+        "id": "t-knee", "version": "1", "title": "t", "status": "approved", "approved_by": "r",
+        "approved_at": "2026-10-01", "source": {"kind": "development-paraphrase", "title": "t"},
+        "service_codes": [{"system": "cpt", "code": "27447"}],
+        "criteria": [{"id": "oa", "text": "OA of the knee", "kind": "diagnosis", "policy_sentence": "s",
+                      "rule": {"type": "condition", "same_side": True,
+                               "codes": [KNEE, {"system": "icd10", "code": "M17.12", "side": "left"},
+                                         {"system": "icd10", "code": "M17.0", "side": "bilateral"},
+                                         {"system": "icd10", "code": "M17.9"}], **rule_extra}}]})
+
+
+def _oa(code):
+    return {"resourceType": "Condition", "code": {"coding": [{"system": ICD, "code": code}]},
+            "clinicalStatus": {"coding": [{"code": "active"}]}, "onsetDateTime": "2024-01-01"}
+
+
+@pytest.mark.parametrize(("codes", "side", "expected"), [
+    (["M17.11"], "right", Status.MET), (["M17.0"], "left", Status.MET),
+    (["M17.12"], "right", Status.UNMET),       # only the other knee: possibly a wrong-side request
+    (["M17.9"], "right", Status.UNKNOWN),      # charted without a side: the clinician confirms
+    (["M17.12", "M17.11"], "right", Status.MET),
+    (["M17.11"], None, Status.UNKNOWN),        # the request does not say which knee
+])
+def test_a_diagnosis_must_be_on_the_side_the_request_names(codes, side, expected):
+    s = _knee_set()
+    engine = Engine({s.key: s.content_sha256()})
+    det = engine.evaluate(s, _knee_record(*[_oa(c) for c in codes]), date(2026, 10, 28), side=side)
+    assert det.results[0].status == expected, det.results[0].explanation
+
+
+def _f2f_set():
+    from caduceus.criteria.dsl import CriteriaSet as CS
+    return CS.model_validate({
+        "id": "t-cpap", "version": "1", "title": "t", "status": "approved", "approved_by": "r",
+        "approved_at": "2026-10-01", "source": {"kind": "development-paraphrase", "title": "t"},
+        "service_codes": [{"system": "hcpcs", "code": "E0601"}],
+        "criteria": [{"id": "f2f", "text": "Evaluation before the test", "kind": "documentation",
+                      "policy_sentence": "s",
+                      "rule": {"type": "observation", "within_days": 365, "label": "sleep evaluation",
+                               "codes": [{"system": "local", "code": "sleep-evaluation"}],
+                               "value_code": {"system": "local", "code": "completed"},
+                               "before_procedure": [{"system": "cpt", "code": "95810"}],
+                               "before_label": "the sleep test"}}]})
+
+
+def _evaluation(day):
+    return {"resourceType": "Observation", "status": "final", "effectiveDateTime": day,
+            "code": {"coding": [{"system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+                                 "code": "sleep-evaluation"}]},
+            "valueCodeableConcept": {"coding": [{"system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+                                                 "code": "completed"}]}}
+
+
+PSG = {"resourceType": "Procedure", "status": "completed", "performedDateTime": "2026-08-01",
+       "code": {"coding": [{"system": "http://www.ama-assn.org/go/cpt", "code": "95810"}]}}
+
+
+@pytest.mark.parametrize(("resources", "expected"), [
+    ([_evaluation("2026-07-10"), PSG], Status.MET),
+    ([_evaluation("2026-08-20"), PSG], Status.UNMET),   # dated after the test it should justify
+    ([_evaluation("2026-08-20"), _evaluation("2026-07-01"), PSG], Status.MET),
+    ([_evaluation("2026-07-10")], Status.UNKNOWN),      # no test to check the order against
+])
+def test_an_evaluation_must_come_before_the_test(resources, expected):
+    s = _f2f_set()
+    det = Engine({s.key: s.content_sha256()}).evaluate(s, _knee_record(*resources), date(2026, 10, 28))
+    assert det.results[0].status == expected, det.results[0].explanation
+
+
+def test_the_newest_approved_set_is_active_and_the_old_one_stays_loadable():
+    from caduceus.criteria.loader import active
+    old = _knee_set()
+    new = old.model_copy(update={"version": "2", "supersedes": old.key})
+    library = {old.key: old, new.key: new}
+    assert active(library, {old.key: old.content_sha256(), new.key: new.content_sha256()})["27447"].key == new.key
+    assert active(library, {old.key: old.content_sha256()})["27447"].key == old.key  # new one not approved yet
