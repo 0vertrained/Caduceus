@@ -20,7 +20,7 @@ JAVA_PINS  = -Duser.timezone=$(DATA_TZ) -Duser.language=en -Duser.country=US -Df
 # Synthea runs with the network switched off: it needs none, and a library flaw found later cannot be reached.
 OFFLINE    = $(abspath scripts/offline.sh)
 
-.PHONY: help setup data synthea seed dev test lint evals evals-hard e2e check approve-policy image up clean
+.PHONY: help setup data fixtures synthea seed dev test lint evals evals-hard e2e check approve-policy image up clean
 
 help: ## List the commands
 	@grep -hE '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  make %-15s %s\n", $$1, $$2}'
@@ -34,6 +34,11 @@ data: $(SYN_JAR) ## Regenerate the synthetic dataset from Synthea (needs Java 17
 	  --exporter.baseDirectory=$(abspath $(SYN_DIR))/out "New Mexico" "Santa Fe" > synthea.log
 	rm -rf $(DATA)/fhir $(DATA)/cases
 	TZ=$(DATA_TZ) $(PY) scripts/build_dataset.py --synthea $(SYN_DIR)/out/fhir --out $(DATA)
+
+fixtures: ## Rebuild the hard sets and the demo's showcase cases (no Synthea; the output is deterministic)
+	rm -rf $(DATA)/hard $(DATA)/showcase
+	$(PY) scripts/build_hard_set.py --out $(DATA)/hard
+	$(PY) scripts/build_showcase.py --out $(DATA)/showcase
 
 $(SYN_JAR): tools/synthea/build.sh tools/synthea/synthea.patch
 	mkdir -p $(SYN_DIR)

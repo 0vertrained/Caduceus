@@ -27,7 +27,7 @@ from caduceus.seed import seed
 
 def story(out: Path) -> tuple[list[str], list[str], dict[str, dict]]:
     """Run the demo's story once. Replies already recorded (in the file or earlier in this process) are reused."""
-    svc = build_services(Settings(auth_mode="dev", db_path=":memory:", model_recordings=str(out)))
+    svc = build_services(Settings(auth_mode="dev", db_path=":memory:", model_recordings=str(out), showcase="1"))
     if svc.router is None or not svc.router.external_enabled:
         raise SystemExit("No external model is configured: "
                          "set CADUCEUS_EXTERNAL_PROVIDER and CADUCEUS_EXTERNAL_API_KEY.")

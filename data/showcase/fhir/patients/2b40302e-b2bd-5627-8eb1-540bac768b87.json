@@ -1,0 +1,22 @@
+{
+ "resourceType": "Bundle",
+ "type": "collection",
+ "entry": [
+  {
+   "resource": {
+    "resourceType": "Patient",
+    "id": "2b40302e-b2bd-5627-8eb1-540bac768b87",
+    "name": [
+     {
+      "given": [
+       "Gilbert"
+      ],
+      "family": "Romero"
+     }
+    ],
+    "gender": "male",
+    "birthDate": "1954-06-12"
+   }
+  }
+ ]
+}
