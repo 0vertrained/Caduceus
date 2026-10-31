@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api, ApiError, type CaseView, type CriterionResult, type Page, type PayerReply, type Timeline } from "../api";
+import { ErrorMessage } from "../components/ErrorSummary";
 import { useAuthImage } from "../components/FaxImage";
 import { ChevronLeft, ChevronRight, CheckCircle, Triangle } from "../components/Icons";
 import { SealMark } from "../components/Seal";
@@ -11,6 +12,14 @@ import { countWords, glue, midSentence, oneLine, useResource, useSecondsLeft, us
 type PagePanel = { kind: "page"; docId: string; sentence: string | null; supports: string | null;
                    lead?: { start: number; end: number } };
 type Panel = { kind: "draft" } | { kind: "edit" } | { kind: "sent" } | PagePanel;
+
+/** Ctrl or Cmd with Enter submits a short form from its text box. */
+function submitOnModEnter(e: KeyboardEvent<HTMLTextAreaElement>) {
+  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+    e.preventDefault();
+    e.currentTarget.form?.requestSubmit();
+  }
+}
 
 const REMOVED: Record<string, [string, string]> = {
   NAME: ["name part", "name parts"], DATE: ["date", "dates"], ADDRESS: ["street address", "street addresses"],
@@ -95,13 +104,95 @@ function Progress({ c }: { c: CaseView }) {
   );
 }
 
-function CaseHeader({ c }: { c: CaseView }) {
+/** Standard or expedited, and the clinical reason for expediting. A PA specialist can change it until approval. */
+function Urgency({ c, setCase }: { c: CaseView; setCase: (c: CaseView) => void }) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [said, setSaid] = useState("");
+  const trigger = useRef<HTMLButtonElement>(null);
+  const field = useRef<HTMLTextAreaElement>(null);
+  const confirm = useRef<HTMLButtonElement>(null);
+  const expedited = c.urgency === "expedited";
+  const reopened = useRef(false);
+
+  // Opening moves focus into the form; closing returns it to the button that opened it.
+  useEffect(() => {
+    if (open) (expedited ? confirm : field).current?.focus();
+    else if (reopened.current) trigger.current?.focus();
+    reopened.current = open;
+  }, [open, expedited]);
+
+  const close = () => { setOpen(false); setReason(""); setError(null); };
+  const submit = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      setCase(await api<CaseView>(`/api/cases/${c.id}/urgency`, { method: "POST",
+        body: JSON.stringify({ expedited: !expedited, reason: expedited ? "" : reason }) }));
+      setSaid(expedited ? "Changed to a standard request." : "Marked expedited.");
+      close();
+    } catch (e) {
+      setError((e as ApiError).message);
+      field.current?.focus();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className={`facts__item${expedited || open ? " facts__item--wide" : ""}`}>
+      <dt className="facts__term">Urgency</dt>
+      <dd className="facts__value urgency">
+        {expedited ? <p><strong className="urgency__word">Expedited.</strong> <span className="urgency__reason">{c.urgency_reason}</span></p>
+          : <p>Standard</p>}
+        {c.actions.can_set_urgency && !open && (
+          <button type="button" ref={trigger} className="link-button link-button--start" aria-expanded={false}
+                  aria-controls="urgency-form" onClick={() => setOpen(true)}>
+            {expedited ? "Change to standard…" : "Ask for an expedited decision…"}
+          </button>
+        )}
+        {open && (
+          <form id="urgency-form" className="urgency__form" noValidate
+                onSubmit={(e) => { e.preventDefault(); void submit(); }}>
+            {expedited ? (
+              <p>The request will go to {c.payer.name} as a standard request, and the reason above will be removed.</p>
+            ) : (
+              <>
+                <label className="field-label" htmlFor="urgency-reason">Why can’t this wait the standard time?</label>
+                <p className="support" id="urgency-hint">Expedite only when waiting could seriously jeopardize the
+                  patient’s life, health or ability to regain maximum function. Give the clinical reason, as the
+                  ordering clinician states it.</p>
+                <ErrorMessage id="urgency-error" message={error ?? undefined} />
+                <textarea id="urgency-reason" ref={field} name="urgency-reason" className="input textarea textarea--short"
+                          value={reason} aria-describedby={`urgency-hint${error ? " urgency-error" : ""}`}
+                          aria-invalid={error ? true : undefined} maxLength={500}
+                          onChange={(e) => setReason(e.target.value)} onKeyDown={submitOnModEnter} />
+              </>
+            )}
+            {expedited && error && <p role="alert" className="alert">{error}</p>}
+            <div className="decision-bar__actions">
+              <button type="submit" ref={confirm} className="btn btn--primary" disabled={busy} data-busy={busy || undefined}>
+                {expedited ? "Change to standard" : "Ask for an expedited decision"}</button>
+              <button type="button" className="btn btn--secondary" onClick={close}>Cancel</button>
+            </div>
+          </form>
+        )}
+        <span className="visually-hidden" role="status">{said}</span>
+      </dd>
+    </div>
+  );
+}
+
+function CaseHeader({ c, setCase }: { c: CaseView; setCase: (c: CaseView) => void }) {
   return (
     <section className="panel case-head" aria-labelledby="patient-name">
       <div className="case-head__main">
         <div className="case-head__title-row">
           <h1 id="patient-name" className="case-name">{c.patient.name}</h1>
           <StatusWord statusKey={c.status.key} word={c.status.word} pill />
+          {c.urgency === "expedited" && <span className="tag tag--urgent">Expedited</span>}
         </div>
         <dl className="facts">
           <div className="facts__item"><dt className="facts__term">Date of birth</dt>
@@ -112,6 +203,7 @@ function CaseHeader({ c }: { c: CaseView }) {
             <dd className="facts__value">{c.service.display}</dd></div>
           <div className="facts__item"><dt className="facts__term">Ordered by</dt>
             <dd className="facts__value">{glue(c.ordering_clinician.name)}, {c.ordering_clinician.specialty}</dd></div>
+          <Urgency c={c} setCase={setCase} />
           {c.payer_clock && (
             <div className="facts__item facts__item--wide"><dt className="facts__term">The payer’s decision</dt>
               <dd className="facts__value">{glue(c.payer_clock.words)}</dd></div>
@@ -706,7 +798,7 @@ function DecisionBar({ c, setCase, reload }: { c: CaseView; setCase: (c: CaseVie
           <form className="decision-bar__form" onSubmit={(e) => { e.preventDefault(); void act("return", { reason }); }}>
             <label className="field-label" htmlFor="return-reason">What needs correcting? The clinic will see this.</label>
             <textarea id="return-reason" className="input textarea textarea--short" value={reason}
-                      onChange={(e) => setReason(e.target.value)} />
+                      onChange={(e) => setReason(e.target.value)} onKeyDown={submitOnModEnter} />
             <div className="decision-bar__actions">
               <button type="submit" className="btn btn--primary" disabled={busy}>Return to {c.ordering_clinician.name}</button>
               <button type="button" className="btn btn--secondary" onClick={() => setReturning(false)}>Cancel</button>
@@ -738,7 +830,7 @@ export function CaseReviewPage() {
     <>
       <div className="page page--case">
         <Link to="/" className="back-link"><ChevronLeft />Back to your queue</Link>
-        <CaseHeader c={c} />
+        <CaseHeader c={c} setCase={setData} />
         {c.reply && ["pended", "awaiting_note", "submitted"].includes(c.state) && <PayerQuestion c={c} reply={c.reply} />}
         {c.appeal && (c.state === "denied" || c.submission?.kind === "appeal") && c.state !== "approved" && (
           <Denial key={c.appeal.draft?.text} c={c} onSaved={setData} />

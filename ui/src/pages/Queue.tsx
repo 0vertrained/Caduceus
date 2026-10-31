@@ -53,7 +53,10 @@ function Row({ row }: { row: QueueRow }) {
   return (
     <li className="row">
       <div className="row__who">
-        <span className="row__name">{row.patient.name}, {row.patient.age}</span>
+        <span className="row__title">
+          <span className="row__name">{row.patient.name}, {row.patient.age}</span>
+          {row.expedited && <span className="tag tag--urgent">Expedited</span>}
+        </span>
         <span className="muted">{row.service}. {row.payer}.</span>
       </div>
       <div className="row__due">

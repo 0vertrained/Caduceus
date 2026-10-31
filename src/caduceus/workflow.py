@@ -184,8 +184,7 @@ class Workflow:
             raise ActionRefused("The request has been approved, so its urgency can no longer change.")
         reason = " ".join(reason.split())
         if expedited and not reason:
-            raise ActionRefused("Say why the standard timeframe could seriously jeopardize the patient's life, "
-                                "health or ability to regain maximum function.", field="reason")
+            raise ActionRefused("Enter the clinical reason this cannot wait the standard time.", field="reason")
         case.urgency, case.urgency_reason = ("expedited", reason) if expedited else ("standard", None)
         self.audit.append(who.id, who.role, "case.urgency_changed", case_id,
                           {"urgency": case.urgency, "reason_sha256": sha256_of(reason) if expedited else None})
