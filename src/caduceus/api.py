@@ -27,6 +27,7 @@ from caduceus.cases import Case, Fax, StaleCase, State
 from caduceus.fhir.store import fax_image
 from caduceus.intake import FaxReadingUnavailable
 from caduceus.outcomes import outcomes
+from caduceus.policies import policies
 from caduceus.presenter import Presenter, clock, moment
 from caduceus.ratelimit import DemoLimits
 from caduceus.seed import clone_demo_services, fresh_demo_services
@@ -603,6 +604,11 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
         return {"demo": live.demo, "sections": [
             {"title": s["title"], "rows": [{"label": a, "value": b, "note": c} for a, b, c in s["rows"]]}
             for s in sections]}
+
+    @app.get("/api/policies")
+    def coverage_policies(who: Principal = Depends(role(Role.PA_SPECIALIST, Role.ADMIN, Role.AUDITOR))) -> dict:
+        wf = live.svc.workflow
+        return {"services": policies(wf.library, wf.engine.approved)}
 
     @app.get("/api/attestations")
     def my_attestations(who: Principal = Depends(role(Role.CLINICIAN))):

@@ -10,6 +10,7 @@ import { QueuePage } from "./pages/Queue";
 import { SignInPage } from "./pages/SignIn";
 import { IntakePage } from "./pages/Intake";
 import { OutcomesPage } from "./pages/Outcomes";
+import { PoliciesPage } from "./pages/Policies";
 
 export function App() {
   const [me, setMe] = useState<Me | null>(null);
@@ -66,6 +67,7 @@ export function App() {
             <Route path="/attest/:id" element={<AttestPage />} />
             <Route path="/intake/:id" element={<IntakePage />} />
             <Route path="/outcomes" element={<OutcomesPage />} />
+            <Route path="/policies" element={me.role === "clinician" ? <Navigate to="/" replace /> : <PoliciesPage />} />
             <Route path="/help" element={<HelpPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

@@ -296,6 +296,9 @@ await small.goto(base + "/cases/2026-1052");
 await small.getByText("The packet may answer this").waitFor();
 await shot(small, "11b-case-where-to-look-320px");
 await axe(small, "11b-case-where-to-look-320px");
+await small.goto(base + "/policies");
+await small.getByRole("heading", { name: "Coverage policies" }).waitFor();
+await axe(small, "11c-policies-320px");
 
 await page.goto(base + "/help");
 await axe(page, "12-help");
@@ -360,6 +363,13 @@ await page.getByRole("button", { name: "Show the history" }).click();
 await page.getByRole("button", { name: "Check that nothing was changed" }).click();
 await page.getByText(/^Intact\. All [\d,]+ events/).waitFor();
 await axe(page, "21-auditor-verifies");
+
+// The policies as anyone on the team reads them: each service's version, its source, its criteria in its words.
+await page.goto(base + "/policies");
+await page.getByRole("heading", { name: "Total knee arthroplasty" }).waitFor();
+await page.getByRole("link", { name: /^LCD L36007/ }).waitFor();
+await shot(page, "22-policies");
+await axe(page, "22-policies");
 
 await browser.close();
 console.log(JSON.stringify(report, null, 2));
