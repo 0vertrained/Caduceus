@@ -1,0 +1,780 @@
+{
+ "judge": "mistral-large-3:675b",
+ "rows": [
+  {
+   "model": "kimi-k2.6",
+   "request": "r01",
+   "task": "draft_request",
+   "text": "[NAME_1] [NAME_2] is a 72-year-old female with low back pain radiating to the left buttock for approximately 9 weeks, documented since [DATE_1]. She completed 6 weeks of physical therapy from [DATE_2] to [DATE_3] with minimal improvement in pain or function. A lumbar spine X-ray on [DATE_4], 8 weeks ago, showed degenerative disc disease at L4 to L5 with mild narrowing and no acute fracture or malalignment. The criterion regarding red-flag symptoms ruled out by the clinician is awaiting clinician attestation, as no red-flag assessment was found in the record. The remaining criteria for MRI of the lumbar spine without contrast (CPT 72148) are met.",
+   "seconds": 1.6,
+   "input_tokens": 324,
+   "output_tokens": 157,
+   "rules": {
+    "words": 104,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "2/4",
+    "pending_stated": true,
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [
+     "The remaining criteria for MRI of the lumbar spine without contrast (CPT 72148) are met"
+    ],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r02",
+   "task": "draft_request",
+   "text": "[NAME_1] [NAME_2] is a 67-year-old male with documented osteoarthritis of the knee. A knee X-ray on [DATE_1] showed medial joint-space narrowing with osteophytes, consistent with moderate to severe osteoarthritis. He completed thirteen weeks of supervised physical therapy from [DATE_2] to [DATE_3] without lasting relief. A functional limitation assessment recorded on [DATE_4] confirms right knee pain limiting walking to one block and making stairs difficult. No active joint infection is present in the record. All criteria for total knee replacement (CPT 27447) are met.",
+   "seconds": 7.2,
+   "input_tokens": 372,
+   "output_tokens": 130,
+   "rules": {
+    "words": 83,
+    "length_ok": false,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "3/5",
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [
+     "All criteria for total knee replacement (CPT 27447) are met."
+    ],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r03",
+   "task": "draft_request",
+   "text": "[NAME_1] [NAME_2] is a 74-year-old male with diagnosed obstructive sleep apnea. A sleep test performed on [DATE_1], five weeks ago, showed an apnea-hypopnea index of 9 events per hour and lowest oxygen saturation of 86 percent, meeting the severity criterion of at least 5 and below 15. Essential hypertension and ischemic heart disease are on the record. A face-to-face sleep evaluation was completed and recorded on [DATE_2], with the source documenting loud snoring and witnessed pauses in breathing reported by the patient's spouse. All criteria for HCPCS E0601 are met.",
+   "seconds": 5.8,
+   "input_tokens": 336,
+   "output_tokens": 134,
+   "rules": {
+    "words": 90,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "4/4",
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [
+     "Essential hypertension and ischemic heart disease are explicitly listed as conditions on the record, but there is no indication in the facts that these conditions are required or relevant to the CPAP device approval criteria",
+     "The paragraph implies that all criteria for HCPCS E0601 are met based on the provided facts, but the facts do not confirm whether *all* payer-specific criteria (beyond those listed) have been satisfied"
+    ],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r04",
+   "task": "draft_request",
+   "text": "[NAME_2] [NAME_1] is a 78-year-old female with low back pain documented for 12 years, since [DATE_1], exceeding the six-week duration requirement. Conservative treatment was attempted: she completed 8 weeks of physical therapy from [DATE_2] to [DATE_3] with minimal improvement in pain or function. A lumbar spine X-ray performed on [DATE_4], four weeks ago, showed degenerative disc disease at L4 to L5 with mild narrowing, with no acute fracture or malalignment. A red-flag symptom screen recorded on [DATE_5] was negative, with no saddle anesthesia, bowel or bladder change, fever, weight loss, or history of cancer. All criteria for MRI of the lumbar spine without contrast (CPT 72148) are met.",
+   "seconds": 7.4,
+   "input_tokens": 326,
+   "output_tokens": 168,
+   "rules": {
+    "words": 108,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "2/4",
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r05",
+   "task": "draft_request",
+   "text": "[NAME_2] [NAME_1] is a 58-year-old female with diagnosed obstructive sleep apnea. A sleep test was performed on [DATE_1], five weeks ago, showing an apnea-hypopnea index of 9 events per hour and lowest oxygen saturation of 86 percent. The criterion for sleep apnea severity is awaiting clinician attestation: the apnea-hypopnea index of 9 does not meet the threshold of at least 15, and while it meets the threshold of at least 5 and below 15, no daytime sleepiness assessment was found in the record, and no matching hypertension or ischemic heart disease diagnosis was found in the record. The criterion for face-to-face sleep evaluation before the test is awaiting clinician attestation, as no sleep evaluation was found in the record.",
+   "seconds": 5.9,
+   "input_tokens": 379,
+   "output_tokens": 165,
+   "rules": {
+    "words": 119,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "4/4",
+    "pending_stated": true,
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [
+     "The paragraph implies that the patient's obstructive sleep apnea diagnosis alone may qualify her for a CPAP device without explicitly stating that additional criteria (e.g., severity, daytime sleepiness, or comorbid conditions) are unmet or pending attestation.",
+     "The paragraph does not clarify that the apnea-hypopnea index of 9 does not meet the primary severity threshold of at least 15 for CPAP qualification based on the provided facts."
+    ],
+    "clarity": 4
+   }
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r06",
+   "task": "draft_request",
+   "text": "[NAME_1] [NAME_2] is an 80-year-old female with documented osteoarthritis of the knee. A knee X-ray performed on [DATE_1] demonstrated medial joint-space narrowing with osteophytes, consistent with moderate to severe osteoarthritis. The criterion regarding twelve weeks of conservative treatment is awaiting clinician attestation, as the record shows completion of only six weeks of physical therapy with no knee injection documented. The criterion regarding pain limiting daily activities is awaiting clinician attestation, as no functional assessment was found in the record. No active joint infection is present, as no such diagnosis appears in the chart.",
+   "seconds": 9.5,
+   "input_tokens": 364,
+   "output_tokens": 127,
+   "rules": {
+    "words": 93,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "5/5",
+    "pending_stated": true,
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r07",
+   "task": "draft_request",
+   "text": "[NAME_1] [NAME_2] is an 83-year-old female with diagnosed obstructive sleep apnea. A sleep test performed on [DATE_1], five weeks ago, showed an apnea-hypopnea index of 22 events per hour and lowest oxygen saturation of 86 percent, meeting the severity threshold of at least 15. A face-to-face sleep evaluation was completed and recorded on [DATE_2], with the patient's spouse reporting loud snoring and witnessed pauses in breathing. All criteria are met for HCPCS E0601 CPAP device coverage.",
+   "seconds": 8.0,
+   "input_tokens": 314,
+   "output_tokens": 117,
+   "rules": {
+    "words": 76,
+    "length_ok": false,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "4/4",
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r08",
+   "task": "draft_request",
+   "text": "[NAME_2] [NAME_1] is an 85-year-old female requesting MRI of the lumbar spine without contrast (CPT 72148). The criterion for low back pain present for at least six weeks is not met; documentation shows pain ongoing for approximately 3 weeks, whereas the policy requires at least 6 weeks. The criterion regarding conservative treatment tried first is awaiting clinician attestation, as no physical therapy was found in the record. The criterion for plain X-ray within the last 90 days is met, with a lumbar spine X-ray performed on [DATE_1] showing degenerative disc disease at L4 to L5 with mild narrowing and no acute fracture or malalignment. The criterion for red-flag symptoms ruled out by the clinician is met, with a negative screen recorded on [DATE_2] showing no saddle anesthesia, bowel or bladder change, fever, weight loss, or history of cancer.",
+   "seconds": 8.0,
+   "input_tokens": 328,
+   "output_tokens": 187,
+   "rules": {
+    "words": 138,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "4/4",
+    "pending_stated": true,
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r09",
+   "task": "draft_request",
+   "text": "[NAME_2] [NAME_1] is a 76-year-old female with unilateral primary osteoarthritis of the right knee, documented by right knee pain for several years limiting walking to one block and making stairs difficult. Knee X-ray on [DATE_1] showed medial joint-space narrowing with osteophytes, consistent with moderate to severe osteoarthritis. Conservative treatment was attempted with corticosteroid injection to the right knee on [DATE_2], providing only two weeks of relief. Functional limitation assessment on [DATE_3] confirms pain limits daily activities. However, the criterion regarding no active infection in the joint is not met, as aspiration of the right knee grew Staphylococcus aureus and septic arthritis is being treated. Clinician attestation is needed to address whether this active infection has been resolved prior to proceeding with total knee replacement.",
+   "seconds": 7.3,
+   "input_tokens": 415,
+   "output_tokens": 177,
+   "rules": {
+    "words": 124,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "5/5",
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [
+     "Clinician attestation is needed to address whether this active infection has been resolved prior to proceeding with total knee replacement"
+    ],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r10",
+   "task": "draft_request",
+   "text": "[NAME_2] [NAME_1] is an 85-year-old male requesting MRI of the lumbar spine without contrast (CPT 72148). He has documented low back pain for 12 weeks, since [DATE_1], meeting the six-week duration criterion. Conservative treatment with physical therapy for 7 weeks from [DATE_2] to [DATE_3] resulted in minimal improvement. Red-flag symptoms were ruled out, recorded [DATE_5], with negative screen for saddle anesthesia, bowel or bladder changes, fever, weight loss, and cancer history. The plain X-ray criterion is not met; the most recent lumbar spine X-ray was on [DATE_4], six months ago, whereas the policy requires imaging within 12 weeks. Whether this criterion may be satisfied by clinician attestation is pending review.",
+   "seconds": 7.7,
+   "input_tokens": 363,
+   "output_tokens": 168,
+   "rules": {
+    "words": 110,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "4/4",
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [
+     "Whether this criterion may be satisfied by clinician attestation is pending review"
+    ],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r11",
+   "task": "draft_request",
+   "text": "[NAME_1] [NAME_2] is a 60-year-old male with obstructive sleep apnea on the record. A face-to-face sleep evaluation was completed and recorded on [DATE_1], with the source noting loud snoring and witnessed pauses in breathing reported by the patient's spouse. Essential hypertension and ischemic heart disease are on the record. The criterion for a sleep test within the last year is awaiting clinician attestation, as no sleep test was found in the record. Sleep apnea severity qualification is awaiting clinician attestation, as no apnea-hypopnea index was found in the record. The requested service is a CPAP device, HCPCS E0601.",
+   "seconds": 6.6,
+   "input_tokens": 290,
+   "output_tokens": 139,
+   "rules": {
+    "words": 98,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "4/4",
+    "pending_stated": true,
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [
+     "Essential hypertension and ischemic heart disease are relevant to the diagnosis of obstructive sleep apnea or the need for a CPAP device",
+     "The patient's obstructive sleep apnea severity qualifies for a CPAP device (implied by inclusion without explicit disclaimer of missing AHI)"
+    ],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r12",
+   "task": "draft_request",
+   "text": "[NAME_1] [NAME_2] is a 72-year-old female with low back pain documented for 9 weeks since [DATE_1], meeting the duration criterion. She completed 6 weeks of physical therapy from [DATE_2] to [DATE_3] with minimal improvement in pain or function, satisfying conservative treatment requirements. A lumbar spine X-ray performed on [DATE_4], 8 weeks ago, showed degenerative disc disease at L4 to L5 with mild narrowing and no acute fracture or malalignment, fulfilling the imaging prerequisite. Red-flag symptoms have been ruled out, as attested by the ordering clinician, Dr. Ana Reyes. MRI of the lumbar spine without contrast (CPT 72148) is requested for further evaluation.",
+   "seconds": 8.7,
+   "input_tokens": 323,
+   "output_tokens": 156,
+   "rules": {
+    "words": 102,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "3/4",
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r13",
+   "task": "draft_request",
+   "text": "[NAME_2] [NAME_1] is a 58-year-old female with obstructive sleep apnea documented in the medical record. A sleep test performed on [DATE_1], five weeks ago, showed an apnea-hypopnea index of 9 events per hour and a lowest oxygen saturation of 86 percent. The ordering clinician, Dr. Priya Patel, attests that the sleep apnea severity qualifies for CPAP therapy. Dr. Priya Patel also attests that a face-to-face sleep evaluation was completed before the sleep test. All criteria for the requested CPAP device (HCPCS E0601) are met.",
+   "seconds": 7.9,
+   "input_tokens": 307,
+   "output_tokens": 129,
+   "rules": {
+    "words": 84,
+    "length_ok": false,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "4/4",
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r14",
+   "task": "draft_request",
+   "text": "[NAME_1] [NAME_2] is an 80-year-old female with documented osteoarthritis of the knee. A knee X-ray on [DATE_1] demonstrated medial joint-space narrowing with osteophytes, consistent with moderate to severe osteoarthritis. Twelve weeks of conservative treatment have been completed, as attested by Dr. Marcus Lee, the ordering clinician; the patient completed six weeks of physical therapy and stopped attending after week six. Pain limits daily activities, as attested by Dr. Marcus Lee. No active joint infection is present; the absence of this documented diagnosis satisfies this criterion. All criteria for total knee replacement (CPT 27447) are met.",
+   "seconds": 10.4,
+   "input_tokens": 348,
+   "output_tokens": 139,
+   "rules": {
+    "words": 95,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "5/5",
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [
+     "Twelve weeks of conservative treatment have been completed"
+    ],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r15",
+   "task": "draft_request",
+   "text": "[NAME_2] [NAME_1] is an 85-year-old female requesting MRI of the lumbar spine without contrast (CPT 72148). The criterion for low back pain of at least six weeks is not met; documentation shows pain ongoing for approximately 3 weeks, whereas the policy requires at least 6 weeks. Conservative treatment tried first is met, attested by Dr. Ana Reyes. Plain X-ray within the last 90 days is met, with lumbar spine X-ray on [DATE_1] showing degenerative disc disease at L4 to L5 with mild narrowing and no acute fracture or malalignment. Red-flag symptoms ruled out by the clinician is met, with negative screen recorded [DATE_2], including no saddle anesthesia, bowel or bladder change, fever, weight loss, or history of cancer.",
+   "seconds": 11.0,
+   "input_tokens": 328,
+   "output_tokens": 168,
+   "rules": {
+    "words": 118,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "4/4",
+    "misstates_criteria": false
+   },
+   "judge": {
+    "error": "unreadable verdict"
+   }
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r16",
+   "task": "draft_request",
+   "text": "[NAME_1] [NAME_2] is a 60-year-old male with diagnosed obstructive sleep apnea. A sleep test was completed within the last year, attested by Dr. Priya Patel, the ordering clinician. Sleep apnea severity qualifies for CPAP therapy, also attested by Dr. Priya Patel. A face-to-face sleep evaluation was completed and recorded on [DATE_1], with the source noting loud snoring and witnessed pauses in breathing reported by the patient's spouse. All criteria for HCPCS E0601 CPAP device are met.",
+   "seconds": 5.7,
+   "input_tokens": 259,
+   "output_tokens": 116,
+   "rules": {
+    "words": 76,
+    "length_ok": false,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "4/4",
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r17",
+   "task": "draft_appeal",
+   "text": "UnitedHealthcare denied coverage because \"The apnea-hypopnea index of 9 is below 15 events per hour, the threshold for coverage of a CPAP device.\" However, the coverage policy states: \"The apnea-hypopnea index is 15 or more, or it is between 5 and 14 with documented excessive daytime sleepiness, hypertension, ischemic heart disease, or a history of stroke.\" The record shows the apnea-hypopnea index was 9 on [DATE_1], which falls between 5 and 14. Essential hypertension is on the record. Ischemic heart disease is on the record. These documented comorbidities satisfy the policy's alternative pathway for coverage when the index is between 5 and 14. The sleep test on [DATE_1] was within the last year, and obstructive sleep apnea is diagnosed. The face-to-face sleep evaluation on [DATE_2] documented loud snoring and witnessed pauses in breathing reported by the patient's spouse. All criteria are met. The denial should be overturned.",
+   "seconds": 6.4,
+   "input_tokens": 492,
+   "output_tokens": 217,
+   "rules": {
+    "words": 147,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "4/4",
+    "misstates_criteria": false,
+    "quotes_reason": true,
+    "quotes_policy": true
+   },
+   "judge": {
+    "unsupported": [],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r01",
+   "task": "draft_request",
+   "text": "Patient [NAME_1] [NAME_2] is a 72\u2011year\u2011old female for whom an MRI of the lumbar spine without contrast (CPT 72148) is requested. She has experienced low back pain radiating to the left buttock for approximately nine weeks, documented as beginning on [DATE_1], thereby meeting the requirement of pain lasting at least six weeks. Conservative management was completed, consisting of six weeks of physical therapy from [DATE_2] to [DATE_3] with minimal improvement, satisfying the trial\u2011of\u2011conservative\u2011treatment criterion. A lumbar spine plain radiograph performed on [DATE_4] (eight weeks ago) demonstrated degenerative disc disease at L4\u2011L5 with mild narrowing and no acute fracture or malalignment, meeting the imaging prerequisite. Assessment for red\u2011flag symptoms has not been documented and is pending clinician attestation.",
+   "seconds": 2.2,
+   "input_tokens": 382,
+   "output_tokens": 933,
+   "rules": {
+    "words": 117,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "4/4",
+    "pending_stated": true,
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [
+     "Assessment for red-flag symptoms has not been documented and is pending clinician attestation (implied opinion that this is a deficiency; the facts state only that no assessment was found, not that it is pending or required for approval)"
+    ],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r02",
+   "task": "draft_request",
+   "text": "The patient, [NAME_1] [NAME_2], a 67\u2011year\u2011old male, is being considered for total knee replacement (CPT 27447). The medical record documents a diagnosis of knee osteoarthritis, and a knee radiograph performed on [DATE_1] demonstrates medial joint\u2011space narrowing with osteophytes consistent with moderate to severe osteoarthritis. The patient has completed twelve weeks of supervised physical therapy from [DATE_2] to [DATE_3] without lasting relief, satisfying the required period of conservative management. Functional limitation is documented on [DATE_4], noting right knee pain that restricts walking to one block and makes stairs difficult. There is no documented active joint infection, meeting the infection exclusion criterion. All required criteria are therefore met.",
+   "seconds": 2.1,
+   "input_tokens": 426,
+   "output_tokens": 980,
+   "rules": {
+    "words": 106,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "4/5",
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [
+     "The patient has completed twelve weeks of supervised physical therapy from [DATE_2] to [DATE_3] without lasting relief"
+    ],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r03",
+   "task": "draft_request",
+   "text": "The patient, [NAME_1] [NAME_2], a 74\u2011year\u2011old male, meets all established criteria for a CPAP device (HCPCS E0601) for obstructive sleep apnea. Obstructive sleep apnea is documented in the record, and a face\u2011to\u2011face sleep evaluation was completed on [DATE_2] with reported loud snoring and witnessed breathing pauses. A polysomnographic sleep test performed on [DATE_1], five weeks ago, demonstrated an apnea\u2011hypopnea index of 9 events per hour and a lowest oxygen saturation of 86\u202fpercent, satisfying the requirement of an AHI between 5 and 15. The test is within the required one\u2011year window. Comorbid essential hypertension and ischemic heart disease are also noted, supporting the medical necessity of CPAP therapy.",
+   "seconds": 2.1,
+   "input_tokens": 394,
+   "output_tokens": 987,
+   "rules": {
+    "words": 108,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "4/4",
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [
+     "Comorbid essential hypertension and ischemic heart disease are also noted, supporting the medical necessity of CPAP therapy"
+    ],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r04",
+   "task": "draft_request",
+   "text": "[NAME_2] [NAME_1] is a 78\u2011year\u2011old female who presents with chronic low back pain documented for 12 years, beginning on [DATE_1]. The pain has persisted for at least six weeks, meeting the duration criterion. She completed an eight\u2011week course of physical therapy from [DATE_2] to [DATE_3] with minimal improvement in pain or function, satisfying the requirement for conservative management. A lumbar spine X\u2011ray performed on [DATE_4] (four weeks ago) demonstrated degenerative disc disease at L4\u2011L5 with mild narrowing and no acute fracture or malalignment, fulfilling the imaging criterion within the past 90 days. A red\u2011flag symptom screen recorded on [DATE_5] was negative for saddle anesthesia, bowel or bladder changes, fever, weight loss, or cancer, confirming the absence of red\u2011flag findings. Therefore, an MRI of the lumbar spine without contrast (CPT 72148) is medically necessary.",
+   "seconds": 2.5,
+   "input_tokens": 384,
+   "output_tokens": 1120,
+   "rules": {
+    "words": 133,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "2/4",
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r05",
+   "task": "draft_request",
+   "text": "[NAME_2] [NAME_1] is a 58\u2011year\u2011old female for whom a CPAP device (HCPCS E0601) is being requested. The record confirms a diagnosis of obstructive sleep apnea and a polysomnography performed on [DATE_1] (5 weeks ago) showing an apnea\u2011hypopnea index of 9 events per hour and a lowest oxygen saturation of 86\u202fpercent, satisfying the requirement for a sleep test within the past year. The severity qualification, which requires an AHI of at least 5 and below 15 or at least 15, is pending clinician attestation because the documented AHI of 9 does not clearly meet the specified threshold and no daytime sleepiness, hypertension, or ischemic heart disease diagnoses are present. Additionally, a face\u2011to\u2011face sleep evaluation prior to testing is also awaiting clinician attestation.",
+   "seconds": 3.1,
+   "input_tokens": 440,
+   "output_tokens": 1457,
+   "rules": {
+    "words": 122,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "4/4",
+    "pending_stated": true,
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [
+     "satisfying the requirement for a sleep test within the past year",
+     "The severity qualification, which requires an AHI of at least 5 and below 15 or at least 15, is pending clinician attestation because the documented AHI of 9 does not clearly meet the specified threshold"
+    ],
+    "clarity": 4
+   }
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r06",
+   "task": "draft_request",
+   "text": "The patient, [NAME_1] [NAME_2], an 80\u2011year\u2011old female, meets the documented criteria for total knee replacement (CPT 27447). The medical record confirms a diagnosis of knee osteoarthritis and a knee radiograph performed on [DATE_1] (five months ago) demonstrates medial joint\u2011space narrowing with osteophytes, consistent with moderate to severe osteoarthritis. There is no documented active joint infection, satisfying the infection exclusion criterion. The record shows completion of six weeks of physical therapy; however, the policy requires twelve weeks of conservative management, and clinician attestation is pending to confirm the required duration and the absence of intra\u2011articular injection. Additionally, clinician attestation is required to verify that pain limits daily activities, as no functional assessment is documented.",
+   "seconds": 2.6,
+   "input_tokens": 418,
+   "output_tokens": 1212,
+   "rules": {
+    "words": 113,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "5/5",
+    "pending_stated": true,
+    "misstates_criteria": true
+   },
+   "judge": {
+    "unsupported": [
+     "The patient, [NAME_1] [NAME_2], an 80\u2011year\u2011old female, meets the documented criteria for total knee replacement (CPT 27447)."
+    ],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r07",
+   "task": "draft_request",
+   "text": "The patient, [NAME_1] [NAME_2], an 83\u2011year\u2011old female, is being considered for a CPAP device (HCPCS E0601) for treatment of obstructive sleep apnea. Obstructive sleep apnea is documented in the medical record, and a diagnostic sleep study performed on [DATE_1]\u2014five weeks ago\u2014demonstrated an apnea\u2011hypopnea index of 22 events per hour with a lowest oxygen saturation of 86 percent, satisfying the severity threshold of \u226515 events per hour. A face\u2011to\u2011face sleep evaluation was completed on [DATE_2], during which the patient\u2019s spouse reported loud snoring and witnessed breathing pauses. All required criteria for CPAP coverage are met.",
+   "seconds": 2.4,
+   "input_tokens": 373,
+   "output_tokens": 931,
+   "rules": {
+    "words": 94,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "4/4",
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r08",
+   "task": "draft_request",
+   "text": "The patient, [NAME_2] [NAME_1], an 85\u2011year\u2011old female, is being considered for an MRI of the lumbar spine without contrast (CPT 72148). The policy requires low back pain of at least six weeks; the record documents pain radiating to the left buttock for approximately three weeks, which does not satisfy the duration criterion. The requirement for a trial of conservative therapy is pending clinician attestation; no physical therapy documentation is present in the chart. A plain lumbar spine X\u2011ray performed on [DATE_1] (10 days ago) meets the imaging criterion, showing degenerative disc disease at L4\u2011L5 with mild narrowing and no acute fracture or malalignment. Red\u2011flag symptoms have been ruled out, with a negative screen recorded on [DATE_2].",
+   "seconds": 2.6,
+   "input_tokens": 386,
+   "output_tokens": 1108,
+   "rules": {
+    "words": 116,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "3/4",
+    "pending_stated": true,
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [
+     "The record documents pain radiating to the left buttock for approximately three weeks, which does not satisfy the duration criterion (implied claim that the 3-week duration is insufficient; this is supported by the facts but framed as a conclusion rather than a direct fact)",
+     "The requirement for a trial of conservative therapy is pending clinician attestation (implied claim that this requirement is not met; the facts state it is 'awaiting clinician attestation,' not definitively unmet)"
+    ],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r09",
+   "task": "draft_request",
+   "text": "The patient, [NAME_2] [NAME_1], a 76\u2011year\u2011old female, has documented unilateral primary osteoarthritis of the right knee, with chronic pain limiting walking to one block and making stairs difficult. Radiographic evaluation on [DATE_1] demonstrated medial joint\u2011space narrowing with osteophytes consistent with moderate to severe osteoarthritis. She has completed twelve weeks of conservative management, including a corticosteroid injection to the right knee on [DATE_2] that provided only two weeks of relief. Functional limitation was confirmed on [DATE_3]. However, an active joint infection is present; aspiration of the right knee grew Staphylococcus aureus and septic arthritis is being treated, so the \u201cno active infection\u201d criterion is not met. No criteria are awaiting clinician attestation.",
+   "seconds": 1.7,
+   "input_tokens": 466,
+   "output_tokens": 649,
+   "rules": {
+    "words": 111,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "4/5",
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [
+     "She has completed twelve weeks of conservative management, including a corticosteroid injection to the right knee on [DATE_2] that provided only two weeks of relief"
+    ],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r10",
+   "task": "draft_request",
+   "text": "The patient, [NAME_2] [NAME_1], an 85\u2011year\u2011old male, has had low back pain for at least six weeks, documented for 12 weeks since [DATE_1], with radiation to the left buttock. He has completed a trial of conservative therapy, undergoing physical therapy from [DATE_2] to [DATE_3] for seven weeks with minimal improvement. Red\u2011flag symptoms have been ruled out, with a negative screen recorded on [DATE_5]. The policy also requires a plain lumbar spine X\u2011ray within the prior 12 weeks; the most recent study was performed on [DATE_4], six months ago, and therefore does not satisfy this requirement. Accordingly, the MRI of the lumbar spine without contrast (CPT 72148) is requested to further evaluate the persistent symptoms.",
+   "seconds": 2.4,
+   "input_tokens": 421,
+   "output_tokens": 1086,
+   "rules": {
+    "words": 114,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "3/4",
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [
+     "The MRI of the lumbar spine without contrast (CPT 72148) is requested to further evaluate the persistent symptoms"
+    ],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r11",
+   "task": "draft_request",
+   "text": "Patient [NAME_1] [NAME_2] is a 60\u2011year\u2011old male for whom a CPAP device (HCPCS E0601) is requested. The medical record confirms a diagnosis of obstructive sleep apnea and documents a face\u2011to\u2011face sleep evaluation completed on [DATE_1] after the patient\u2019s spouse reported loud snoring and witnessed breathing pauses. Essential hypertension and ischemic heart disease are also noted in the record. The criteria requiring a sleep study performed within the past year and documentation of apnea\u2011hypopnea index severity are currently awaiting clinician attestation, as no sleep test or apnea\u2011hypopnea index value is present in the record. All other required criteria are satisfied.",
+   "seconds": 3.4,
+   "input_tokens": 347,
+   "output_tokens": 1597,
+   "rules": {
+    "words": 99,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "4/4",
+    "pending_stated": true,
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [
+     "documents a face-to-face sleep evaluation completed on [DATE_1] *after* the patient\u2019s spouse reported loud snoring and witnessed breathing pauses",
+     "The criteria requiring a sleep study performed within the past year and documentation of apnea-hypopnea index severity are currently awaiting clinician attestation, *as no sleep test or apnea-hypopnea index value is present in the record* (redundant repetition of 'no apnea-hypopnea index was found in the record')",
+     "All other required criteria are satisfied"
+    ],
+    "clarity": 4
+   }
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r12",
+   "task": "draft_request",
+   "text": "Patient [NAME_1] [NAME_2] is a 72\u2011year\u2011old female for whom lumbar spine magnetic resonance imaging without contrast (CPT 72148) is requested. She has experienced low back pain radiating to the left buttock for approximately nine weeks, documented as ongoing since [DATE_1], thereby satisfying the requirement of pain persisting at least six weeks. Conservative management has been attempted, with six weeks of physical therapy completed from [DATE_2] to [DATE_3] and only minimal improvement in pain or function. A lumbar spine plain radiograph performed on [DATE_4] (eight weeks ago) demonstrated degenerative disc disease at L4\u2011L5 with mild narrowing and no acute fracture, meeting the imaging criterion within the prior 90 days. Red\u2011flag symptoms have been explicitly ruled out and attested by the ordering clinician, Dr. Ana Reyes.",
+   "seconds": 2.9,
+   "input_tokens": 380,
+   "output_tokens": 972,
+   "rules": {
+    "words": 124,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "3/4",
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r13",
+   "task": "draft_request",
+   "text": "The patient, [NAME_2] [NAME_1], a 58\u2011year\u2011old female, has a documented diagnosis of obstructive sleep apnea. A polysomnographic study performed on [DATE_1], five weeks ago, demonstrated an apnea\u2011hypopnea index of 9 events per hour and a lowest oxygen saturation of 86\u202fpercent, satisfying the requirement for a sleep test within the past year. The severity of the disorder meets the threshold for CPAP therapy, as confirmed by the ordering clinician, Dr. Priya Patel, who also attested that a face\u2011to\u2011face sleep evaluation was completed prior to testing. All required criteria are therefore met, supporting the medical necessity of a CPAP device (HCPCS E0601) for this patient.",
+   "seconds": 2.3,
+   "input_tokens": 367,
+   "output_tokens": 812,
+   "rules": {
+    "words": 104,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "4/4",
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r14",
+   "task": "draft_request",
+   "text": "The patient, [NAME_1] [NAME_2], an 80\u2011year\u2011old female, is being considered for total knee replacement (CPT 27447). The medical record documents a diagnosis of knee osteoarthritis, satisfying the first criterion. A knee radiograph performed on [DATE_1] demonstrates medial joint\u2011space narrowing with osteophytes, consistent with moderate to severe osteoarthritis, meeting the imaging requirement. Twelve weeks of conservative management have been completed, as attested by the ordering clinician, Dr. Marcus Lee, including six weeks of physical therapy before the patient discontinued. Dr. Lee also attests that the patient\u2019s pain limits daily activities, fulfilling the functional limitation criterion. There is no documented active joint infection, satisfying the infection exclusion criterion.",
+   "seconds": 2.6,
+   "input_tokens": 402,
+   "output_tokens": 984,
+   "rules": {
+    "words": 106,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "5/5",
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [
+     "Twelve weeks of conservative management have been completed, as attested by the ordering clinician, Dr. Marcus Lee, including six weeks of physical therapy before the patient discontinued"
+    ],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r15",
+   "task": "draft_request",
+   "text": "The patient, [NAME_2] [NAME_1], an 85\u2011year\u2011old female, presents with low back pain radiating to the left buttock that has been present for approximately three weeks, which does not satisfy the policy\u2019s six\u2011week minimum duration requirement. Conservative management has been initiated and documented as completed, with attestation by the ordering clinician, Dr. Ana Reyes. A plain lumbar spine radiograph performed on [DATE_1] (10 days ago) demonstrated degenerative disc disease at L4\u2011L5 with mild narrowing and no acute fracture or malalignment, fulfilling the imaging prerequisite. A red\u2011flag symptom screen performed on [DATE_2] was negative for saddle anesthesia, bowel or bladder changes, fever, weight loss, or cancer history, meeting the safety criterion. Accordingly, an MRI of the lumbar spine without contrast (CPT 72148) is requested to further evaluate the underlying pathology.",
+   "seconds": 3.5,
+   "input_tokens": 386,
+   "output_tokens": 1328,
+   "rules": {
+    "words": 128,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "3/4",
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [
+     "Conservative management has been initiated and documented as completed",
+     "Accordingly, an MRI of the lumbar spine without contrast (CPT 72148) is requested to further evaluate the underlying pathology"
+    ],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r16",
+   "task": "draft_request",
+   "text": "The patient, [NAME_1] [NAME_2], a 60\u2011year\u2011old male, has a documented diagnosis of obstructive sleep apnea and meets all required criteria for a continuous positive airway pressure (CPAP) device (HCPCS E0601). A sleep study performed within the past year was completed and is attested by the ordering clinician, Dr. Priya Patel, confirming that the severity of the apnea meets the threshold for therapy. Additionally, a face\u2011to\u2011face sleep evaluation was performed on [DATE_1], during which the patient\u2019s spouse reported loud snoring and witnessed pauses in breathing, satisfying the requirement for an in\u2011person assessment prior to testing. All criteria are therefore satisfied, supporting authorization of the CPAP device.",
+   "seconds": 2.7,
+   "input_tokens": 315,
+   "output_tokens": 1089,
+   "rules": {
+    "words": 105,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "4/4",
+    "misstates_criteria": false
+   },
+   "judge": {
+    "unsupported": [],
+    "clarity": 5
+   }
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r17",
+   "task": "draft_appeal",
+   "text": "The prior\u2011authorization denial states: \u201cThe apnea\u2011hypopnea index of 9 is below 15 events per hour, the threshold for coverage of a CPAP device.\u201d UnitedHealthcare Medicare Advantage policy further requires: \u201cThe apnea\u2011hypopnea index is 15 or more, or it is between 5 and 14 with documented excessive daytime sleepiness, hypertension, ischemic heart disease, or a history of stroke.\u201d In this case, the sleep study performed on [DATE_1] documented an apnea\u2011hypopnea index of 9 events per hour, which falls within the 5\u201114 range. The medical record also includes essential hypertension and ischemic heart disease, both of which satisfy the \u201chypertension, ischemic heart disease\u201d component of the policy. A face\u2011to\u2011face sleep evaluation was completed on [DATE_2] confirming obstructive sleep apnea. All required criteria\u2014diagnosis, recent sleep test, severity range, and comorbid conditions\u2014are met, therefore the CPAP device is medically necessary and should be covered.",
+   "seconds": 3.8,
+   "input_tokens": 551,
+   "output_tokens": 1557,
+   "rules": {
+    "words": 140,
+    "length_ok": true,
+    "invented_placeholders": [],
+    "invented_numbers": [],
+    "criteria_mentioned": "4/4",
+    "misstates_criteria": false,
+    "quotes_reason": true,
+    "quotes_policy": true
+   },
+   "judge": {
+    "unsupported": [
+     "A face-to-face sleep evaluation was completed on [DATE_2] confirming obstructive sleep apnea"
+    ],
+    "clarity": 5
+   }
+  }
+ ]
+}
