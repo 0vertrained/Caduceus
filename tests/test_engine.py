@@ -234,3 +234,30 @@ def test_the_newest_approved_set_is_active_and_the_old_one_stays_loadable():
     library = {old.key: old, new.key: new}
     assert active(library, {old.key: old.content_sha256(), new.key: new.content_sha256()})["27447"].key == new.key
     assert active(library, {old.key: old.content_sha256()})["27447"].key == old.key  # new one not approved yet
+
+
+def _rule_set(rule):
+    from caduceus.criteria.dsl import CriteriaSet as CS
+    return CS.model_validate({
+        "id": "t-rule", "version": "1", "title": "t", "status": "approved", "approved_by": "r",
+        "approved_at": "2026-10-01", "source": {"kind": "development-paraphrase", "title": "t"},
+        "service_codes": [{"system": "cpt", "code": "27447"}],
+        "criteria": [{"id": "rule_under_test", "text": "t", "kind": "prior_treatment", "policy_sentence": "s",
+                      "rule": rule}]})
+
+
+def test_a_course_shorter_than_usual_asks_the_clinician_instead_of_failing():
+    s = _rule_set({"type": "procedure", "label": "physical therapy", "min_span_days": 84, "below_minimum": "unknown",
+                   "codes": [{"system": "cpt", "code": "97110"}]})
+    pt = {"resourceType": "Procedure", "status": "completed", "performedPeriod": {"start": "2026-07-01",
+                                                                                 "end": "2026-08-12"},
+          "code": {"coding": [{"system": "http://www.ama-assn.org/go/cpt", "code": "97110"}]}}
+    result = Engine({s.key: s.content_sha256()}).evaluate(s, _knee_record(pt), date(2026, 10, 28)).results[0]
+    assert result.status == Status.UNKNOWN and "reasonable attempt" in result.explanation
+
+
+@pytest.mark.parametrize(("born", "expected"), [("1950-01-01", Status.MET), ("2010-01-01", Status.UNMET)])
+def test_an_age_rule_reads_the_date_of_birth(born, expected):
+    s = _rule_set({"type": "age", "min_years": 18})
+    record = PatientRecord(patient={"resourceType": "Patient", "id": "p", "birthDate": born})
+    assert Engine({s.key: s.content_sha256()}).evaluate(s, record, date(2026, 10, 28)).results[0].status == expected

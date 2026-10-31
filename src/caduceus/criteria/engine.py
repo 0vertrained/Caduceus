@@ -11,6 +11,7 @@ from dataclasses import asdict, dataclass, field
 from datetime import date
 
 from caduceus.criteria.dsl import (
+    AgeRule,
     AllOf,
     AnyOf,
     Code,
@@ -181,6 +182,8 @@ class Engine:
             return self._procedure(rule, record, as_of)
         if isinstance(rule, ObservationRule):
             return self._observation(rule, record, as_of)
+        if isinstance(rule, AgeRule):
+            return self._age(rule, record, as_of)
         if isinstance(rule, AnyOf):
             return self._any_of(rule, record, as_of, side)
         if isinstance(rule, AllOf):
@@ -280,6 +283,12 @@ class Engine:
             )
         if rule.min_span_days is not None:
             span = (last - first).days
+            if span < rule.min_span_days and rule.below_minimum == "unknown":
+                return RuleOutcome(
+                    Status.UNKNOWN,
+                    f"{_cap(rule.label)} covers {_span(span)}; the policy says it usually lasts at least "
+                    f"{_span(rule.min_span_days)}, so the clinician confirms whether that was a reasonable attempt.",
+                    evidence)
             if span < rule.min_span_days:
                 return RuleOutcome(
                     Status.UNMET,
@@ -352,6 +361,18 @@ class Engine:
         return RuleOutcome(Status.UNMET, f"The {rule.label} on record is dated {_when(when)}, after "
                            f"{rule.before_label} on {_when(test)}; the policy requires it before.",
                            [_evidence(first, when)])
+
+    @staticmethod
+    def _age(rule: AgeRule, record: PatientRecord, as_of: date) -> RuleOutcome:
+        born = record.patient.get("birthDate")
+        if not born:
+            return RuleOutcome(Status.UNKNOWN, "The record has no date of birth.")
+        b = date.fromisoformat(born[:10])
+        years = as_of.year - b.year - ((as_of.month, as_of.day) < (b.month, b.day))
+        if years >= rule.min_years:
+            return RuleOutcome(Status.MET, f"The patient is {years}.")
+        return RuleOutcome(Status.UNMET, f"The patient is {years}; the policy covers patients {rule.min_years} and "
+                           "older.")
 
     def _any_of(self, rule: AnyOf, record: PatientRecord, as_of: date, side: str | None = None) -> RuleOutcome:
         outcomes = [self._rule(r, record, as_of, side) for r in rule.rules]
