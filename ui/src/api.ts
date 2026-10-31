@@ -246,6 +246,8 @@ export interface FaxField {
 export interface FormField {
   key: string; label: string; kind: "text" | "select" | "date"; read_as: string; initial: string;
   problem: string | null; confidence: number; box: [number, number, number, number] | null; at_clinic?: string[];
+  /** A list of its own (the side), and the services it applies to; without them, a field always applies. */
+  options?: { value: string; label: string }[]; for_services?: string[];
 }
 export interface FaxChoices {
   payers: string[];

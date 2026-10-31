@@ -12,7 +12,8 @@ const PARTS = [["month", "Month"], ["day", "Day"], ["year", "Year"]] as const;
 /** Each field's name for use mid-sentence. */
 const NAMED: Record<string, string> = {
   referral: "referral number", patient_name: "patient’s name", birth_date: "date of birth", member_id: "member ID",
-  payer: "health plan", clinician: "ordering clinician", service_code: "requested service", diagnosis: "diagnosis",
+  payer: "health plan", clinician: "ordering clinician", service_code: "requested service", side: "side",
+  diagnosis: "diagnosis",
 };
 
 /** "a", "a and b", "a, b and c" */
@@ -59,6 +60,7 @@ function formatProblem(f: FormField, value: string, dob: Parts): [string, string
     case "payer": return value ? null : ["Choose the health plan", here];
     case "clinician": return value ? null : ["Choose the ordering clinician", here];
     case "service_code": return value ? null : ["Choose the requested service", here];
+    case "side": return value ? null : ["Choose the side the request is for", here];
     case "diagnosis": return /^[A-Z]\d{2}\.\d+ \S/.test(value) ? null
       : ["Enter the diagnosis starting with its ICD-10 code, like M54.50 Low back pain", here];
     default: return null;
@@ -86,7 +88,9 @@ function Choice({ f, choices, value, onChange, describedBy, invalid, clinic }: {
   const atClinic = f.at_clinic ?? [];
   const narrowed = f.key === "clinician" && atClinic.length > 0 && !every && (!value || atClinic.includes(value));
   let options: ReactNode;
-  if (f.key === "payer") {
+  if (f.options) {
+    options = f.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>);
+  } else if (f.key === "payer") {
     options = choices.payers.map((p) => <option key={p} value={p}>{p}</option>);
   } else if (f.key === "service_code") {
     options = choices.services.map((s) => <option key={s.code} value={s.code}>{s.label}</option>);
@@ -102,7 +106,8 @@ function Choice({ f, choices, value, onChange, describedBy, invalid, clinic }: {
       </optgroup>
     ));
   }
-  const placeholder = { payer: "Choose a health plan", clinician: "Choose a clinician", service_code: "Choose a service" }[f.key];
+  const placeholder = { payer: "Choose a health plan", clinician: "Choose a clinician", service_code: "Choose a service",
+                        side: "Choose a side" }[f.key];
   return (
     <>
       <select id={`fax-${f.key}`} className="input select" value={value} aria-describedby={describedBy}
@@ -272,7 +277,9 @@ export function IntakePage() {
   const valueOf = (f: FormField) => (f.kind === "date" ? joined(dob) : values[f.key] ?? "");
   const changed = (f: FormField) => valueOf(f) !== f.initial;
   const isChecked = (f: FormField) => ticked.has(f.key) || changed(f);
-  const flagged = data.form.filter((f) => f.problem);
+  // A field for some services only (the side, for a knee replacement) applies once one of them is chosen.
+  const form = data.form.filter((f) => !f.for_services || f.for_services.includes(values.service_code ?? ""));
+  const flagged = form.filter((f) => f.problem);
   const done = flagged.filter(isChecked).length;
   const chart = match?.patient ?? null;
   const exact = chart !== null && sameName(values.patient_name ?? "", chart.name) && joined(dob) === chart.birth_date;
@@ -285,7 +292,7 @@ export function IntakePage() {
       const them = missing.size === 1 ? "it" : "them";
       found.push({ key: "missing", target: "ask-clinic", message: `You marked ${missing.size === 1 ? "a field" : `${missing.size} fields`} as not on the fax. Ask the clinic for ${them}, or say ${them === "it" ? "it is" : "they are"} on the fax` });
     }
-    for (const f of data.form) {
+    for (const f of form) {
       if (missing.has(f.key)) continue;
       const p = formatProblem(f, valueOf(f), dob);
       if (p) found.push({ key: f.key, message: p[0], target: p[1] });
@@ -312,7 +319,7 @@ export function IntakePage() {
     if (found.length) return;
     setBusy(true);
     try {
-      const body = { values: Object.fromEntries(data.form.map((f) => [f.key, valueOf(f)])),
+      const body = { values: Object.fromEntries(form.map((f) => [f.key, valueOf(f)])),
                      checked: flagged.filter((f) => ticked.has(f.key)).map((f) => f.key) };
       const made = await api<{ case_id: string }>(`/api/intake/${data.id}/confirm`, { method: "POST", body: JSON.stringify(body) });
       navigate(`/cases/${made.case_id}`);
@@ -412,14 +419,15 @@ export function IntakePage() {
           {flagged.length > 0 && (
             <p className="intake__counter" role="status"><CheckCircle size={20} />{done} of {flagged.length} checked</p>
           )}
-          {data.form.map((f) => {
+          {form.map((f) => {
             const err = errorFor(f.key);
             const errId = `err-${f.key}`;
             const describedBy = [`why-${f.key}`, err && err.target !== `tick-${f.key}` ? errId : ""].filter(Boolean).join(" ");
             const invalid = Boolean(err && err.target !== `tick-${f.key}`);
             // The line it was read from, or the whole page when the line could not be found at all.
-            const crop = f.box ? <Crop src={image} size={data.size} box={f.box} label={NAMED[f.key]} />
-              : <WholePage src={image} label={NAMED[f.key]} />;
+            const named = NAMED[f.key === "side" ? "diagnosis" : f.key];  // the side is read from the diagnosis
+            const crop = f.box ? <Crop src={image} size={data.size} box={f.box} label={named} />
+              : <WholePage src={image} label={named} />;
             const memberId = values.member_id ?? "";
             const absent = missing.has(f.key);
             return (
