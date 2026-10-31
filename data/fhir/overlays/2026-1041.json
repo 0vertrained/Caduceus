@@ -78,6 +78,55 @@
    }
   },
   {
+   "fullUrl": "urn:uuid:cc783366-ec24-5109-bad1-a5dcb1ee35d6",
+   "resource": {
+    "resourceType": "Condition",
+    "id": "cc783366-ec24-5109-bad1-a5dcb1ee35d6",
+    "subject": {
+     "reference": "Patient/06988162-b264-f4b9-8b74-b11050dc5d9a"
+    },
+    "clinicalStatus": {
+     "coding": [
+      {
+       "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+       "code": "active",
+       "display": "active"
+      }
+     ],
+     "text": "active"
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://hl7.org/fhir/sid/icd-10-cm",
+       "code": "M17.11",
+       "display": "Unilateral primary osteoarthritis, right knee"
+      }
+     ],
+     "text": "Unilateral primary osteoarthritis, right knee"
+    },
+    "onsetDateTime": "2024-05-11",
+    "recordedDate": "2024-05-11",
+    "extension": [
+     {
+      "url": "http://mesaverde.example/fhir/StructureDefinition/source-sentence",
+      "extension": [
+       {
+        "url": "document",
+        "valueReference": {
+         "reference": "DocumentReference/ec147f13-7ed0-5814-9e93-5943ae8ed256"
+        }
+       },
+       {
+        "url": "sentence",
+        "valueString": "Right knee pain for several years, now limiting walking to one block and making stairs difficult."
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
    "fullUrl": "urn:uuid:63715bff-666a-5829-bee1-ac3fe970944e",
    "resource": {
     "resourceType": "DocumentReference",
