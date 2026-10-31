@@ -7,6 +7,9 @@ Approval puts the submission in an outbox for the 30-second undo window; only th
 When the payer pends a request and asks for documentation, the same pattern repeats: the PA specialist asks the
 ordering clinician, the clinician writes and signs the note themselves (or says they cannot document it), the
 specialist approves the reply, and the agent sends it after the undo window.
+
+A case can also start from inside an EHR: a SMART launch reads the patient's record (caduceus.smart), the record is
+filed here, and the person who launched it names the service. From then on it is prepared like any other case.
 """
 
 from __future__ import annotations
@@ -20,13 +23,15 @@ from typing import Any
 
 from caduceus.audit.log import sha256_of
 from caduceus.auth import AGENT, Principal, Role
-from caduceus.cases import Attestation, Case, Fax, LastAction, State
+from caduceus.cases import Attestation, Case, EhrRecordRepository, Fax, LastAction, State, new_ehr_key
 from caduceus.criteria.dsl import CriteriaSet
 from caduceus.criteria.engine import Engine
-from caduceus.drafting import Drafter, mid_sentence, patient_name
+from caduceus.drafting import Drafter, age_on, mid_sentence, patient_context, patient_name
+from caduceus.fhir.record import PatientRecord
 from caduceus.fhir.store import FhirStore
 from caduceus.intake import FORM, LABELS, check, clinic_request, cover_sheet, form, iso_date, read_fax, unchecked
 from caduceus.payer import MockPayer, build_appeal_bundle, build_reply_bundle, build_request_bundle
+from caduceus.smart import LaunchRefused, Read
 from caduceus.storage import AuditStore, CaseStore, DocumentStore, FaxStore
 from caduceus.tools import ToolGateway, build_gateway
 from caduceus.words import clock, long_date, moment
@@ -37,6 +42,8 @@ SNAPSHOT_FIELDS = ("state", "attestation_requested", "attestation_requested_at",
                    "attestations", "returned_reason", "submission", "payer_response", "draft", "reply", "appeal")
 APPROVALS = ("case.approved", "reply.approved", "appeal.approved")  # what puts something in the outbox
 REMIND_EVERY = timedelta(minutes=10)  # the most often a clinician is reminded about one case
+SIDE_PART = {"27447": "knee"}  # the part a sided service is for, to ask "which knee?" in words
+EHR_CASE_DUE = timedelta(hours=72)  # a request started from the EHR, like a faxed referral, is due in three days
 
 
 class ActionRefused(Exception):
@@ -53,11 +60,12 @@ class Workflow:
                  engine: Engine, drafter: Drafter, payer: MockPayer,
                  clock: Callable[[], datetime] = lambda: datetime.now(UTC), faxes: FaxStore | None = None,
                  catalog: dict[str, Any] | None = None, fax_dir: Path | None = None, tz: tzinfo = UTC,
-                 filed: DocumentStore | None = None):
+                 filed: DocumentStore | None = None, launched: EhrRecordRepository | None = None):
         self.cases, self.audit, self.store, self.library = cases, audit, store, library
         self.engine, self.drafter, self.payer, self.now = engine, drafter, payer, clock
         self.faxes, self.fax_dir = faxes, fax_dir
         self.filed = filed  # documents Caduceus files itself; the store finds them by id (WithFiledDocuments)
+        self.launched = launched  # records an EHR shared by SMART launch; the store finds them (WithEhrRecords)
         self.tz = tz  # the clinic's time zone, for times a refusal or a request to a clinic gives in words
         # What a referral may name: the services this team handles, the payers, the ordering clinicians on file.
         self.catalog = catalog or {"services": {}, "clinicians": {}, "clinics": {}, "payers": set()}
@@ -479,6 +487,103 @@ class Workflow:
         if self.fax_dir is None or not re.fullmatch(r"FAX-\d{4}\.png", fax_file):
             raise ActionRefused("There is no such fax.")
         return read_fax(self.fax_dir / fax_file)
+
+    # Records from an EHR -------------------------------------------------------------------------------------
+
+    def in_use(self) -> dict[str, CriteriaSet]:
+        """The criteria sets the team's services are checked against: what a record from an EHR is read for. A
+        draft in the policies folder is not one of them."""
+        keys = {s["criteria_set"] for s in self.catalog["services"].values()}
+        return {k: v for k, v in self.library.items() if k in keys}
+
+    def file_ehr_record(self, who: Principal, read: Read, keep: int | None = None) -> str:
+        """File the record a SMART launch read, for the person who launched it, and return its key. The same patient
+        from the same EHR replaces their earlier record. `keep` caps how many patients one copy holds (the demo's
+        copies), letting go first of the oldest that no case uses. The record must be one the engine, the drafter
+        and the screens can read, or nothing is filed."""
+        self._require(who, Role.PA_SPECIALIST)
+        if self.launched is None:
+            raise ActionRefused("This system does not keep records from an EHR.")
+        as_of = date.fromisoformat(read.as_of)
+        try:
+            record = PatientRecord(read.patient, list(read.resources))
+            for criteria in self.in_use().values():
+                self.engine.evaluate(criteria, record, as_of)
+            patient_name(read.patient), age_on(read.patient, as_of), patient_context(read.patient)
+        except (AttributeError, IndexError, KeyError, TypeError, ValueError) as e:
+            raise LaunchRefused("bad_response", step="record", error=type(e).__name__) from e
+        key = self.launched.find(read.match)
+        if key is None:
+            kept = self.launched.keys()
+            if keep is not None and len(kept) >= keep:
+                used = {c.patient_id for c in self.cases.all()}
+                spare = [k for k in kept if k not in used]
+                if not spare:
+                    raise ActionRefused(f"This copy of the demo already holds {keep} patients opened from an EHR, "
+                                        "each with a case. Start over to open another.")
+                self.launched.delete(spare[0])
+            key = new_ehr_key()
+        self.launched.save(key, read.match, {
+            "key": key, "iss": read.iss, "read_at": self.now().isoformat(), "read_by": who.id, "as_of": read.as_of,
+            "patient": read.patient, "resources": read.resources, "notes": read.notes, "counts": read.counts,
+            "not_shared": read.not_shared, "windows": read.windows})
+        self.audit.append(who.id, who.role, "ehr.record_read", key, read.audit)
+        return key
+
+    def ehr_preview(self, key: str) -> list[dict[str, Any]]:
+        """For each service this team handles: how many of its approved criteria the record answers today, before
+        any case exists. The same engine and the same criteria the case would be checked against."""
+        record = self.store.record(key)
+        as_of = self.now().astimezone(self.tz).date()
+        out = []
+        for code, service in sorted(self.catalog["services"].items(), key=lambda kv: kv[1]["short"]):
+            counts = self.engine.evaluate(self.library[service["criteria_set"]], record, as_of).counts
+            clinician = self.catalog.get("ordering", {}).get(code)
+            out.append({"code": code, "label": service["short"], "display": service["display"],
+                        "total": sum(counts.values()), "met": counts["met"], "unmet": counts["unmet"],
+                        "unknown": counts["unknown"], "clinician": clinician["name"] if clinician else None,
+                        "side": SIDE_PART.get(code, "side") if service.get("needs_side") else None})
+        return out
+
+    def open_from_ehr(self, who: Principal, key: str, service_code: str, side: str | None, payer: str) -> Case:
+        """Start a request from a record an EHR shared. The person names the service, the knee for a knee
+        replacement, and the health plan: the launch reads the clinical record, not the coverage. The ordering
+        clinician is the one on this team for the service, and confirms what the record does not answer. From here
+        the case is prepared like any other: the same engine, attestation, drafting and audit."""
+        self._require(who, Role.PA_SPECIALIST)
+        data = self.launched.get(key) if self.launched else None
+        if data is None:
+            raise ActionRefused("That record from the EHR is no longer here. Open Caduceus from the EHR again.")
+        service = self.catalog["services"].get(service_code)
+        if service is None:
+            raise ActionRefused("Choose what is being requested.", field="service")
+        sided = bool(service.get("needs_side"))  # its criteria check the diagnosis is on the requested side
+        if sided and side not in ("left", "right"):
+            raise ActionRefused(f"Choose which {SIDE_PART.get(service_code, 'side')} the request is for.",
+                                field="side")
+        if payer not in self.catalog["payers"]:
+            raise ActionRefused("Choose the health plan.", field="payer")
+        side = side if sided else None
+        same = next((c for c in sorted(self.cases.all(), key=lambda c: c.id) if c.patient_id == key
+                     and c.service["code"] == service_code and c.side == side
+                     and c.state != State.APPROVED), None)
+        if same is not None:
+            raise ActionRefused(f"Case {same.id} is already open for this patient and this service, so this would "
+                                "be a second request. Open that case instead.", field="service", case_id=same.id)
+        named = {k: service[k] for k in ("system", "code", "display", "short")}
+        now = self.now()
+        numbers = [int(c.id[4:]) for c in self.cases.all() if re.fullmatch(r"EHR-\d{4}", c.id)]
+        case = Case(id=f"EHR-{max(numbers, default=0) + 1:04d}", patient_id=key, service=named,
+                    criteria_set=service["criteria_set"], side=side, as_of=now.astimezone(self.tz).date().isoformat(),
+                    payer={"name": payer, "member_id_last4": ""},  # the launch reads no coverage, so no member ID
+                    ordering_clinician=self.catalog["ordering"][service_code],
+                    packet=[f"{key}-{n}" for n in range(1, len(data["notes"]) + 1)], received_at=now,
+                    due_at=now + EHR_CASE_DUE)
+        self.cases.save(case)
+        self.audit.append(who.id, who.role, "case.received", case.id,
+                          {"service": service_code, "pages": len(case.packet), "source": "smart_launch",
+                           "iss": data["iss"], "record": key} | ({"side": side} if side else {}))
+        return self.prepare(case.id)
 
     def _draft_appeal(self, case_id: str) -> None:
         """After a denial the agent drafts the appeal from the payer's reason, the policy and the record."""

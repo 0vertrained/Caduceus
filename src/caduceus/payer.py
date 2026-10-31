@@ -52,6 +52,19 @@ def priority(case: Case) -> dict[str, Any]:
                         "code": "stat" if case.urgency == "expedited" else "normal"}]}
 
 
+def service_item(case: Case) -> dict[str, Any]:
+    """The requested service as the claim's one item. A service for one side of the body (a knee replacement) names
+    it with the HCPCS level II modifier, LT or RT, as payers expect it."""
+    item: dict[str, Any] = {"sequence": 1, "productOrService": {"coding": [{
+        "system": SERVICE_SYSTEMS[case.service["system"]], "code": case.service["code"],
+        "display": case.service["display"]}]}}
+    side = case.side
+    if side in ("left", "right"):
+        item["modifier"] = [{"coding": [{"system": SERVICE_SYSTEMS["hcpcs"], "code": side[0].upper() + "T",
+                                         "display": f"{side.capitalize()} side"}]}]
+    return item
+
+
 def build_request_bundle(case: Case) -> dict[str, Any]:
     claim_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"caduceus/claim/{case.id}"))
     results = case.effective_results()
@@ -77,9 +90,7 @@ def build_request_bundle(case: Case) -> dict[str, Any]:
                 for i, r in enumerate(results, start=1)] + [
                 {"sequence": len(results) + 1, "category": {"text": "Documentation questionnaire"},
                  "valueReference": {"reference": f"QuestionnaireResponse/{qr['id']}"}}],
-            "item": [{"sequence": 1, "productOrService": {"coding": [{
-                "system": SERVICE_SYSTEMS[case.service["system"]], "code": case.service["code"],
-                "display": case.service["display"]}]}}],
+            "item": [service_item(case)],
         }}, {"fullUrl": f"urn:uuid:{uuid.uuid5(uuid.NAMESPACE_URL, qr['id'])}", "resource": qr}],
     }
 
@@ -131,9 +142,7 @@ def build_reply_bundle(case: Case) -> dict[str, Any]:
                 "valueAttachment": {"contentType": "text/plain; charset=utf-8",
                                     "data": base64.b64encode(note["text"].encode()).decode(),
                                     "title": f"Addendum by {note['author']}", "creation": note["signed_at"]}}],
-            "item": [{"sequence": 1, "productOrService": {"coding": [{
-                "system": SERVICE_SYSTEMS[case.service["system"]], "code": case.service["code"],
-                "display": case.service["display"]}]}}],
+            "item": [service_item(case)],
         }}],
     }
 

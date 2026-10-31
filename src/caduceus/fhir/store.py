@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import base64
 import json
+import re
 from collections.abc import Iterable
 from difflib import SequenceMatcher
 from pathlib import Path
@@ -120,6 +121,44 @@ class WithFiledDocuments:
 
     def document(self, doc_id: str) -> dict | None:
         return self.filed.get(doc_id) or self.base.document(doc_id)
+
+    def find_patient(self, name: str, birth_date: str) -> str | None:
+        return self.base.find_patient(name, birth_date)
+
+    def candidates(self, name: str, birth_date: str, limit: int = 3) -> list[dict]:
+        return self.base.candidates(name, birth_date, limit)
+
+
+class Kept(Protocol):
+    def get(self, key: str) -> dict | None: ...
+
+
+EHR_PAGE = re.compile(r"(ehr-[0-9a-f]{20})-(\d{1,2})")
+
+
+class WithEhrRecords:
+    """The store, plus patients' records read from an EHR by a SMART launch, which a case names by their key
+    (caduceus.cases.EhrRecordRepository). Their newest notes are the case's pages. A fax is never matched to them:
+    a faxed referral is checked against the clinic's own chart."""
+
+    def __init__(self, base: FhirStore, kept: Kept):
+        self.base, self.kept = base, kept
+
+    def record(self, patient_id: str, overlay_case: str | None = None) -> PatientRecord:
+        if patient_id.startswith("ehr-"):
+            data = self.kept.get(patient_id)
+            if data is None:
+                raise KeyError(patient_id)
+            return PatientRecord(patient=data["patient"], resources=list(data["resources"]))
+        return self.base.record(patient_id, overlay_case)
+
+    def document(self, doc_id: str) -> dict | None:
+        m = EHR_PAGE.fullmatch(doc_id)
+        if m:
+            notes = (self.kept.get(m.group(1)) or {}).get("notes", [])
+            n = int(m.group(2))
+            return notes[n - 1] | {"id": doc_id} if 0 < n <= len(notes) else None
+        return self.base.document(doc_id)
 
     def find_patient(self, name: str, birth_date: str) -> str | None:
         return self.base.find_patient(name, birth_date)

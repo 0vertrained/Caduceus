@@ -277,7 +277,10 @@ def test_granted_scopes_in_either_syntax():
 
 
 def test_the_record_is_read_as_far_back_as_the_criteria_look_and_no_further(library):
-    assert lookback(library) == {"Condition": None, "Procedure": 730, "Observation": 365}
+    # The reviewed CPAP criteria accept a sleep test, and its index, from any date, so those types are read whole.
+    assert lookback(library) == {"Condition": None, "Procedure": None, "Observation": None}
+    lumbar = {k: s for k, s in library.items() if k.startswith("dev-lumbar-mri@")}
+    assert lookback(lumbar) == {"Condition": None, "Procedure": 365, "Observation": 120}
 
 
 def test_only_addresses_on_the_fhir_server_get_the_token():

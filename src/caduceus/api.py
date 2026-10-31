@@ -12,8 +12,9 @@ from contextvars import ContextVar, Token
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
+import httpx
 import jwt
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
@@ -23,7 +24,7 @@ from pydantic import BaseModel, Field
 from caduceus.app_factory import Services, Settings, build_services
 from caduceus.audit.log import TamperDetected
 from caduceus.auth import DEV_USERS, AuthError, Principal, Role
-from caduceus.cases import Case, Fax, StaleCase, State
+from caduceus.cases import EHR_RECORD, Case, Fax, StaleCase, State
 from caduceus.fhir.store import fax_image
 from caduceus.intake import FaxReadingUnavailable
 from caduceus.outcomes import outcomes
@@ -31,6 +32,7 @@ from caduceus.policies import policies
 from caduceus.presenter import Presenter, clock, moment
 from caduceus.ratelimit import DemoLimits
 from caduceus.seed import clone_demo_services, fresh_demo_services
+from caduceus.smart import LaunchRefused, Limits, SmartLaunch, lookback
 from caduceus.timeline import timeline
 from caduceus.tools import ToolForbidden, ToolNotAllowed
 from caduceus.tour import tour
@@ -53,6 +55,7 @@ DEMO_RESET_COOLDOWN = timedelta(minutes=1)
 SANDBOX_ID = re.compile(r"[0-9a-f]{32}")
 MAX_SANDBOXES = 60           # each is a few hundred kilobytes; the least recently used goes first
 TEMPLATE_MAX_AGE = timedelta(hours=6)
+DEMO_EHR_RECORDS = 3         # patients opened from an EHR that one visitor's copy holds at once
 
 
 class TooManySandboxes(Exception):
@@ -228,9 +231,29 @@ class MatchBody(BaseModel):
     ref: str | None = Field(default=None, max_length=32)
 
 
+class LaunchBody(BaseModel):
+    """What the EHR put on Caduceus's launch address, sent on in the body so it stays out of access logs."""
+    iss: str = Field(min_length=1, max_length=512)
+    launch: str = Field(min_length=1, max_length=2048)
+    redirect_uri: str = Field(min_length=1, max_length=512)
+
+
+class CallbackBody(BaseModel):
+    code: str = Field(min_length=1, max_length=2048)
+    state: str = Field(min_length=1, max_length=64)
+
+
+class EhrCaseBody(BaseModel):
+    service: str = Field(max_length=10)
+    side: Literal["left", "right"] | None = None
+    payer: str = Field(max_length=100)
+
+
 def create_app(services: Services | None = None, dispatch_interval: float | None = 5.0,
-               fresh_demo: Callable[[], Services] | None = None) -> FastAPI:
-    """dispatch_interval=None (tests) starts no background threads: no outbox dispatcher, no demo resets."""
+               fresh_demo: Callable[[], Services] | None = None, ehr_transport: httpx.BaseTransport | None = None,
+               ehr_limits: Limits | None = None) -> FastAPI:
+    """dispatch_interval=None (tests) starts no background threads: no outbox dispatcher, no demo resets.
+    ehr_transport stands in for the network to the EHR (tests pass httpx.MockTransport)."""
     built: Services | None = None  # what this app builds, it closes when it stops; services handed in stay open
     if services is None:
         settings = Settings()
@@ -278,6 +301,11 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
 
     signing_key = live.svc.settings.proxy_signing_key
     app.state.demo_limits = DemoLimits() if live.demo else None
+    settings = live.svc.settings
+    smart = SmartLaunch(settings.smart_allowed, settings.smart_redirects, settings.smart_client_id,
+                        transport=ehr_transport, limits=ehr_limits)
+    app.state.smart = smart
+    windows = lookback(live.svc.workflow.in_use())  # how far back the record is read: the criteria's own windows
 
     @app.middleware("http")
     async def choose_sandbox(request: Request, call_next):
@@ -379,7 +407,14 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
         fax = fax_of(case.id)
         out["came_by_fax"] = fax and live.presenter.came_by_fax(
             fax, live.svc.audit.events(fax.id), live.svc.workflow.intake_form(fax)["clinic"], now())
+        out["came_from_ehr"] = live.presenter.came_from_ehr(
+            case, live.svc.audit.events(case.id), ehr_record_of(case), now()) \
+            if EHR_RECORD.fullmatch(case.patient_id) else None
         return out
+
+    def ehr_record_of(case: Case) -> dict | None:
+        launched = live.svc.workflow.launched
+        return launched.get(case.patient_id) if launched else None
 
     @app.get("/api/health")
     def health() -> dict:
@@ -521,6 +556,8 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
         fax = fax_of(case_id)
         if fax:  # a case that came by fax begins with the fax: received, read, checked, perhaps sent back first
             events = sorted(live.svc.audit.events(fax.id) + events, key=lambda e: e.seq)
+        if EHR_RECORD.fullmatch(case.patient_id):  # one opened from the EHR begins with the EHR sharing the record
+            events = sorted(live.svc.audit.events(case.patient_id) + events, key=lambda e: e.seq)
         return {"events": len(events), "can_verify": who.role in (Role.AUDITOR, Role.ADMIN),
                 "entries": timeline(events, case.ordering_clinician["name"], live.svc.tz, now())}
 
@@ -652,6 +689,88 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
         svc.router.switch_external(body.on)
         svc.audit.append(who.id, who.role, "admin.external_route", None, {"on": body.on})
         return administration(who)
+
+    # Opening from an EHR (SMART launch, docs/smart-launch.md) --------------------------------------------------
+
+    def ehr_step(request: Request) -> str | None:
+        """Checks before a step of a launch talks to the EHR: the launch is set up here, the request names the
+        visitor's own copy of the demo (a shared record never lands in the shared set), and the launch limits."""
+        if not smart.enabled:
+            raise HTTPException(404, "Opening Caduceus from an EHR is not set up here.")
+        sandbox = request.headers.get("x-caduceus-sandbox") if live.demo else None
+        if live.demo and not sandbox:
+            raise HTTPException(400, "Open this page from the Caduceus demo site.")
+        limits = request.app.state.demo_limits
+        wait = limits.ehr_launch(visitor_of(request)) if limits else 0
+        if wait:
+            raise HTTPException(429, "Too many launches from an EHR from your address. Wait a few minutes and try "
+                                     "again.", headers={"Retry-After": str(wait)})
+        return sandbox
+
+    def launch_refused(who: Principal, e: LaunchRefused) -> JSONResponse:
+        live.svc.audit.append(who.id, who.role, "ehr.launch_refused", None, e.audit)
+        return JSONResponse({"message": e.message}, status_code=e.status)
+
+    def load_record(key: str) -> dict:
+        launched = live.svc.workflow.launched
+        data = launched.get(key) if launched else None
+        if data is None:
+            raise HTTPException(404, "That record from the EHR is not here: it goes when the demo starts over. Open "
+                                     "Caduceus from the EHR again.")
+        return data
+
+    @app.get("/api/smart")
+    def smart_info() -> dict:
+        """Whether Caduceus can be opened from an EHR here, and the client id a launcher should hold it to."""
+        return {"enabled": smart.enabled, "client_id": smart.client_id if smart.enabled else None}
+
+    @app.post("/api/smart/launch")
+    def smart_launch(body: LaunchBody, request: Request, who: Principal = Depends(role(Role.PA_SPECIALIST))):
+        """The EHR opened Caduceus: check where from, discover its endpoints, and say where the browser goes next."""
+        sandbox = ehr_step(request)
+        try:
+            pending, url = smart.begin(body.iss, body.launch, body.redirect_uri, sandbox, who.id, now())
+        except LaunchRefused as e:
+            return launch_refused(who, e)
+        live.svc.audit.append(who.id, who.role, "ehr.launch_started", None,
+                              {"iss": pending.server.iss, "scope": pending.scope})
+        return {"authorize_url": url}
+
+    @app.post("/api/smart/callback")
+    def smart_callback(body: CallbackBody, request: Request, who: Principal = Depends(role(Role.PA_SPECIALIST))):
+        """The EHR sent the browser back: exchange the code here, read the record, file it in this copy."""
+        sandbox = ehr_step(request)
+        try:
+            read = smart.finish(body.code, body.state, sandbox, who.id, now(), now().astimezone(live.svc.tz).date(),
+                                windows)
+        except LaunchRefused as e:
+            return launch_refused(who, e)
+        try:
+            key = live.svc.workflow.file_ehr_record(who, read, keep=DEMO_EHR_RECORDS if live.demo else None)
+        except (LaunchRefused, ActionRefused) as e:
+            # Read, then let go: the audit log says what was read and why it was not filed, never anything from it.
+            why = e.audit if isinstance(e, LaunchRefused) else {"reason": "not_filed"}
+            live.svc.audit.append(who.id, who.role, "ehr.launch_refused", None,
+                                  why | {"iss": read.iss, "discarded": read.counts})
+            if isinstance(e, ActionRefused):
+                raise
+            return JSONResponse({"message": e.message}, status_code=e.status)
+        live.presenter.forget(key)
+        return {"record": key}
+
+    @app.get("/api/smart/records/{key}")
+    def ehr_record(key: str, who: Principal = Depends(role(Role.PA_SPECIALIST, Role.ADMIN, Role.AUDITOR))):
+        data = load_record(key)
+        live.svc.audit.append(who.id, who.role, "ehr.record_viewed", key)
+        cases = [c for c in live.svc.cases.all() if c.patient_id == key]
+        out = live.presenter.ehr_record(data, live.svc.workflow.ehr_preview(key), cases, now())
+        return out | {"payers": sorted(live.svc.workflow.catalog["payers"]),
+                      "read_only": who.role != Role.PA_SPECIALIST}
+
+    @app.post("/api/smart/records/{key}/case")
+    def ehr_case(key: str, body: EhrCaseBody, who: Principal = Depends(role(Role.PA_SPECIALIST))):
+        load_record(key)
+        return {"case_id": live.svc.workflow.open_from_ehr(who, key, body.service, body.side, body.payer).id}
 
     @app.get("/api/attestations")
     def my_attestations(who: Principal = Depends(role(Role.CLINICIAN))):

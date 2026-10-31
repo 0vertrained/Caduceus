@@ -33,7 +33,7 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 import httpx
 import jwt
 
-from caduceus.criteria.dsl import AllOf, AnyOf, ConditionRule, CriteriaSet, ObservationRule, ProcedureRule
+from caduceus.criteria.dsl import AgeRule, AllOf, AnyOf, ConditionRule, CriteriaSet, ObservationRule, ProcedureRule
 
 # The public SMART Health IT sandbox (launch.smarthealthit.org), FHIR R4: the demo's default allow-list.
 SANDBOX_ISS = ("https://launch.smarthealthit.org/v/r4/fhir",)
@@ -81,6 +81,10 @@ def lookback(library: dict[str, CriteriaSet]) -> dict[str, int | None]:
             for r in rule.rules:
                 walk(r)
             return
+        if isinstance(rule, AgeRule):
+            return  # the age comes from the Patient resource, which is always read
+        if getattr(rule, "before_procedure", None):
+            longest["Procedure"] = None  # "before the test": the test is looked for whenever it was done
         kind = {ConditionRule: "Condition", ProcedureRule: "Procedure", ObservationRule: "Observation"}[type(rule)]
         days = getattr(rule, "within_days", None)
         if kind in longest and longest[kind] is None:

@@ -15,12 +15,12 @@ from zoneinfo import ZoneInfo
 
 from caduceus.audit.log import AuditLog
 from caduceus.auth import Authenticator
-from caduceus.cases import CaseRepository, DocumentRepository, FaxRepository
+from caduceus.cases import CaseRepository, DocumentRepository, EhrRecordRepository, FaxRepository
 from caduceus.criteria.engine import Engine
 from caduceus.criteria.loader import active, load_library, load_lock, needs_side
 from caduceus.deid.safe_harbor import SafeHarborDeidentifier
 from caduceus.drafting import Drafter
-from caduceus.fhir.store import FhirStore, HapiFhirStore, LocalBundleStore, WithFiledDocuments
+from caduceus.fhir.store import FhirStore, HapiFhirStore, LocalBundleStore, WithEhrRecords, WithFiledDocuments
 from caduceus.payer import MockPayer
 from caduceus.router import Router
 from caduceus.router.providers import (
@@ -175,6 +175,7 @@ def build_services(settings: Settings | None = None, conn: sqlite3.Connection | 
     cases: CaseStore
     filed: DocumentStore
     faxes: FaxStore
+    launched: EhrRecordRepository | None = None  # records shared by an EHR launch; SQLite only for now
     if conn is None and s.database_url:
         from caduceus.postgres import connect  # the driver loads only when a deployment asks for Postgres
         database = connect(s.database_url)
@@ -185,9 +186,12 @@ def build_services(settings: Settings | None = None, conn: sqlite3.Connection | 
                 Path(s.db_path).parent.mkdir(parents=True, exist_ok=True)
             conn = sqlite3.connect(s.db_path, check_same_thread=False)
         audit, cases, filed, faxes = AuditLog(conn), CaseRepository(conn), DocumentRepository(conn), FaxRepository(conn)
+        launched = EhrRecordRepository(conn)
     record: FhirStore = (HapiFhirStore(s.fhir_base_url) if s.fhir_base_url
                          else LocalBundleStore(*s.scenario_dirs()))
-    store = WithFiledDocuments(record, filed)
+    store: FhirStore = WithFiledDocuments(record, filed)
+    if launched is not None:
+        store = WithEhrRecords(store, launched)
     policies = s.data_dir / "policies"
     lock = load_lock(policies)
     library, engine = load_library(policies), Engine(lock)
@@ -212,7 +216,7 @@ def build_services(settings: Settings | None = None, conn: sqlite3.Connection | 
                         MockPayer(published={c.key: c.content_sha256() for c in current.values()},
                                   review_seconds=float(s.payer_review_seconds)),
                         faxes=faxes, catalog=_catalog(*s.scenario_dirs(), current=current),
-                        fax_dir=s.data_dir / "faxes", tz=tz, filed=filed)
+                        fax_dir=s.data_dir / "faxes", tz=tz, filed=filed, launched=launched)
     auth = Authenticator(s.auth_mode, s.oidc_jwks_url, s.oidc_issuer, s.oidc_audience)
     return Services(s, tz, audit, cases, store, workflow, auth, router, conn, database)
 
@@ -244,8 +248,13 @@ def _catalog(*dirs: Path, current: dict | None = None) -> dict[str, Any]:
         return c["service"] | {"criteria_set": now.key if now else c["criteria_set"],
                                "needs_side": bool(now and needs_side(now))}
 
+    # Who orders each service on this team: the clinician a case opened from an EHR goes to for anything the record
+    # does not answer.
+    ordering: dict[str, dict[str, str]] = {}
+    for c in sorted(cases, key=lambda c: c["id"]):
+        ordering.setdefault(c["service"]["code"], c["ordering_clinician"])
     return {"services": {c["service"]["code"]: service(c) for c in cases},
-            "clinicians": clinicians,
+            "clinicians": clinicians, "ordering": ordering,
             "clinics": {name: CLINICS[c["id"]] for name, c in clinicians.items() if c["id"] in CLINICS},
             "payers": {c["payer"]["name"] for c in cases},
             "coverage": {pid: {"payer": p, "member_id_last4": last4}
