@@ -41,12 +41,16 @@ jobs:
         run: pytest
       - name: Eval gate (criteria agreement, PHI leakage, red team)
         run: python -m caduceus.evals.run
+      - name: Hard sets, reported and not gated (docs/hard-evaluation.md)
+        run: |
+          python -m caduceus.evals.hard --split dev --report evals/reports/hard-dev.json
+          python -m caduceus.evals.hard --split heldout --report evals/reports/hard-heldout.json
       - name: Keep the eval report
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: eval-report
-          path: evals/reports/latest.json
+          path: evals/reports/*.json
 
   dependencies:
     name: Known vulnerabilities in Python and npm packages
