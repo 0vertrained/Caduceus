@@ -80,7 +80,8 @@ def sentence(e: AuditEvent, clinician: str) -> str:
             return (f"Checked the record against the coverage policy: {c.get('met', 0)} met, "
                     f"{c.get('unknown', 0)} not found, {c.get('unmet', 0)} not met.")
         case "draft.generated":
-            how = {"external": "with the model, from de-identified facts", "deid_in_vpc": "with the in-VPC model",
+            how = {"external": "with the model, from de-identified facts",
+                   "deid_in_vpc": "with the model inside the network, from de-identified facts",
                    "template": "from the template"}.get(d.get("route"), "")
             why = " after the clinician signed" if d.get("reason") == "attestation signed" else ""
             return f"Wrote the draft {how}{why}.".replace("  ", " ")
@@ -90,6 +91,13 @@ def sentence(e: AuditEvent, clinician: str) -> str:
             return "Edited the draft."
         case "attestation.requested":
             return f"Asked {clinician} to confirm {plural(len(d.get('criteria', [])), 'item', 'items')}."
+        case "summary.written" if d.get("route") == "phi":
+            return f"Summarized the chart for {clinician} with the model inside the network, which alone may see " \
+                   "the patient's details."
+        case "summary.written":
+            return f"Summarized the chart for {clinician} from the record's facts, without a model."
+        case "summary.error":
+            return "Could not summarize the chart; the summary from the record's facts stays."
         case "attestation.signed":
             answers = list((d.get("answers") or {}).values())
             return f"Signed, answering {', '.join(answers) or 'the questions'}."

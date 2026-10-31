@@ -261,6 +261,8 @@ export interface AttestationView {
   service: string;
   ordered: string;
   chart_summary: string;
+  /** How the summary was written: by the model inside the network ("phi"), or from the record's facts. */
+  chart_summary_by: { route: string | null; model: string | null };
   questions: { criterion_id: string; question: string; help: string | null;
                leads: { title: string; page: number; text: string }[] }[];
   payer: string;

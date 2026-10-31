@@ -25,6 +25,7 @@ from caduceus.app_factory import Services, Settings, build_services
 from caduceus.audit.log import TamperDetected
 from caduceus.auth import DEV_USERS, AuthError, Principal, Role
 from caduceus.cases import EHR_RECORD, Case, Fax, StaleCase, State
+from caduceus.drafting import Drafter
 from caduceus.fhir.store import fax_image
 from caduceus.intake import FaxReadingUnavailable
 from caduceus.outcomes import outcomes
@@ -182,6 +183,9 @@ def visitor_of(request: Request) -> str:
 
 
 # Free text is bounded here so a request cannot park megabytes in a case; the workflow gives the friendly limits.
+NO_SUMMARY = {"text": "", "route": None, "model": None}  # after signing, the summary is not shown again
+
+
 class SwitchBody(BaseModel):
     on: bool
 
@@ -539,8 +543,7 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
     def undo(case_id: str, who: Principal = Depends(principal)):
         case = live.svc.workflow.undo(who, load(case_id).id)
         if who.role == Role.CLINICIAN:
-            return live.presenter.attestation(case, live.svc.workflow.drafter.chart_summary(
-                case, live.presenter.patient(case), case.attestation_requested), now())
+            return live.presenter.attestation(case, summary_of(case), now())
         return view(case, who)
 
     @app.get("/api/cases/{case_id}/history")
@@ -786,20 +789,22 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
                         if sent else None})
         return out
 
+    def summary_of(case: Case) -> dict:
+        """The summary written when the clinician was asked (the model's, once it is ready), or from the facts."""
+        return case.chart_summary or Drafter.template_summary(case, case.attestation_requested or [])
+
     @app.get("/api/attestations/{case_id}")
     def attestation(case_id: str, who: Principal = Depends(role(Role.CLINICIAN))):
         case = load(case_id)
         if case.ordering_clinician["id"] != who.clinician_id:
             raise HTTPException(403, "Only the ordering clinician can see this request.")
         live.svc.audit.append(who.id, who.role, "attestation.viewed", case_id)
-        summary = live.svc.workflow.drafter.chart_summary(case, live.presenter.patient(case),
-                                                     case.attestation_requested or [])
-        return live.presenter.attestation(case, summary, now())
+        return live.presenter.attestation(case, summary_of(case), now())
 
     @app.post("/api/attestations/{case_id}")
     def sign(case_id: str, body: AttestBody, who: Principal = Depends(role(Role.CLINICIAN))):
         case = live.svc.workflow.sign_attestation(who, load(case_id).id, body.answers)
-        out = live.presenter.attestation(case, "", now())
+        out = live.presenter.attestation(case, NO_SUMMARY, now())
         out["undo_until"] = case.last_action.undo_until.isoformat() if case.last_action else None
         out["answers"] = body.answers
         return out
@@ -807,14 +812,14 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
     @app.post("/api/attestations/{case_id}/note")
     def sign_note(case_id: str, body: NoteBody, who: Principal = Depends(role(Role.CLINICIAN))):
         case = live.svc.workflow.sign_note(who, load(case_id).id, body.text)
-        out = live.presenter.attestation(case, "", now())
+        out = live.presenter.attestation(case, NO_SUMMARY, now())
         out["undo_until"] = case.last_action.undo_until.isoformat() if case.last_action else None
         return out
 
     @app.post("/api/attestations/{case_id}/decline-note")
     def decline_note(case_id: str, who: Principal = Depends(role(Role.CLINICIAN))):
         case = live.svc.workflow.decline_note(who, load(case_id).id)
-        out = live.presenter.attestation(case, "", now())
+        out = live.presenter.attestation(case, NO_SUMMARY, now())
         out["undo_until"] = case.last_action.undo_until.isoformat() if case.last_action else None
         return out
 

@@ -104,6 +104,9 @@ export function AttestPage() {
       <section className="panel attest__card" aria-labelledby="chart-title">
         <h2 id="chart-title" className="attest__card-title">What the chart shows</h2>
         <p>{data.chart_summary}</p>
+        <p className="support">{data.chart_summary_by.route === "phi"
+          ? <>Summarized by <span translate="no">{data.chart_summary_by.model}</span>, inside Mesa Verde’s network.</>
+          : "From the record’s facts. No model was used."}</p>
       </section>
       {data.questions.map((q) => (
         <fieldset key={q.criterion_id} className="fieldset">

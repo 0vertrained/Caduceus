@@ -31,6 +31,7 @@ APPEAL_SYSTEM = (
     "token such as [NAME_1] or [DATE_2] exactly as written. Write 120 to 180 words of formal, plain English, no "
     "headings, no salutation, no signature."
 )
+SUMMARY_TOKENS = 300  # two sentences; on a CPU, every token is about a seventh of a second
 SUMMARY_SYSTEM = (
     "Summarize, for the ordering clinician, what this patient's chart shows about the listed criteria, in at most "
     "two sentences. State plainly what the chart does not say. Use only the facts provided."
@@ -189,16 +190,28 @@ class Drafter:
         return {"text": text, "route": out.route, "model": out.completion.model,
                 "deid_removed": dict(result.removed), "sent": sent}
 
-    def chart_summary(self, case: Case, patient: dict, criterion_ids: list[str]) -> str:
+    @property
+    def phi_route(self) -> bool:
+        """True when a model inside the network can do work that needs the patient's details."""
+        return self._router is not None and self._router.in_vpc_enabled
+
+    @staticmethod
+    def template_summary(case: Case, criterion_ids: list[str]) -> dict[str, Any]:
+        """What the chart shows, from the record's facts alone, without a model: at once, and always available."""
         results = [r for r in case.effective_results() if r["criterion_id"] in criterion_ids]
         known = [r for r in case.effective_results() if r["status"] == "met"][:2]
         sentences = [r["explanation"] for r in known]
         sentences += [f"The chart does not say whether this was done: {mid_sentence(r['text'])}." for r in results]
-        fallback = " ".join(sentences)
-        if self._router is None:
-            return fallback
+        return {"text": " ".join(sentences), "route": "template", "model": None}
+
+    def chart_summary(self, case: Case, patient: dict, criterion_ids: list[str]) -> dict[str, Any]:
+        """The summary by the model inside the network, which may take tens of seconds on a CPU; the template's
+        when there is no such model or it fails. The patient's details never leave the network on this route."""
+        if not self.phi_route:
+            return self.template_summary(case, criterion_ids)
         try:
-            out = self._router.complete_phi("attestation_summary", SUMMARY_SYSTEM, _facts(case, patient), case.id)
+            out = self._router.complete_phi("attestation_summary", SUMMARY_SYSTEM, _facts(case, patient),  # type: ignore[union-attr]
+                                            case.id, max_tokens=SUMMARY_TOKENS)
         except (InVpcUnavailable, ProviderUnavailable):
-            return fallback
-        return out.completion.text.strip()
+            return self.template_summary(case, criterion_ids) | {"fallback_reason": "in_vpc_unavailable"}
+        return {"text": out.completion.text.strip(), "route": out.route, "model": out.completion.model}
