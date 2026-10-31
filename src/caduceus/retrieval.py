@@ -83,9 +83,11 @@ _CASED = [(re.compile(p), f" {t} ") for p, t in CASED]
 _CONCEPTS = [(re.compile(p), f" {t} ") for p, t in CONCEPTS]
 _WORD = re.compile(r"[a-z0-9]+")
 # A sentence ends at . ! or ?, or at a line break that does not follow a hyphen: "evalu-\nation" is one word.
-_SENTENCE = re.compile(r"(?:-\n|[^.!?\n])+(?:[.!?]+|\n|$)")
+# A full stop inside a code or a number ("G47.33", "2.5 mg") does not end a sentence.
+_SENTENCE = re.compile(r"(?:-\n|[^.!?\n]|[.!?](?=\S))+(?:[.!?]+(?=\s|$)|\n|$)")
 _BROKEN = re.compile(r"(\w)-\s*\n\s*(\w)")
-_CONCEPT_TOKENS = {t for _, t in CASED + CONCEPTS}
+_UNITS = {"week", "month", "year"}
+_CONCEPT_TOKENS = {t for _, t in CASED + CONCEPTS} - _UNITS  # durations are on every page; they name nothing
 
 
 def _stem(w: str) -> str:
@@ -175,9 +177,19 @@ def _ranks(scores: list[float]) -> list[int | None]:
     return ranks
 
 
+def relevant(passage: Passage, query: str, background: str = "") -> bool:
+    """Enough in common with the query to show a person: a shared concept ("physical therapy", "apnea-hypopnea
+    index"), or at least two shared words. What the background names (the service itself, which every page of its
+    packet mentions) does not count. Ranking alone always fills a list; this keeps weak matches out of it."""
+    shared = (set(words(passage.text)) & set(words(query))) - set(words(background)) - _UNITS
+    return bool(shared & _CONCEPT_TOKENS) or len(shared) >= 2
+
+
 def search(pages: Sequence[str], query: str, k: int = 5, channels: Sequence[str] = ("words", "trigrams"),
-           embed: Callable[[list[str]], list[list[float]]] | None = None, rrf_k: int = 60) -> list[Hit]:
-    """The k passages most likely to bear on the query, best first."""
+           embed: Callable[[list[str]], list[list[float]]] | None = None, rrf_k: int = 60,
+           floor: bool = False, background: str = "") -> list[Hit]:
+    """The k passages most likely to bear on the query, best first. With `floor`, only passages relevant enough
+    to show a person (see `relevant`)."""
     ps = passages(pages)
     if not ps:
         return []
@@ -199,7 +211,7 @@ def search(pages: Sequence[str], query: str, k: int = 5, channels: Sequence[str]
     seen, unique = set(), []
     for h in fused:  # a line copied forward onto many pages takes one place in the results, not several
         key = " ".join(words(h.passage.text))
-        if key not in seen:
+        if key not in seen and (not floor or relevant(h.passage, query, background)):
             seen.add(key)
             unique.append(h)
     return unique[:k]

@@ -98,6 +98,10 @@ class Workflow:
         self.audit.append(AGENT.id, AGENT.role, "criteria.evaluated", cid,
                           {"set": det.criteria_set, "set_sha256": det.content_sha256, "overall": det.overall,
                            "counts": det.counts, "result_sha256": sha256_of(det.to_dict())})
+        # Where to look: for each criterion the record could not answer, the packet passages that may.
+        case.leads = {r.criterion_id: gw.call(AGENT, cid, "enrichment", "documents.search_packet", packet=case.packet,
+                                              criteria_set=case.criteria_set, criterion_id=r.criterion_id, k=3)
+                      for r in det.results if r.status.value == "unknown"}
 
         self._draft(case, record.patient, reason="prepared")
         case = self.cases.save(case)

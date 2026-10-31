@@ -55,3 +55,16 @@ def test_a_signature_line_does_not_outrank_the_evidence():
     hits = search(pages, "The clinician documents pain or loss of function that limits activities of daily living")
     assert hits[0].passage.page == 2
     assert len([h for h in hits if h.passage.page == 1]) <= 1  # a copied-forward line takes one place
+
+
+def test_a_full_stop_inside_a_code_does_not_end_the_sentence():
+    texts = [p.text for p in passages(["Diagnosis: G47.33, obstructive sleep apnea. Plan: 2.5 mg nightly."])]
+    assert texts == ["Diagnosis: G47.33, obstructive sleep apnea.", "Plan: 2.5 mg nightly."]
+
+
+def test_the_floor_hides_passages_that_share_only_what_every_page_says():
+    pages = ["Requested service: CPAP device for sleep apnea.", "Sleep evaluation in person: loud snoring.",
+             "Follow up in two weeks."]
+    query = "A clinician evaluated the patient in person for sleep apnea before the sleep test."
+    shown = [h.passage.page for h in search(pages, query, floor=True, background="CPAP device sleep apnea")]
+    assert shown == [2]  # the service line names sleep apnea on every page; a duration names nothing
