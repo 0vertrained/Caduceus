@@ -171,7 +171,9 @@ export interface CaseView {
     can_ask_for_note: boolean; can_send_note: boolean; can_send_appeal: boolean; can_edit_appeal: boolean;
     can_recall: boolean; can_resubmit: boolean; can_remind: boolean; can_set_urgency: boolean;
   };
-  payer_clock: { applies: boolean; plan_type: string; decided?: boolean; within?: boolean; words: string } | null;
+  payer_clock: { applies: boolean; plan_type: string; decided?: boolean; within?: boolean; expedited?: boolean; words: string } | null;
+  /** While the payer reviews a request it has: when it said it would decide, in words. */
+  payer_review: { expected_by: string; words: string } | null;
   requirements: { matches: boolean; plan_type: string; checked_at: string } | null;
   appeal: {
     reason: string | null; criterion: string | null; policy_sentence: string | null; record: string | null;
