@@ -1,0 +1,10 @@
+{
+ "_about": "Expected answers for the demo cases under the criteria set each service runs under now, where that set is not the one the case was built for. Written from the policy text (data/policies/sources), not from the engine. Cases whose service still runs the set they were built for use their own labels in data/cases/cases.json.",
+ "2026-1041": {"arthritis_of_this_knee": "met", "imaging_shows_arthritis": "met", "conservative_therapy": "met", "functional_disability": "met", "no_active_infection": "met", "no_wound_at_site": "met"},
+ "2026-1033": {"arthritis_of_this_knee": "met", "imaging_shows_arthritis": "met", "conservative_therapy": "unknown", "functional_disability": "unknown", "no_active_infection": "met", "no_wound_at_site": "met"},
+ "2026-1027": {"arthritis_of_this_knee": "met", "imaging_shows_arthritis": "met", "conservative_therapy": "unknown", "functional_disability": "met", "no_active_infection": "unmet", "no_wound_at_site": "met"},
+ "2026-1038": {"adult": "met", "in_person_evaluation": "met", "covered_sleep_test": "met", "severity_qualifies": "met"},
+ "2026-1035": {"adult": "met", "in_person_evaluation": "unknown", "covered_sleep_test": "met", "severity_qualifies": "unknown"},
+ "2026-1031": {"adult": "met", "in_person_evaluation": "met", "covered_sleep_test": "met", "severity_qualifies": "met"},
+ "2026-1023": {"adult": "met", "in_person_evaluation": "unknown", "covered_sleep_test": "unknown", "severity_qualifies": "unknown"}
+}

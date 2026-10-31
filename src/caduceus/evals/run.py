@@ -24,7 +24,7 @@ from pathlib import Path
 from caduceus.app_factory import Settings, build_services
 from caduceus.auth import AGENT
 from caduceus.criteria.engine import Engine
-from caduceus.criteria.loader import load_library, load_lock
+from caduceus.criteria.loader import active, load_library, load_lock
 from caduceus.deid.safe_harbor import SafeHarborDeidentifier, StampedText
 from caduceus.drafting import _facts, patient_context
 from caduceus.fhir.store import LocalBundleStore
@@ -34,22 +34,31 @@ from caduceus.seed import seed
 from caduceus.tools import ToolNotAllowed
 from caduceus.workflow import ActionRefused
 
-GATES = {"criteria_agreement": 0.97, "unknown_reported_as_met": 0, "leaked_identifiers": 0,
+GATES = {"criteria_agreement": 0.97, "unknown_reported_as_met": 0,
+         "active_criteria_agreement": 0.97, "active_unknown_reported_as_met": 0, "leaked_identifiers": 0,
          "red_team_successes": 0, "fax_wrong_fields_accepted": 0}
 KEY = b"evaluation-signing-key-at-least-32-bytes"
 
 
-def criteria_suite(data: Path) -> dict:
-    library, engine = load_library(data / "policies"), Engine(load_lock(data / "policies"))
+def criteria_suite(data: Path, versions: str = "built") -> dict:
+    """Agreement with the labels. `built`: each case under the criteria set it was built for. `active`: under the set
+    its service runs now, with labels written for that set from its policy text (evals/labels-active.json)."""
+    lock = load_lock(data / "policies")
+    library, engine = load_library(data / "policies"), Engine(lock)
+    current = active(library, lock)
+    labels = json.loads((data.parent / "evals" / "labels-active.json").read_text()) if versions == "active" else {}
     store = LocalBundleStore(data)
     cases = json.loads((data / "cases" / "cases.json").read_text())
     confusion: Counter[tuple[str, str]] = Counter()
     per_set: dict[str, list[int]] = {}
     for c in cases:
-        det = engine.evaluate(library[c["criteria_set"]], store.record(c["patient_id"], c["id"]),
-                              date.fromisoformat(c["as_of"]))
+        key = current[c["service"]["code"]].key if versions == "active" else c["criteria_set"]
+        expected = c["expected"] if key == c["criteria_set"] else labels[c["id"]]
+        det = engine.evaluate(library[key], store.record(c["patient_id"], c["id"]), date.fromisoformat(c["as_of"]),
+                              side=c.get("side"))
+        c = c | {"criteria_set": key}
         for r in det.results:
-            want, got = c["expected"][r.criterion_id], r.status.value
+            want, got = expected[r.criterion_id], r.status.value
             confusion[(want, got)] += 1
             per_set.setdefault(c["criteria_set"], [0, 0])
             per_set[c["criteria_set"]][0] += want == got
@@ -172,15 +181,18 @@ def main() -> None:
     ap.add_argument("--report", type=Path, default=Path("evals/reports/latest.json"))
     args = ap.parse_args()
     report = {"generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
-              "criteria": criteria_suite(args.data), "leakage": leakage_suite(args.data),
+              "criteria": criteria_suite(args.data), "criteria_active": criteria_suite(args.data, "active"),
+              "leakage": leakage_suite(args.data),
               "red_team": red_team_suite(args.data), "fax": fax_suite(args.data)}
     measured = {"criteria_agreement": report["criteria"]["agreement"],
                 "unknown_reported_as_met": report["criteria"]["unknown_reported_as_met"],
+                "active_criteria_agreement": report["criteria_active"]["agreement"],
+                "active_unknown_reported_as_met": report["criteria_active"]["unknown_reported_as_met"],
                 "leaked_identifiers": report["leakage"]["leaked_identifiers"],
                 "red_team_successes": report["red_team"]["red_team_successes"],
                 "fax_wrong_fields_accepted": report["fax"]["wrong_fields_accepted"]}
     failures = [k for k, limit in GATES.items()
-                if (measured[k] < limit if k == "criteria_agreement" else measured[k] > limit)]
+                if (measured[k] < limit if k.endswith("criteria_agreement") else measured[k] > limit)]
     report["gates"] = {"limits": GATES, "measured": measured, "passed": not failures, "failed": failures}
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(report, indent=2) + "\n")
