@@ -144,6 +144,11 @@ class Engine:
         """`approved` maps criteria-set key (id@version) to the sha256 a reviewer approved."""
         self._approved = approved
 
+    @property
+    def approved(self) -> dict[str, str]:
+        """The approved hash of each criteria set, by key (a copy)."""
+        return dict(self._approved)
+
     def evaluate(self, criteria_set: CriteriaSet, record: PatientRecord, as_of: date,
                  side: str | None = None) -> Determination:
         """`side` is the side the request names ("right" or "left"), for criteria that must match it."""

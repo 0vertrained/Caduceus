@@ -497,6 +497,22 @@ mark { background: var(--mark); color: var(--ink); padding: 0.05em 0.15em; margi
   font-size: var(--text-title-m); line-height: 1.2; font-variant-numeric: tabular-nums lining-nums; }
 .ledger__note { grid-area: note; margin: 0; color: var(--ink-2); font-size: var(--text-small); }
 
+/* Coverage policies: each service's running version, where its words come from, its criteria in those words */
+.policies > *, .admin > * { max-width: 864px; }
+.policy { padding: 28px 36px; display: flex; flex-direction: column; gap: var(--space-4); }
+.policy__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); }
+.policy__plain { font-weight: 400; overflow-wrap: anywhere; }
+.policy__criteria { display: flex; flex-direction: column; }
+.policy__criterion { padding: 16px 0; border-top: 1px solid var(--rule-soft); display: flex; flex-direction: column;
+  gap: var(--space-2); }
+.policy__quote { margin: 0; padding-left: var(--space-3); border-left: 2px solid var(--hairline-strong);
+  font-family: var(--font-serif); line-height: 1.55; max-width: 70ch; }
+.policy__codes { border-top: 0; padding-top: 0; }
+.policy__codes ul { margin-top: var(--space-1); display: flex; flex-direction: column; gap: 2px; font-size: var(--text-small); }
+.policy__code { font-weight: 600; font-variant-numeric: tabular-nums; }
+.policy__earlier { border-top: 1px solid var(--rule-soft); padding-top: var(--space-3); display: flex; flex-direction: column;
+  gap: var(--space-2); }
+
 /* Case history: the audit trail in plain words ------------------------------------------------- */
 .history { padding: 24px 36px; display: flex; flex-direction: column; gap: var(--space-4); }
 .history__head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--space-3) var(--space-5); }
@@ -646,7 +662,7 @@ mark { background: var(--mark); color: var(--ink); padding: 0.05em 0.15em; margi
   .tour__inner { padding: var(--space-3) var(--space-4); }
   .page { padding: var(--space-4) var(--space-4) var(--space-7); }
   .helper__steps, .facts { grid-template-columns: minmax(0, 1fr); }
-  .row, .case-head, .criteria, .side, .history, .fax-inbox, .intake__form, .ledger { padding-left: var(--space-4); padding-right: var(--space-4); }
+  .row, .case-head, .criteria, .side, .history, .fax-inbox, .intake__form, .ledger, .policy { padding-left: var(--space-4); padding-right: var(--space-4); }
   .payer-question { padding-left: 22px; padding-right: var(--space-4); }
   .criterion--attention, .criterion--showing { margin: 0 -12px; padding: 16px 12px; }
   .history__item { grid-template-columns: minmax(0, 1fr); }
