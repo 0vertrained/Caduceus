@@ -64,7 +64,7 @@ def test_the_clinician_sees_the_facts_at_once_then_the_in_network_models_summary
     client.post(f"/api/cases/{CASE}/request-attestation", headers=DOLORES)
     first = client.get(f"/api/attestations/{CASE}", headers=REYES).json()
     assert first["chart_summary_by"] == {"route": "template", "model": None}  # nothing waits on the model
-    assert "does not say" in first["chart_summary"]
+    assert "does not say" in first["chart_summary"] and first["chart_summary_pending"] is True
 
     run(jobs)
     (asked,) = model.sent
@@ -75,6 +75,7 @@ def test_the_clinician_sees_the_facts_at_once_then_the_in_network_models_summary
     after = client.get(f"/api/attestations/{CASE}", headers=REYES).json()
     assert after["chart_summary"] == SUMMARY
     assert after["chart_summary_by"] == {"route": "phi", "model": "qwen2.5-1.5b-instruct"}
+    assert after["chart_summary_pending"] is False
     (written,) = [e for e in svc.audit.events(CASE) if e.action == "summary.written"]
     assert written.detail["route"] == "phi" and SUMMARY not in json.dumps(written.detail)
     history = client.get(f"/api/cases/{CASE}/timeline", headers=DOLORES).json()["entries"]

@@ -211,7 +211,8 @@ class Workflow:
         case.attestation_requested_by = who.name
         # What the chart shows, for the clinician: from the record's facts at once, then by the model inside the
         # network in the background, when there is one. The clinician never waits for a model.
-        case.chart_summary = self.drafter.template_summary(case, unknown) | {"generated_at": self.now().isoformat()}
+        case.chart_summary = self.drafter.template_summary(case, unknown) | {
+            "generated_at": self.now().isoformat(), "pending": self.drafter.phi_route}
         self.audit.append(who.id, who.role, "attestation.requested", case_id,
                           {"criteria": unknown, "clinician": case.ordering_clinician["id"]})
         saved = self.cases.save(case)
@@ -246,6 +247,13 @@ class Workflow:
                                "text_sha256": sha256_of(summary["text"])})
         except Exception as e:  # noqa: BLE001 - background work must not take the process down; it is audited
             self.audit.append(AGENT.id, AGENT.role, "summary.error", case_id, {"error": type(e).__name__})
+            try:  # the clinician's screen stops waiting for it
+                case = self._get(case_id)
+                if case.chart_summary and case.chart_summary.get("pending"):
+                    case.chart_summary = case.chart_summary | {"pending": False}
+                    self.cases.save(case)
+            except Exception:  # noqa: BLE001, S110 - the case store itself failed; the summary from the facts stays
+                pass
 
     def sign_attestation(self, who: Principal, case_id: str, answers: dict[str, str]) -> Case:
         self._require(who, Role.CLINICIAN)
