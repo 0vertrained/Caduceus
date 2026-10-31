@@ -71,6 +71,10 @@ class Case(BaseModel):
     # Packet passages that may answer each criterion the record could not, found inside the boundary at
     # enrichment. Candidates for a person to read, never evidence: the engine's answer does not change.
     leads: dict[str, list[dict[str, Any]]] | None = None
+    # What the chart shows, for the clinician's request to sign: written by the model inside the network when there
+    # is one (in the background, since it takes seconds on a CPU), else from the record's facts. Its route and model
+    # are kept with it, so the screen can say how it was written.
+    chart_summary: dict[str, Any] | None = None
     submission: dict[str, Any] | None = None
     payer_response: dict[str, Any] | None = None
     # The answer to a payer's request for more: who asked the clinician, and the note they signed (or that they

@@ -50,11 +50,11 @@ class OpenAICompatibleProvider(Provider):
     """vLLM, Ollama and the AI Workload and Release Platform all expose this API inside the VPC."""
 
     def __init__(self, base_url: str, model: str, api_key: str | None = None, client: httpx.Client | None = None,
-                 name: str = "in_vpc"):
-        self.name, self.model = name, model
+                 name: str = "in_vpc", vendor: str = "Mesa Verde's own server", timeout: float = 120):
+        self.name, self.model, self.vendor = name, model, vendor
         self._url = base_url.rstrip("/") + "/chat/completions"
         self._headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
-        self._client = client or httpx.Client(timeout=60)
+        self._client = client or httpx.Client(timeout=timeout)  # a small model on a CPU takes tens of seconds
 
     def complete(self, system: str, user: str, max_tokens: int = 800) -> Completion:
         body = {"model": self.model, "max_tokens": max_tokens, "temperature": 0,
@@ -67,7 +67,7 @@ class OpenAICompatibleProvider(Provider):
         data = r.json()
         usage = data.get("usage", {})
         return Completion(data["choices"][0]["message"]["content"], self.model, self.name,
-                          usage.get("prompt_tokens", 0), usage.get("completion_tokens", 0))
+                          usage.get("prompt_tokens", 0), usage.get("completion_tokens", 0), vendor=self.vendor)
 
 
 class AnthropicMessagesProvider(Provider):

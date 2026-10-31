@@ -559,7 +559,9 @@ function Denial({ c, onSaved }: { c: CaseView; onSaved: (c: CaseView) => void })
       setError((e as ApiError).message);
     }
   };
-  const how = a.draft?.route === "external" ? `by ${a.draft.model} from de-identified facts` : "from the template";
+  const how = a.draft && a.draft.route !== "template"
+    ? `by ${a.draft.model}${a.draft.route === "deid_in_vpc" ? " inside Mesa Verde’s network" : ""} from de-identified facts`
+    : "from the template";
   return (
     <section className="panel payer-question callout callout--ink" aria-labelledby="denial-title">
       <h2 id="denial-title" className="section-title">{c.payer.name} denied it</h2>

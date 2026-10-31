@@ -60,6 +60,10 @@ class Router:
         return self._external is not None
 
     @property
+    def in_vpc_enabled(self) -> bool:
+        return self._in_vpc is not None
+
+    @property
     def external_on(self) -> bool:
         """Configured, and not switched off by an administrator."""
         return self._external is not None and not self._external_off

@@ -17,13 +17,14 @@ from __future__ import annotations
 import re
 import threading
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, date, datetime, timedelta, tzinfo
 from pathlib import Path
 from typing import Any
 
 from caduceus.audit.log import sha256_of
 from caduceus.auth import AGENT, Principal, Role
-from caduceus.cases import Attestation, Case, EhrRecordRepository, Fax, LastAction, State, new_ehr_key
+from caduceus.cases import Attestation, Case, EhrRecordRepository, Fax, LastAction, StaleCase, State, new_ehr_key
 from caduceus.criteria.dsl import CriteriaSet
 from caduceus.criteria.engine import Engine
 from caduceus.drafting import Drafter, age_on, mid_sentence, patient_context, patient_name
@@ -36,6 +37,9 @@ from caduceus.storage import AuditStore, CaseStore, DocumentStore, FaxStore
 from caduceus.tools import ToolGateway, build_gateway
 from caduceus.words import clock, long_date, moment
 
+# Work for the model inside the network: one at a time, since a small model on a CPU answers one request at a time,
+# and never on a request's path, since each answer takes tens of seconds. Shared by every demo visitor's copy.
+MODEL_WORK = ThreadPoolExecutor(max_workers=1, thread_name_prefix="in-vpc-model")
 UNDO_SECONDS = 30
 NOTE_LIMIT = 4000  # characters; a payer's question is answered in a paragraph or two
 SNAPSHOT_FIELDS = ("state", "attestation_requested", "attestation_requested_at", "attestation_requested_by",
@@ -64,6 +68,7 @@ class Workflow:
         self.cases, self.audit, self.store, self.library = cases, audit, store, library
         self.engine, self.drafter, self.payer, self.now = engine, drafter, payer, clock
         self.faxes, self.fax_dir = faxes, fax_dir
+        self.later: Callable[..., Any] = MODEL_WORK.submit  # tests run background work at once instead
         self.filed = filed  # documents Caduceus files itself; the store finds them by id (WithFiledDocuments)
         self.launched = launched  # records an EHR shared by SMART launch; the store finds them (WithEhrRecords)
         self.tz = tz  # the clinic's time zone, for times a refusal or a request to a clinic gives in words
@@ -204,9 +209,43 @@ class Workflow:
         case.state, case.attestation_requested, case.attestation_requested_at = \
             State.AWAITING_ATTESTATION, unknown, self.now()
         case.attestation_requested_by = who.name
+        # What the chart shows, for the clinician: from the record's facts at once, then by the model inside the
+        # network in the background, when there is one. The clinician never waits for a model.
+        case.chart_summary = self.drafter.template_summary(case, unknown) | {"generated_at": self.now().isoformat()}
         self.audit.append(who.id, who.role, "attestation.requested", case_id,
                           {"criteria": unknown, "clinician": case.ordering_clinician["id"]})
-        return self.cases.save(case)
+        saved = self.cases.save(case)
+        if self.drafter.phi_route:
+            self.later(self._write_summary, case_id, saved.attestation_requested_at)
+        return saved
+
+    def _write_summary(self, case_id: str, asked_at: datetime | None) -> None:
+        """The in-network model's summary, kept only if the case still waits on the same request. Runs in the
+        background: anything that goes wrong is audited, and the summary from the record's facts stays."""
+        def waiting(c: Case) -> bool:
+            return c.state == State.AWAITING_ATTESTATION and c.attestation_requested_at == asked_at
+
+        try:
+            case = self._get(case_id)
+            if not waiting(case):
+                return
+            summary = self.drafter.chart_summary(case, self.store.record(case.patient_id, case.id).patient,
+                                                 case.attestation_requested)
+            for _ in range(3):  # a person may save the case meanwhile; the summary goes on top of their change
+                case = self._get(case_id)
+                if not waiting(case):
+                    return
+                case.chart_summary = summary | {"generated_at": self.now().isoformat()}
+                try:
+                    self.cases.save(case)
+                    break
+                except StaleCase:
+                    continue
+            self.audit.append(AGENT.id, AGENT.role, "summary.written", case_id,
+                              {"route": summary["route"], "model": summary.get("model"),
+                               "text_sha256": sha256_of(summary["text"])})
+        except Exception as e:  # noqa: BLE001 - background work must not take the process down; it is audited
+            self.audit.append(AGENT.id, AGENT.role, "summary.error", case_id, {"error": type(e).__name__})
 
     def sign_attestation(self, who: Principal, case_id: str, answers: dict[str, str]) -> Case:
         self._require(who, Role.CLINICIAN)

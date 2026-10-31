@@ -441,14 +441,16 @@ class Presenter:
                       for c in sorted(cases, key=lambda c: c.id)],
         }
 
-    def attestation(self, case: Case, summary: str, now: datetime) -> dict[str, Any]:
+    def attestation(self, case: Case, summary: dict[str, Any], now: datetime) -> dict[str, Any]:
         p = self.patient(case)
         crit = {c.id: c for c in self.library[case.criteria_set].criteria}
         out = {
             "case_id": case.id, "state": case.state.value,
             "patient": {"name": patient_name(p), "birth_date": long_date(date.fromisoformat(p["birthDate"]))},
             "service": case.service["display"], "ordered": long_date(case.received_at.astimezone(self.tz).date()),
-            "chart_summary": summary,
+            "chart_summary": summary["text"],
+            # How it was written: by the model inside the network, or from the record's facts.
+            "chart_summary_by": {"route": summary.get("route"), "model": summary.get("model")},
             "questions": [{"criterion_id": cid, "question": crit[cid].attestation_question or crit[cid].text,
                            "help": crit[cid].attestation_help,
                            "leads": [{k: lead[k] for k in ("title", "page", "text")} for lead in self.leads(case, cid)]}
