@@ -7,6 +7,7 @@ deterministic template writes the draft instead, so the workflow never depends o
 
 from __future__ import annotations
 
+import re
 from datetime import date
 from typing import Any
 
@@ -88,6 +89,21 @@ def _facts(case: Case, patient: dict) -> str:
     return "\n".join(lines)
 
 
+# A model's draft may not say every criterion is met when the facts say one is not, or is still with the clinician.
+# The model bake-off caught a candidate model doing this (docs/model-bakeoff.md); such a draft is not shown.
+CLAIMS_ALL_MET = re.compile(
+    r"\b(?:all (?:of )?(?:the )?(?:listed |documented |coverage |required )?criteria (?:are|have been|were) "
+    r"(?:met|satisfied)|meets (?:all )?(?:of )?(?:the )?(?:listed |documented |coverage |required )?criteria)\b", re.I)
+
+
+def contradicts(facts: str, reply: str) -> str | None:
+    """Why a reply misstates the facts' criteria, or None. Deterministic, so it can gate every draft."""
+    open_items = "awaiting clinician attestation" in facts or ": not met." in facts
+    if open_items and CLAIMS_ALL_MET.search(re.sub(r"\s+", " ", reply)):  # a non-breaking space must not hide it
+        return "the draft said every criterion is met, but the facts list one that is not"
+    return None
+
+
 def _denied(case: Case) -> tuple[dict[str, Any], dict[str, Any] | None]:
     reason = (case.payer_response or {}).get("decision", {}).get("reason") or {}
     result = next((r for r in case.effective_results() if r["text"] == reason.get("criterion")), None)
@@ -161,6 +177,9 @@ class Drafter:
             return {"text": template, "route": "template", "model": None,
                     "fallback_reason": f"{type(e).__name__}: {e}"[:200]}
         reply = out.completion.text.strip()
+        wrong = contradicts(facts, reply) if task == "draft_request" else None
+        if wrong:
+            return {"text": template, "route": "template", "model": None, "fallback_reason": f"Rejected: {wrong}"}
         text = reidentify(reply, result.token_map)
         # What left Caduceus, for the reviewer: it is de-identified by construction, so it may be kept and shown.
         sent = {"text": stamped.text, "policy": stamped.stamp.policy, "text_sha256": stamped.stamp.text_sha256,
