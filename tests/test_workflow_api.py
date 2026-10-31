@@ -301,7 +301,7 @@ def test_end_to_end_drafting_never_sends_patient_identifiers(env):
         wire.append(request.content)
         body = json.loads(request.content)
         tokens = [t for t in ("[NAME_1]", "[DATE_1]") if t in body["messages"][0]["content"]]
-        text = f"{tokens[0] if tokens else 'The patient'} meets the documented criteria for imaging."
+        text = f"{tokens[0] if tokens else 'The patient'} has documented findings supporting imaging."
         return httpx.Response(200, json={"content": [{"type": "text", "text": text}],
                                          "usage": {"input_tokens": 100, "output_tokens": 12}})
 

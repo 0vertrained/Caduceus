@@ -127,3 +127,13 @@ def test_thinking_is_turned_off_and_a_model_that_refuses_is_asked_again_without_
 
     assert ollama(handler).complete("s", "u").text == "Reply."
     assert bodies[0]["think"] is False and "think" not in bodies[1]
+
+
+def test_a_draft_that_says_every_criterion_is_met_when_one_is_pending_is_rejected():
+    from caduceus.drafting import contradicts
+    pending = "Criteria:\n- Pain limits daily activities: awaiting clinician attestation. None found."
+    assert contradicts(pending, "The patient meets the documented criteria for total knee replacement.")
+    assert contradicts(pending, "All criteria are met.")
+    assert contradicts(pending, "The patient meets\u00a0the documented\ncriteria.")
+    assert contradicts(pending, "Two criteria await the ordering clinician's attestation.") is None
+    assert contradicts("Criteria:\n- Osteoarthritis: met.", "All criteria are met.") is None
