@@ -85,7 +85,22 @@ def condition_onset(r: dict) -> date | None:
     return parse_date(r.get("onsetDateTime") or (r.get("onsetPeriod") or {}).get("start") or r.get("recordedDate"))
 
 
+VOIDED = {"refuted", "entered-in-error"}
+
+
+def condition_is_voided(r: dict) -> bool:
+    """Ruled out, or charted in error: such a diagnosis is not the patient's, whatever its clinical status says."""
+    return bool({c.get("code") for c in (r.get("verificationStatus") or {}).get("coding", [])} & VOIDED)
+
+
+def condition_onset_is_known(r: dict) -> bool:
+    """True when the record says when the problem began; recordedDate alone says only when it was charted."""
+    return bool(r.get("onsetDateTime") or (r.get("onsetPeriod") or {}).get("start"))
+
+
 def condition_is_active(r: dict, as_of: date) -> bool:
+    if condition_is_voided(r):
+        return False
     status = {c.get("code") for c in (r.get("clinicalStatus") or {}).get("coding", [])}
     if status and not status & {"active", "recurrence", "relapse"}:
         return False
