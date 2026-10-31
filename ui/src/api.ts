@@ -191,6 +191,35 @@ export interface CaseView {
   read_only: boolean;
   /** For a case created from a fax: who checked it against the page, when, and what they corrected. */
   came_by_fax: { from: string | null; by: string; at: string; corrected: string | null; asked_clinic: boolean; words: string } | null;
+  /** For a case started from inside an EHR: which EHR, who started it, and when. */
+  came_from_ehr: { from: string; by: string; at: string; words: string } | null;
+}
+
+/** Whether Caduceus can be opened from an EHR here, and the client id the launcher holds it to. */
+export interface SmartInfo { enabled: boolean; client_id: string | null }
+
+/** One service, and how much of its approved criteria the EHR's record answers before any case exists. */
+export interface EhrService {
+  code: string; label: string; display: string; total: number; met: number; unmet: number; unknown: number;
+  clinician: string | null; side: string | null;
+  /** "The record answers 1 of the 4 criteria." */
+  lead: string;
+  /** That, and who will be asked to confirm the rest. */
+  answers: string;
+}
+
+/** A patient's record as an EHR shared it by SMART launch, in the visitor's own copy of the demo. */
+export interface EhrRecordView {
+  key: string;
+  patient: { name: string; born: string; age: number; sex: string };
+  source: { host: string; read: string; by: string };
+  holds: { what: string; words: string }[];
+  relevant: string[];
+  reads: string;
+  services: EhrService[];
+  cases: { id: string; service: string; status: Status }[];
+  payers: string[];
+  read_only: boolean;
 }
 
 export interface TimelineEntry {

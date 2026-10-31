@@ -214,11 +214,13 @@ function CaseHeader({ c, setCase }: { c: CaseView; setCase: (c: CaseView) => voi
           )}
         </dl>
         {c.came_by_fax && <p className="case-head__fax">{glue(c.came_by_fax.words)}</p>}
+        {c.came_from_ehr && <p className="case-head__fax">{glue(c.came_from_ehr.words)}</p>}
         <details className="details">
           <summary className="details__summary">More details about this request</summary>
           <dl className="facts">
             <div className="facts__item"><dt className="facts__term">Payer</dt><dd className="facts__value">{c.payer.name}</dd></div>
-            <div className="facts__item"><dt className="facts__term">Member ID</dt><dd className="facts__value">Ending in {c.payer.member_id_last4}</dd></div>
+            <div className="facts__item"><dt className="facts__term">Member ID</dt><dd className="facts__value">{c.payer.member_id_last4
+              ? `Ending in ${c.payer.member_id_last4}` : "Not given: the EHR shared the clinical record only"}</dd></div>
             <div className="facts__item"><dt className="facts__term">Procedure code</dt><dd className="facts__value">{c.service.system.toUpperCase()} {c.service.code}</dd></div>
             <div className="facts__item"><dt className="facts__term">Received</dt><dd className="facts__value">{c.received}, {c.packet.length} pages</dd></div>
             <div className="facts__item"><dt className="facts__term">Case number</dt><dd className="facts__value">{c.id}</dd></div>
@@ -504,7 +506,7 @@ function SidePanel({ c, panel, setPanel, onSaved }: {
                 onClick={() => { setDraftText(c.draft?.text ?? ""); setPanel({ kind: "edit" }); }}>Edit the draft</button>
       )}
       <div className="packet">
-        <h3 className="packet__title" id="packet-title">Referral packet</h3>
+        <h3 className="packet__title" id="packet-title">{c.came_from_ehr ? "Newest notes from the EHR" : "Referral packet"}</h3>
         <ul aria-labelledby="packet-title">
           {c.packet.map((p) => (
             <li key={p.id}>

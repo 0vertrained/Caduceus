@@ -642,6 +642,40 @@ mark { background: var(--mark); color: var(--ink); padding: 0.05em 0.15em; margi
 .help__list { padding: 8px 24px; }
 .help__section { display: flex; flex-direction: column; gap: var(--space-3); }
 
+/* Opening from an EHR: the entry on Help and the queue, the launch steps, and the record the EHR shared ---------- */
+.ehr-entry { display: flex; flex-direction: column; gap: var(--space-3); }
+.ehr-entry--compact { color: var(--ink-2); max-width: 64ch; }
+.ehr > * { max-width: 764px; }
+.ehr__working { display: flex; align-items: flex-start; gap: var(--space-3); }
+.ehr__working svg { flex: none; margin-top: 3px; color: var(--seal); }
+.ehr__problem { padding: 22px 28px 22px 32px; display: flex; flex-direction: column; gap: var(--space-2); }
+.ehr__problem-text { font-size: var(--text-lead); line-height: 1.4; font-weight: 600; }
+.ehr__head { padding: 28px 36px; display: flex; flex-direction: column; gap: 14px; }
+.ehr__from { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); }
+.ehr__holds, .ehr__cases { padding: 24px 32px; display: flex; flex-direction: column; gap: var(--space-3); }
+.ehr__list { margin: 0; display: flex; flex-direction: column; }
+.ehr__row { display: grid; grid-template-columns: minmax(9em, 15em) minmax(0, 1fr); gap: 2px var(--space-5); padding: 12px 0;
+  border-top: 1px solid var(--rule-soft); }
+.ehr__row dt { font-weight: 600; }
+.ehr__row dd { margin: 0; }
+.ehr__relevant { display: flex; flex-direction: column; gap: var(--space-1); }
+.ehr__relevant ul { list-style: disc; padding-left: 1.4em; display: flex; flex-direction: column; gap: var(--space-1); }
+.ehr__form { padding: 28px 32px; display: flex; flex-direction: column; gap: var(--space-5); }
+.choice--rich { padding: 14px 16px; align-items: flex-start; }
+.choice--rich input { margin-top: 2px; flex: none; }
+.choice__body { display: flex; flex-direction: column; gap: 2px; }
+.choice__title { font-weight: 600; }
+.choice__note { font-weight: 400; color: var(--ink-2); }
+.ehr__sides { display: flex; flex-wrap: wrap; gap: 10px var(--space-3); }
+.ehr__sides .choice { flex: 1 1 12em; }
+.ehr__answers { display: flex; flex-direction: column; gap: var(--space-2); padding: 16px 20px; background: var(--seal-wash);
+  border: 1px solid var(--hairline); border-radius: var(--radius-control); }
+.ehr__counts { display: flex; flex-wrap: wrap; gap: var(--space-2) 20px; }
+.ehr__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); }
+/* Two lines kept for the words beside the button, so the button never moves when they change */
+.ehr__status { flex: 1 1 260px; min-height: 2.9em; }
+.ehr__field--error { box-shadow: inset 5px 0 0 var(--urgent); margin: 0 -16px; padding: 0 16px 0 21px; }
+
 /* Reflow ---------------------------------------------------------------------------------------- */
 
 /* Larger text gets one comfortable column on the case page, unless the screen is very wide */
@@ -672,7 +706,9 @@ mark { background: var(--mark); color: var(--ink); padding: 0.05em 0.15em; margi
   .tour__inner { padding: var(--space-3) var(--space-4); }
   .page { padding: var(--space-4) var(--space-4) var(--space-7); }
   .helper__steps, .facts { grid-template-columns: minmax(0, 1fr); }
-  .row, .case-head, .criteria, .side, .history, .fax-inbox, .intake__form, .ledger, .policy, .admin__section { padding-left: var(--space-4); padding-right: var(--space-4); }
+  .row, .case-head, .criteria, .side, .history, .fax-inbox, .intake__form, .ledger, .policy, .admin__section,
+  .ehr__head, .ehr__holds, .ehr__cases, .ehr__form, .ehr__problem { padding-left: var(--space-4); padding-right: var(--space-4); }
+  .ehr__row { grid-template-columns: minmax(0, 1fr); }
   .payer-question { padding-left: 22px; padding-right: var(--space-4); }
   .criterion--attention, .criterion--showing { margin: 0 -12px; padding: 16px 12px; }
   .history__item { grid-template-columns: minmax(0, 1fr); }
