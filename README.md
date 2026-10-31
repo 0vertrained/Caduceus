@@ -56,7 +56,7 @@ the clinician's attestation, the payer's question and the clinician's note, a de
 | **Eval gate** | `make evals` fails the build if agreement falls below 0.97, or if any unknown is reported as met, any identifier leaks, any attack succeeds, or any wrong fax field is accepted without a person. | CI |
 | **Hard sets and packet retrieval** | 54 messy synthetic cases (a dev split and a held-out split) with long, shuffled, OCR-damaged packets and record problems from real charts. Retrieval finds the sentences that bear on a criterion inside the boundary: word BM25 after clinical normalization, fused with character trigrams; the agent calls it as `documents.search_packet`. | Held-out, first run: engine agreement 0.885 with 4 unsafe errors; 0.942 with 2 after fixes. Evidence in the top 5 passages: 0.899 (plain BM25: 0.512). Reported in CI, not yet a gate |
 | **Reproducible data** | 11 scenarios built from Synthea with labels known by construction. | `make data` regenerates the dataset byte for byte; CI checks with `git diff --exit-code` |
-| **Deployment** | Dockerfile, docker-compose (the model on an internal-only network), a Terraform skeleton for AWS. | Compose validated; Checkov 292 passed, 0 failed; Terraform not yet applied |
+| **Deployment** | Dockerfile, docker-compose (Postgres and the model, each on an internal-only network), a Terraform skeleton for AWS. Cases and the audit log move from SQLite to Postgres when `CADUCEUS_DATABASE_URL` is set ([docs/postgres.md](docs/postgres.md)). | Compose validated; the repository, audit and workflow tests also run on Postgres 17 in CI; Checkov 292 passed, 0 failed; Terraform not yet applied |
 
 The 1.00 agreement measures that the engine does what its criteria say on cases built to known labels. It is not
 a measure of clinical validity. That needs real policies, real charts and clinician reviewers. The hard sets are a
@@ -158,7 +158,8 @@ simulation. Synthea also runs with the network switched off (`scripts/offline.sh
 An in-VPC vision-language model behind the fax tool, and per-tier thresholds fitted on real faxes (ADR 6).
 Dense retrieval with an in-VPC embedding model (ADR 5), and packet passages in the interface. Laterality, order and
 value-set changes to the criteria sets, for a reviewer ([docs/hard-evaluation.md](docs/hard-evaluation.md)). The
-Postgres repository, then Temporal (ADR 4). OIDC sign-in in the
+outbox's send-once lock in the database, so API instances can share one ([docs/postgres.md](docs/postgres.md)), then
+Temporal (ADR 4). OIDC sign-in in the
 UI: the API side is done and tested. HAPI FHIR and Keycloak in compose. An AWS apply. The full red-team corpus.
 Expedited (72-hour) requests.
 

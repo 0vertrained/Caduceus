@@ -1,6 +1,7 @@
 # 4. A database state machine with an outbox first; Temporal later
 
-Status: Accepted, built for SQLite (`src/caduceus/workflow.py`, `cases.py`); Postgres and Temporal on the roadmap
+Status: Accepted, built for SQLite and Postgres (`src/caduceus/workflow.py`, `cases.py`, `postgres.py`); Temporal on
+the roadmap
 
 ## Context
 
@@ -32,3 +33,23 @@ never be sent twice, and a specialist who approves by mistake needs a way back b
 * **Temporal from day one.** Strong guarantees, but a cluster to operate before there is a workflow complex
   enough to need it.
 * **A queue (SQS) with workers.** Gives retries but not the case-level state the UI needs to show.
+
+## Built since: the Postgres store
+
+The case, fax and document repositories and the audit log now have Postgres versions (`src/caduceus/postgres.py`),
+with the same interfaces and the same meaning (`src/caduceus/storage.py`). Setting `CADUCEUS_DATABASE_URL` chooses
+them; otherwise everything stays in SQLite, and the public demo always does. How to run, migrate and verify:
+[docs/postgres.md](../postgres.md).
+
+* A case's version check and its write are one statement, so of two instances saving the same read, the second gets
+  `StaleCase`.
+* The schema is versioned SQL (`src/caduceus/migrations`), applied in order at startup under an advisory lock and
+  recorded in `schema_migrations`. A migration edited after it was applied is refused.
+* The audit log's hashes are SQLite's, computed the same way over the same text. A trigger refuses UPDATE, DELETE
+  and TRUNCATE; the service's role may only INSERT and SELECT (`infra/sql/audit.sql`, which now holds the
+  privileges while the migration holds the table). Appends from every instance take one advisory lock, and a unique
+  constraint on each event's predecessor stops the chain forking.
+* The repository, audit and workflow tests run on both databases; CI runs them against Postgres 17.
+
+Before a second instance shares the database, the outbox's send-once lock has to move into it. Today the lock is in
+memory, per process, so two instances could both send the same approved request.
