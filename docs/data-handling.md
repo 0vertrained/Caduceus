@@ -19,6 +19,8 @@ real data.
 | Case numbers in URLs and server logs | An internal identifier, kept inside the boundary | API access logs (KMS-encrypted CloudWatch) |
 | Text sent to the external model | De-identified only, and only for drafting | Leaves the VPC; nothing else does. Anthropic in the target deployment; Ollama Cloud in the public demo (hosted mainly in the US; Ollama states prompts and replies are not logged or trained on). Each draft keeps a copy of exactly what was sent, which the case page shows |
 | Patient names typed into search | Yes | Never leaves the browser tab: the term travels in history state, not the URL, so it cannot reach server or load-balancer logs |
+| A patient's record an EHR shared at a SMART launch | Yes | Read by the API over FHIR with the launching person's access token, then filed with the cases, compressed: the name, birth date, sex, and the contact details and identifiers that de-identification needs; every diagnosis; procedures and measurements within the approved criteria's look-back windows; the five newest notes. Narrative text and server metadata are dropped. In the public demo it lives only in the visitor's own copy and goes when that copy starts over or after 6 hours. The browser names it by a random key, never by the EHR's id for the patient. The audit log keeps the FHIR server, counts and scope, never contents |
+| A SMART launch's access token, code, PKCE verifier and state | Not PHI, but each can open PHI | Token: in the API's memory for the one request that reads the record; never stored, logged, audited or sent to the browser. Code: carried by the browser once, in the address the EHR sends it back to, which the page clears at once. Verifier and state: in the API's memory only, for at most 10 minutes, and used once |
 
 ## Where it flows
 
@@ -35,6 +37,44 @@ real data.
 5. If the payer pends the request and asks for documentation, the ordering clinician writes the note themselves;
    no model drafts it. After a person approves, it goes by the same channel as an attachment to a Claim related to
    the first. The audit log records a hash of the note, never its words.
+
+A case can also start inside the EHR, by a SMART launch ([docs/smart-launch.md](smart-launch.md)). The API reads
+the patient's record with the launching person's authority and files it with the cases. From then on the record
+flows exactly as above: drafting still gets only de-identified facts.
+
+## Opening from an EHR: the threat model
+
+In a real deployment a SMART launch brings real PHI into Caduceus: a patient's record, read from the EHR with a
+person's authority. In the public demo the EHR is the public SMART sandbox, and every patient in it is synthetic.
+The controls below are written for the real case.
+
+| Threat | Control | Tested by |
+|---|---|---|
+| Someone points Caduceus at their own server, to plant a record or to probe the network | An allowlist of FHIR base URLs, matched exactly and checked before any request: https only, plain http only to the machine itself. Empty outside the demo unless configured. No HTTP redirect is followed | `test_an_iss_off_the_allowlist_is_refused_before_anything_is_fetched`, `test_launch_settings_that_are_not_safe_are_refused` |
+| A changed SMART configuration sends the code elsewhere | The authorization and token endpoints must be on the FHIR server's own origin | `test_a_configuration_that_points_elsewhere_or_lacks_pkce_is_refused` |
+| A code is finished in the wrong place: an attacker's in a victim's session, or a victim's in an attacker's | The state is single use, good for 10 minutes, and bound to the person and to the demo copy. The redirect URI comes from configuration, never from the request | `test_a_state_is_used_once`, `test_a_launch_started_in_one_copy_cannot_finish_in_another` |
+| A code is read from a log, a referrer or the browser history | PKCE S256: a code is useless without the verifier, which never leaves the API. The page clears the code from the address at once; the site sends no referrer | `test_the_ehr_exchanges_the_code_only_for_the_verifier_behind_its_challenge` |
+| The access token leaks | It is exchanged and used on the server, in one request. It is never stored, logged, audited or returned | `test_nothing_secret_reaches_the_audit_log_the_record_or_the_browser` |
+| A hostile next-page link sends the token to another host | The token goes only to addresses on the FHIR server | `test_a_next_link_off_the_fhir_server_is_never_followed` |
+| A huge or slow answer ties up the API | 10 seconds per request, 20 in all; 3 MB streamed and cut off; 1,000 entries; 20 pages. Launch steps are rate-limited per visitor and for everyone. A record over a limit is refused whole, never filed in part | `test_a_record_over_a_limit_is_refused_whole`, `test_a_slow_answer_runs_out_of_time`, `test_launch_steps_are_limited_per_visitor` |
+| A server returns another patient's data | Entries whose subject is not the launched patient are dropped and counted | `test_entries_about_anyone_else_are_dropped` |
+| Malformed data breaks a case later | The engine and the drafter must be able to read the record before it is filed | `test_a_record_the_engine_cannot_read_is_not_filed` |
+| The EHR's error text shows internals | Fixed plain words on the screen; only the OAuth error code is kept | `test_a_refused_exchange_keeps_the_ehrs_own_words_off_the_screen` |
+| More is read than the request needs | The scopes name five resource types for one patient. Procedures and measurements are read only as far back as the approved criteria look; narrative text and server metadata are dropped | `test_a_launch_reads_the_patient_within_the_criteria_windows` |
+| Caduceus is framed by a hostile page | `frame-ancestors 'none'` stays. The launcher's iframe mode is turned off in the link | The end-to-end walk, which runs the launch with the Content Security Policy enforced |
+
+What is left:
+
+* **The callback address carries the code.** Whatever serves the UI may log it: Netlify in the demo, or uvicorn
+  where the API serves the UI. The code is single use, expires in minutes, and is useless without the verifier.
+  Where a deployment can, it should keep query strings out of its access logs.
+* **The EHR's launch value is the EHR's design.** The SMART launcher encodes its launch options, the patient's id
+  among them, in the address it opens. Caduceus passes the value on in a request body, never in an address of its
+  own.
+* **The EHR user is taken on TLS's word.** The ID token's `fhirUser` is recorded in the audit log after checking its
+  audience and expiry, not its signature. It decides nothing.
+* **Pending launches live in one process's memory.** A restart drops them, and the person launches again. More than
+  one instance needs a shared store.
 
 ## What de-identification removes
 
@@ -81,4 +121,7 @@ the leakage suite (planted identifiers never reach the captured external wire; p
 `test_a_note_changed_after_approval_is_not_sent`,
 `test_the_patient_is_found_in_the_chart_or_the_closest_are_offered` (no record number reaches the browser, no name
 reaches the audit log), `test_a_fax_missing_something_waits_on_the_clinic_until_they_send_it` (the request to the
-clinic never names the patient), and the end-to-end check that a searched name never appears in the URL.
+clinic never names the patient), `test_nothing_secret_reaches_the_audit_log_the_record_or_the_browser` (no token,
+code or verifier in the audit log, the filed record or any response),
+`test_the_record_lives_only_in_the_visitors_copy_and_goes_when_it_starts_over`, the end-to-end check that a searched
+name never appears in the URL, and the one that a launch's code leaves the address bar.
