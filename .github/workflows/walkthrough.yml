@@ -1,0 +1,117 @@
+name: walkthrough
+
+# Records the captioned walkthrough (ui/public/demo.mp4) and the README's stills (docs/screenshots) the way the
+# public demo runs: the showcase cases, a payer that takes a minute, the recorded draft replies, and the in-network
+# model beside the API, which a laptop without the model's image cannot show. Run by hand on main. The recording
+# goes to the walkthrough branch, for a person to watch before it is committed.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: walkthrough
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.13"
+  NODE_VERSION: "22"
+  PLAYWRIGHT_VERSION: "1.63.0"
+
+jobs:
+  record:
+    name: Record the walkthrough with the in-network model
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write  # to pull the published model image, with short-lived Google credentials; no stored key
+    env:
+      PROJECT: project-fc4eda29-999d-4812-a00
+      REGION: us-central1
+      WORKLOAD_IDENTITY_PROVIDER: projects/612996341673/locations/global/workloadIdentityPools/github/providers/caduceus
+      DEPLOY_SA: caduceus-deployer@project-fc4eda29-999d-4812-a00.iam.gserviceaccount.com
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SA }}
+      - name: Start the in-network model the demo runs, reachable only from this machine
+        # The published image (model-image.yml), on this runner's loopback address and nowhere else, as it listens
+        # on 127.0.0.1 beside the API on Cloud Run.
+        run: |
+          image="${REGION}-docker.pkg.dev/${PROJECT}/caduceus/model:current"
+          gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+          docker pull "$image"
+          docker run -d --name model -p 127.0.0.1:8081:8081 -e LLAMA_ARG_HOST=0.0.0.0 "$image"
+          for _ in $(seq 1 90); do
+            curl -fsS http://127.0.0.1:8081/health >/dev/null 2>&1 && break
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:8081/health || { docker logs model 2>&1 | tail -n 30; exit 1; }
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - run: pip install -e .
+      - name: Tesseract OCR, for fax intake, and ffmpeg, to join the clips
+        run: sudo apt-get install -y --no-install-recommends tesseract-ocr ffmpeg
+      - run: npm ci --no-audit --no-fund && npm run build
+        working-directory: ui
+      - name: Install Playwright and Chromium
+        run: |
+          npm install --global "playwright@${PLAYWRIGHT_VERSION}"
+          npx --yes "playwright@${PLAYWRIGHT_VERSION}" install --with-deps chromium
+      - name: Record it
+        env:
+          CADUCEUS_IN_VPC_URL: http://127.0.0.1:8081/v1
+          CADUCEUS_IN_VPC_MODEL: qwen2.5-1.5b-instruct
+        run: |
+          mkdir -p "$RUNNER_TEMP/walkthrough"
+          SHOTS_DIR="$RUNNER_TEMP/walkthrough/screenshots" NODE_PATH="$(npm root --global)" \
+            scripts/demo_video.sh "$RUNNER_TEMP/walkthrough/demo.mp4"
+          duration="$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$RUNNER_TEMP/walkthrough/demo.mp4")"
+          echo "::notice title=Walkthrough::${duration%.*} seconds; $(ls "$RUNNER_TEMP/walkthrough/screenshots" | wc -l) stills"
+      - name: Model log, for the record
+        if: always()
+        run: docker logs model 2>&1 | tail -n 40
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: walkthrough
+          path: ${{ runner.temp }}/walkthrough
+          if-no-files-found: error
+
+  publish:
+    # A separate job, so the token that can write to the repository never runs alongside installed packages, the
+    # browser or the model: this job only downloads the recording and pushes it.
+    name: Publish the recording to the walkthrough branch
+    needs: record
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: walkthrough
+          path: walkthrough
+      - name: Push to the walkthrough branch
+        env:
+          TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          git init -q -b walkthrough published && cd published || exit 1
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          cp -r ../walkthrough/. .
+          git add -A
+          git commit -qm "Walkthrough recorded from ${GITHUB_SHA:0:7}, with the in-network model"
+          git push -qf "https://x-access-token:${TOKEN}@github.com/${REPOSITORY}.git" walkthrough
