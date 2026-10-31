@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.10
 # The model inside the network: llama.cpp's server with Qwen2.5-1.5B-Instruct (Apache 2.0), on a CPU. It does the
-# work that needs the patient's details (the clinician's chart summary), so it must have nothing to call out to:
+# work that needs the patient's details (the clinician's chart summary), so it is built to have nothing to call out with:
 # - built from source at a pinned commit, without its HTTPS client (LLAMA_OPENSSL=OFF), its web UI (which can
 #   download models), RPC (the backend with past remote-code-execution advisories), tests or examples;
 # - the weights baked in, pinned by revision and sha256, and served with --offline;
