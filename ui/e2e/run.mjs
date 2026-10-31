@@ -389,7 +389,11 @@ await page.getByRole("status").filter({ hasText: "The external model is on again
 // browser only navigates to the EHR and back and talks to nothing but /api.
 const ehrIss = process.env.E2E_SMART_ISS;
 if (!ehrIss) report.failures.push("ehr: E2E_SMART_ISS is not set; run the walk through scripts/e2e.sh");
-const strict = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+// It comes as a visitor of its own, at the address Netlify would report, in the same copy. Here the API serves the
+// UI's files too, and they count toward the demo's 300 requests per visitor in five minutes: the walk as one
+// visitor would come close to that, and the last pages would be refused.
+const strict = await browser.newContext({ viewport: { width: 1280, height: 900 },
+  extraHTTPHeaders: { "x-nf-client-connection-ip": "203.0.113.7" } });
 await share(strict);
 await strict.addInitScript(() => document.addEventListener("securitypolicyviolation",
   (e) => console.error(`CSP violation: ${e.violatedDirective} ${e.blockedURI}`)));
