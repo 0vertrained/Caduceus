@@ -198,6 +198,11 @@ class AppealBody(BaseModel):
     text: str = Field(max_length=20_000)
 
 
+class UrgencyBody(BaseModel):
+    expedited: bool
+    reason: str = Field(default="", max_length=500)
+
+
 class ConfirmFaxBody(BaseModel):
     values: dict[str, Annotated[str, Field(max_length=300)]] = Field(max_length=20)
     # The fields sent to a person that they ticked as matching the fax. The server refuses the case until each one
@@ -445,6 +450,11 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
     @app.post("/api/cases/{case_id}/approve")
     def approve(case_id: str, who: Principal = Depends(principal)):
         return view(live.svc.workflow.approve(who, load(case_id).id), who)
+
+    @app.post("/api/cases/{case_id}/urgency")
+    def urgency(case_id: str, body: UrgencyBody, who: Principal = Depends(principal)):
+        """Ask the payer for an expedited decision (72 hours under the CMS rule), or go back to standard."""
+        return view(live.svc.workflow.set_urgency(who, load(case_id).id, body.expedited, body.reason), who)
 
     @app.post("/api/cases/{case_id}/request-note")
     def request_note(case_id: str, who: Principal = Depends(principal)):

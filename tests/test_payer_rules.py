@@ -69,7 +69,7 @@ def test_a_specific_denial_gets_an_appeal_that_a_person_approves(env):  # noqa: 
     svc, client, clock = env
     sent: list[dict] = []
     appeal = svc.workflow.payer.appeal
-    svc.workflow.payer.appeal = lambda bundle, *a: sent.append(bundle) or appeal(bundle, *a)
+    svc.workflow.payer.appeal = lambda bundle, *a, **k: sent.append(bundle) or appeal(bundle, *a, **k)
 
     case = send(svc, client, clock, SLEEP)
     assert case["state"] == "denied" and case["status"]["word"] == "Denied; appeal drafted"

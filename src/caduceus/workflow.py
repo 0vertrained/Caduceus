@@ -130,30 +130,62 @@ class Workflow:
             return self._dispatch_due_locked()
 
     def _dispatch_due_locked(self) -> list[str]:
-        sent = []
+        """Send what is due, then read any decision the payer has had time to make. A request in review is asked
+        about once, when the payer said it would be decided, so waiting adds nothing to the audit log."""
+        moved = []
         for case in self.cases.all():
-            sub = case.submission or {}
-            if case.state == State.SUBMITTED and not sub.get("sent") and \
-                    datetime.fromisoformat(sub["send_after"]) <= self.now():
+            sub, waiting = case.submission or {}, case.payer_response or {}
+            if case.state != State.SUBMITTED:
+                continue
+            if not sub.get("sent") and datetime.fromisoformat(sub["send_after"]) <= self.now():
                 tool = {"reply": "payer.respond", "appeal": "payer.appeal"}.get(sub.get("kind"), "payer.submit")
                 result = self.gateway.call(AGENT, case.id, "submission", tool, case_id=case.id,
                                            approval_seq=sub["approval_seq"])
-                decision = self.gateway.call(AGENT, case.id, "follow_up", "payer.status",
-                                             submission_id=result["id"])
-                case = self._get(case.id)
-                case.payer_response = decision
-                new_state = {"A1": State.APPROVED, "A3": State.DENIED}.get(decision["decision"]["code"], State.PENDED)
-                if new_state == State.PENDED:
-                    case.reply = None  # a new question starts a new reply
-                elif case.decided_at is None:
-                    case.decided_at = self.now()  # the decision clock stops at the first approval or denial
-                case = self.cases.save(case)
-                self.gateway.call(AGENT, case.id, "follow_up", "tickets.set_state", case_id=case.id,
-                                  state=new_state.value, reason=decision["decision"]["display"])
-                if new_state == State.DENIED:
-                    self._draft_appeal(case.id)
-                sent.append(case.id)
-        return sent
+                self._follow_up(case.id, result["id"])
+                moved.append(case.id)
+            elif sub.get("sent") and waiting.get("in_review") and \
+                    datetime.fromisoformat(waiting["expected_by"]) <= self.now():
+                if self._follow_up(case.id, waiting["id"]):
+                    moved.append(case.id)
+        return moved
+
+    def _follow_up(self, case_id: str, submission_id: str) -> bool:
+        """Read the payer's decision and act on it. False when the payer is still reviewing."""
+        decision = self.gateway.call(AGENT, case_id, "follow_up", "payer.status", submission_id=submission_id)
+        case = self._get(case_id)
+        if decision.get("in_review"):
+            case.payer_response = {k: decision[k] for k in ("id", "submitted_at", "in_review", "expected_by",
+                                                            "priority")}
+            self.cases.save(case)
+            return False
+        case.payer_response = decision
+        new_state = {"A1": State.APPROVED, "A3": State.DENIED}.get(decision["decision"]["code"], State.PENDED)
+        if new_state == State.PENDED:
+            case.reply = None  # a new question starts a new reply
+        elif case.decided_at is None:
+            case.decided_at = self.now()  # the decision clock stops at the first approval or denial
+        case = self.cases.save(case)
+        self.gateway.call(AGENT, case.id, "follow_up", "tickets.set_state", case_id=case.id,
+                          state=new_state.value, reason=decision["decision"]["display"])
+        if new_state == State.DENIED:
+            self._draft_appeal(case.id)
+        return True
+
+    def set_urgency(self, who: Principal, case_id: str, expedited: bool, reason: str = "") -> Case:
+        """Ask the payer for an expedited decision, or go back to standard. Only before the request is approved, and
+        an expedited request needs the clinical reason the standard timeframe would put the patient at risk."""
+        self._require(who, Role.PA_SPECIALIST)
+        case = self._get(case_id)
+        if case.state not in (State.REVIEW, State.AWAITING_ATTESTATION, State.RETURNED):
+            raise ActionRefused("The request has been approved, so its urgency can no longer change.")
+        reason = " ".join(reason.split())
+        if expedited and not reason:
+            raise ActionRefused("Say why the standard timeframe could seriously jeopardize the patient's life, "
+                                "health or ability to regain maximum function.", field="reason")
+        case.urgency, case.urgency_reason = ("expedited", reason) if expedited else ("standard", None)
+        self.audit.append(who.id, who.role, "case.urgency_changed", case_id,
+                          {"urgency": case.urgency, "reason_sha256": sha256_of(reason) if expedited else None})
+        return self.cases.save(case)
 
     # People --------------------------------------------------------------------------------------------
 
@@ -656,7 +688,7 @@ class Workflow:
         case, _ = self._outbox(case_id, approval_seq, "case.approved", None)
         case.sent_at = case.sent_at or self.now()
         bundle = build_request_bundle(case)
-        result = self.payer.submit(bundle, case.payer["name"])
+        result = self.payer.submit(bundle, case.payer["name"], now=self.now())
         case.submission = (case.submission or {}) | {"sent": True, "sent_at": self.now().isoformat(),
                                                      "submission_id": result["id"]}
         self.cases.save(case)
@@ -668,7 +700,8 @@ class Workflow:
         note = (case.reply or {}).get("note") or {}
         if sha256_of(note.get("text", "")) != approval.detail.get("note_sha256"):
             raise ActionRefused("The note changed after it was approved.")
-        result = self.payer.respond(build_reply_bundle(case), case.payer["name"], case.payer_response["id"])
+        result = self.payer.respond(build_reply_bundle(case), case.payer["name"], case.payer_response["id"],
+                                    now=self.now())
         case.submission = (case.submission or {}) | {"sent": True, "sent_at": self.now().isoformat(),
                                                      "submission_id": result["id"]}
         self.cases.save(case)
@@ -679,14 +712,15 @@ class Workflow:
         case, approval = self._outbox(case_id, approval_seq, "appeal.approved", "appeal")
         if sha256_of((case.appeal or {}).get("text", "")) != approval.detail.get("appeal_sha256"):
             raise ActionRefused("The appeal changed after it was approved.")
-        result = self.payer.appeal(build_appeal_bundle(case), case.payer["name"], case.payer_response["id"])
+        result = self.payer.appeal(build_appeal_bundle(case), case.payer["name"], case.payer_response["id"],
+                                   now=self.now())
         case.submission = (case.submission or {}) | {"sent": True, "sent_at": self.now().isoformat(),
                                                      "submission_id": result["id"]}
         self.cases.save(case)
         return result
 
     def _payer_status(self, submission_id: str) -> dict[str, Any]:
-        return self.payer.status(submission_id)
+        return self.payer.status(submission_id, now=self.now())
 
 
 def approve_blocked_reason(case: Case) -> str | None:

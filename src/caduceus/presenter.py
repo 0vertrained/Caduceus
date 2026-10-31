@@ -16,7 +16,7 @@ from caduceus.criteria.dsl import CriteriaSet
 from caduceus.drafting import age_on, patient_name
 from caduceus.fhir.store import FhirStore, document_text, fax_image
 from caduceus.intake import fields_in_words
-from caduceus.payer import RULE_PLANS, STANDARD_DECISION_DAYS
+from caduceus.payer import EXPEDITED_DECISION_HOURS, RULE_PLANS, STANDARD_DECISION_DAYS
 from caduceus.timeline import who
 from caduceus.words import clock, long_date, moment, took
 from caduceus.workflow import NOTE_LIMIT, REMIND_EVERY, UNDO_SECONDS, approve_blocked_reason
@@ -84,14 +84,19 @@ def payer_clock(case: Case, now: datetime, tz: ZoneInfo) -> dict[str, Any] | Non
     if plan not in RULE_PLANS:
         return {"applies": False, "plan_type": plan,
                 "words": f"{plan} is not covered by the CMS prior authorization rule's decision deadlines."}
-    due_at = case.sent_at + timedelta(days=STANDARD_DECISION_DAYS)
+    expedited = case.urgency == "expedited"
+    limit = timedelta(hours=EXPEDITED_DECISION_HOURS) if expedited else timedelta(days=STANDARD_DECISION_DAYS)
+    named = f"{EXPEDITED_DECISION_HOURS}-hour" if expedited else f"{STANDARD_DECISION_DAYS}-day"
+    due_at = case.sent_at + limit
     if case.decided_at is not None:
         within = case.decided_at <= due_at
-        return {"applies": True, "plan_type": plan, "decided": True, "within": within,
+        return {"applies": True, "plan_type": plan, "decided": True, "within": within, "expedited": expedited,
                 "words": f"Decided in {took(case.decided_at - case.sent_at)}, "
-                         f"{'within' if within else 'past'} the {STANDARD_DECISION_DAYS}-day limit."}
-    return {"applies": True, "plan_type": plan, "decided": False, "within": now <= due_at,
-            "words": f"Due by {moment(due_at, now, tz)}: {STANDARD_DECISION_DAYS} calendar days under the CMS rule."}
+                         f"{'within' if within else 'past'} the {named} limit."}
+    return {"applies": True, "plan_type": plan, "decided": False, "within": now <= due_at, "expedited": expedited,
+            "words": f"Due by {moment(due_at, now, tz)}: "
+                     + (f"{EXPEDITED_DECISION_HOURS} hours for an expedited request" if expedited
+                        else f"{STANDARD_DECISION_DAYS} calendar days") + " under the CMS rule."}
 WITH_CLINICIAN = {State.AWAITING_ATTESTATION, State.AWAITING_NOTE}
 WAITING = WITH_CLINICIAN | {State.RETURNED, State.SUBMITTED}
 
@@ -110,7 +115,8 @@ class Presenter:
         p = self.patient(case)
         return {"id": case.id, "patient": {"name": patient_name(p), "age": age_on(p, date.fromisoformat(case.as_of))},
                 "service": case.service["short"] + (f", {case.side}" if case.side else ""),
-                "payer": case.payer["name"], "due": due(case.due_at, now, self.tz), "status": status(case)}
+                "payer": case.payer["name"], "due": due(case.due_at, now, self.tz), "status": status(case),
+                "expedited": case.urgency == "expedited"}
 
     def queue(self, cases: list[Case], now: datetime, approved_today: int) -> dict[str, Any]:
         active = sorted((c for c in cases if c.state in ACTIVE), key=lambda c: c.due_at)
@@ -198,7 +204,8 @@ class Presenter:
             "reply": self.reply(case, now),
             "appeal": self.appeal(case),
             "payer_clock": payer_clock(case, now, self.tz),
-            "side": case.side,
+            "side": case.side, "urgency": case.urgency, "urgency_reason": case.urgency_reason,
+            "payer_review": self.payer_review(case, now),
             "requirements": case.requirements and {
                 "matches": case.requirements.get("matches"), "plan_type": case.requirements.get("plan_type"),
                 "checked_at": clock(datetime.fromisoformat(case.requirements["checked_at"]), self.tz)},
@@ -206,6 +213,16 @@ class Presenter:
         } | ({"actions": {k: False if k.startswith("can_") else v for k, v in actions.items()},
               "summary": "Read only. Only a prior-authorization specialist can act on a case."}
              if read_only else {})
+
+    def payer_review(self, case: Case, now: datetime) -> dict[str, Any] | None:
+        """While the payer is reviewing: when it said it would decide, in words."""
+        waiting = case.payer_response or {}
+        if case.state != State.SUBMITTED or not waiting.get("in_review"):
+            return None
+        at = datetime.fromisoformat(waiting["expected_by"])
+        return {"expected_by": at.isoformat(), "words": f"{case.payer['name']} is reviewing it. Its decision is "
+                f"expected by {moment(at, now, self.tz)}." if at > now else
+                f"{case.payer['name']} has had time to decide; its answer is being read."}
 
     def clinician_wait(self, case: Case, now: datetime) -> dict[str, Any] | None:
         """How long the case has waited on the ordering clinician, and the reminders sent, in words."""
@@ -332,6 +349,8 @@ def summary_sentence(case: Case, counts: dict[str, int], total: int) -> str:
         if reply.get("declined_by"):
             return f"{clin} cannot document this, so there is no note to send. Return the case to the clinic."
         return f"{payer} needs a note from {clin} before it decides."
+    if case.state == State.SUBMITTED and (case.payer_response or {}).get("in_review"):
+        return f"{lead} Sent to {payer}, which is reviewing it."
     if case.state != State.REVIEW:
         return lead
     reason = approve_blocked_reason(case)
