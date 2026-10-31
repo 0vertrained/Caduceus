@@ -13,6 +13,8 @@ trap 'kill "${server:-0}" 2>/dev/null || true; rm -rf "$work"' EXIT
 export CADUCEUS_DB="$work/e2e.sqlite3"
 export CADUCEUS_DEID_KEY="${CADUCEUS_DEID_KEY:-e2e-only-signing-key-at-least-32-bytes-long}"
 export CADUCEUS_AUTH_MODE=demo  # as deployed: the demo banner is on every screen the walk checks
+export CADUCEUS_SHOWCASE=1      # as deployed: the three showcase cases after the dataset's own
+export CADUCEUS_PAYER_REVIEW_SECONDS="${CADUCEUS_PAYER_REVIEW_SECONDS:-4}"  # the payer reviews before it decides
 
 # Replies from a stub model on the de-identified route, recorded the way the real ones are, so the walk can open
 # "What was sent to the model" without calling a model.

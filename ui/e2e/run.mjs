@@ -154,6 +154,49 @@ await shot(page, "02i-case-from-fax");
 await axe(page, "02i-case-from-fax");
 await page.goto(base + "/");
 
+// The showcase cases. An expedited request is tagged in the queue.
+await page.locator("li.row").filter({ hasText: "Raymond Vigil" }).getByText("Expedited", { exact: true }).waitFor();
+// Therapy only an outside summary in the packet records: the record cannot answer, so the case says where to look,
+// and the page opens on the passage, which is not evidence.
+await page.goto(base + "/cases/2026-1052");
+await page.getByText("The packet may answer this").waitFor();
+await shot(page, "03b-case-where-to-look");
+await axe(page, "03b-case-where-to-look");
+await page.getByRole("button", { name: /^Show the therapy notes, page\s\d+$/ }).first().click();
+await page.getByText(/is the passage that may answer/).waitFor();
+await page.locator("mark").filter({ hasText: "10 weeks of physical therapy" }).waitFor();
+await view(page, "03c-case-lead-page");  // the passage scrolled into view on a long page
+await axe(page, "03c-case-lead-page");
+// Expediting needs the clinical reason: refused next to the field, with focus on it; then marked, and changed back.
+await page.getByRole("button", { name: "Ask for an expedited decision…", exact: true }).click();
+await page.getByRole("button", { name: "Ask for an expedited decision", exact: true }).click();
+await page.locator("#urgency-error").waitFor();
+if (!(await page.evaluate(() => document.activeElement?.id === "urgency-reason"))) {
+  report.failures.push("urgency: the refusal did not move focus to the reason");
+}
+await shot(page, "03d-case-urgency-refused");
+await axe(page, "03d-case-urgency-refused");
+await page.getByLabel("Why can’t this wait the standard time?").fill("New weakness of the right foot over two weeks.");
+await page.getByRole("button", { name: "Ask for an expedited decision", exact: true }).click();
+await page.getByRole("status").filter({ hasText: "Marked expedited." }).waitFor();
+await page.getByRole("button", { name: "Change to standard…", exact: true }).click();
+await page.getByRole("button", { name: "Change to standard", exact: true }).click();
+await page.getByRole("status").filter({ hasText: "Changed to a standard request." }).waitFor();
+// Sent to the ordering clinician, whose questions carry the same passages (signed on the phone, below).
+await page.getByRole("button", { name: "Send to Dr. Ana Reyes to attest" }).click();
+await page.getByText(/This case comes back to you/).waitFor();
+// A request for the right knee when the chart documents the left: stopped, with the reason.
+await page.goto(base + "/cases/2026-1051");
+await page.getByText(/left knee is charted, but the request is for the right side/).waitFor();
+await shot(page, "03e-case-other-knee");
+await axe(page, "03e-case-other-knee");
+// Expedited by the clinic, with its reason.
+await page.goto(base + "/cases/2026-1053");
+await page.getByText("Expedited.", { exact: true }).waitFor();
+await shot(page, "03f-case-expedited");
+await axe(page, "03f-case-expedited");
+await page.goto(base + "/");
+
 await page.getByRole("link", { name: /^Open case for/ }).first().click();
 await page.getByRole("heading", { name: "Coverage criteria" }).waitFor();
 await shot(page, "03-case");
@@ -206,6 +249,10 @@ await doc.getByRole("button", { name: "Sign and return" }).click();
 await doc.getByText("Signed. Thank you.").waitFor();
 await shot(doc, "07-attest-signed");
 await axe(doc, "07-attest-signed");
+await doc.goto(base + "/attest/2026-1052");
+await doc.getByText("Where the referral packet may answer this").waitFor();
+await shot(doc, "07b-attest-where-to-look");
+await axe(doc, "07b-attest-where-to-look");
 
 // Back to the specialist: now approvable.
 await page.goto(caseUrl);
@@ -245,6 +292,10 @@ await small.getByRole("link", { name: /^Open case for/ }).first().click();
 await small.getByRole("heading", { name: "Coverage criteria" }).waitFor();
 await shot(small, "11-case-320px");
 await axe(small, "11-case-320px");
+await small.goto(base + "/cases/2026-1052");
+await small.getByText("The packet may answer this").waitFor();
+await shot(small, "11b-case-where-to-look-320px");
+await axe(small, "11b-case-where-to-look-320px");
 
 await page.goto(base + "/help");
 await axe(page, "12-help");
