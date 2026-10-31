@@ -75,6 +75,9 @@ class ProcedureRule(_Strict):
     min_span_days: int | None = None
     min_count: int | None = None
     label: str = "procedure"
+    # When a policy gives a usual length rather than a hard one ("usually 3 months or more"), a shorter course is not
+    # a failure: the clinician confirms whether it was a reasonable attempt.
+    below_minimum: Literal["unmet", "unknown"] = "unmet"
 
 
 class ObservationRule(_Strict):
@@ -93,6 +96,14 @@ class ObservationRule(_Strict):
     before_label: str = "the procedure"
 
 
+class AgeRule(_Strict):
+    """The patient's age on the as-of date, from the record's date of birth."""
+
+    type: Literal["age"]
+    min_years: int
+    label: str = "age"
+
+
 class AnyOf(_Strict):
     type: Literal["any_of"]
     rules: list[Rule]
@@ -103,7 +114,8 @@ class AllOf(_Strict):
     rules: list[Rule]
 
 
-Rule = Annotated[ConditionRule | ProcedureRule | ObservationRule | AnyOf | AllOf, Field(discriminator="type")]
+Rule = Annotated[ConditionRule | ProcedureRule | ObservationRule | AgeRule | AnyOf | AllOf,
+                 Field(discriminator="type")]
 AnyOf.model_rebuild()
 AllOf.model_rebuild()
 
@@ -179,7 +191,7 @@ class CriteriaSet(_Strict):
 # Fields added to the language after sets were approved. Left at their defaults they are not part of a set's
 # content, so adding a field never changes the hash of a set a reviewer already approved.
 LATER_DEFAULTS = {"side": None, "same_side": False, "before_procedure": None, "before_label": "the procedure",
-                  "supersedes": None, "document": None, "retrieved": None}
+                  "supersedes": None, "document": None, "retrieved": None, "below_minimum": "unmet"}
 
 
 def _without_later_defaults(value):
