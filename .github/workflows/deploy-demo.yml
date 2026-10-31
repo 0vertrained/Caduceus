@@ -38,6 +38,9 @@ jobs:
       DEPLOY_SA: caduceus-deployer@project-fc4eda29-999d-4812-a00.iam.gserviceaccount.com
       RUNTIME_SA: caduceus-demo-runtime@project-fc4eda29-999d-4812-a00.iam.gserviceaccount.com
       SERVICE: caduceus-demo
+      # The Netlify site's address. An EHR launch (docs/smart-launch.md) may send the browser back only to its
+      # /smart/callback: the API takes that address from here, never from a request.
+      SITE: https://caduceusdemo.netlify.app
       # The draft model, on Ollama Cloud: a subscription with fixed limits, so its key cannot run up a bill. It sees
       # only de-identified, stamped text. Its key lives in Secret Manager (infra/demo/add-model-key.sh). The deploy
       # uses the first of these that Ollama Cloud offers the key (a name matches exactly or by its family, so
@@ -116,7 +119,7 @@ jobs:
           gcloud run deploy "$SERVICE" --project "$PROJECT" --region "$REGION" --image "$IMAGE" \
             --service-account "$RUNTIME_SA" --port 8000 --cpu 1 --memory 1Gi --concurrency 40 \
             --min-instances 0 --max-instances 1 --allow-unauthenticated \
-            --set-env-vars "CADUCEUS_AUTH_MODE=demo,CADUCEUS_DEMO_RESET_HOURS=6,CADUCEUS_SHOWCASE=1,CADUCEUS_PAYER_REVIEW_SECONDS=30,CADUCEUS_EXTERNAL_PROVIDER=ollama,CADUCEUS_EXTERNAL_MODEL=$EXTERNAL_MODEL,CADUCEUS_EXTERNAL_TIMEOUT=20" \
+            --set-env-vars "CADUCEUS_AUTH_MODE=demo,CADUCEUS_DEMO_RESET_HOURS=6,CADUCEUS_SHOWCASE=1,CADUCEUS_PAYER_REVIEW_SECONDS=30,CADUCEUS_EXTERNAL_PROVIDER=ollama,CADUCEUS_EXTERNAL_MODEL=$EXTERNAL_MODEL,CADUCEUS_EXTERNAL_TIMEOUT=20,CADUCEUS_SMART_REDIRECT_URIS=$SITE/smart/callback" \
             --set-secrets "$secrets" \
             --quiet
       - name: The API is up, and refuses requests that did not come through Netlify
