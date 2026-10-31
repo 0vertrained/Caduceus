@@ -47,13 +47,15 @@ def seed(services: Services, now: datetime | None = None, by_fax: bool = False) 
         # written for, which the eval gate checks separately.
         criteria_set = services.workflow.catalog.get("services", {}).get(c["service"]["code"], {}).get(
             "criteria_set", c["criteria_set"])
+        # A referral can arrive marked expedited by its clinic, with the clinic's reason.
         case = Case(id=c["id"], patient_id=c["patient_id"], service=c["service"], criteria_set=criteria_set,
-                    side=c.get("side"), as_of=c["as_of"], payer=c["payer"], ordering_clinician=c["ordering_clinician"],
+                    side=c.get("side"), urgency=c.get("urgency", "standard"), urgency_reason=c.get("urgency_reason"),
+                    as_of=c["as_of"], payer=c["payer"], ordering_clinician=c["ordering_clinician"],
                     packet=c["packet"], received_at=now - timedelta(days=1),
                     due_at=now + timedelta(hours=c["due_in_hours"]))
         services.cases.save(case)
         services.audit.append("intake", "agent_runtime", "case.received", case.id,
-                              {"service": case.service["code"], "pages": len(case.packet)})
+                              {"service": case.service["code"], "pages": len(case.packet), "urgency": case.urgency})
         services.workflow.prepare(case.id)
         ids.append(case.id)
     return ids
