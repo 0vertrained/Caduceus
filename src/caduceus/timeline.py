@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import Any
+from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
 from caduceus.audit.log import AuditEvent
@@ -23,7 +24,8 @@ STEP_WORDS = {"enrichment": "read the record, the referral packet and the payer'
               "intake": "read the faxed cover sheet"}
 VIEWS = {"case.viewed": "Opened the case", "page.viewed": "Read a packet page",
          "attestation.viewed": "Opened the request to attest", "fax.viewed": "Opened the fax",
-         "fax.patient_searched": "Looked the patient up in the chart"}
+         "fax.patient_searched": "Looked the patient up in the chart",
+         "ehr.record_viewed": "Opened the record the EHR shared"}
 ROLE_WORDS = {"pa_specialist": "PA specialist", "clinician": "ordering clinician", "admin": "administrator",
               "auditor": "auditor", "agent_runtime": "agent"}
 
@@ -39,9 +41,25 @@ def plural(n: int, one: str, many: str) -> str:
     return f"{n} {one if n == 1 else many}"
 
 
+def ehr(iss: str | None) -> str:
+    return f"the EHR at {urlsplit(iss).hostname or iss}" if iss else "the EHR"
+
+
 def sentence(e: AuditEvent, clinician: str) -> str:
     d = e.detail or {}
     match e.action:
+        case "ehr.record_read":
+            n = d.get("resources") or {}
+            held = [plural(n.get("Condition", 0), "diagnosis", "diagnoses"),
+                    plural(n.get("Procedure", 0), "procedure", "procedures"),
+                    plural(n.get("Observation", 0), "measurement or result", "measurements and results"),
+                    plural(d.get("notes", 0), "note", "notes")]
+            return (f"Opened Caduceus from {ehr(d.get('iss'))} by a SMART launch. The EHR shared the patient’s "
+                    f"record: {', '.join(held[:-1])} and {held[-1]}. Its access token was used for that one read and "
+                    "kept nowhere.")
+        case "case.received" if d.get("source") == "smart_launch":
+            return (f"Started the case from the record {ehr(d.get('iss'))} shared: "
+                    f"{plural(d.get('pages', 0), 'page', 'pages')}, its newest notes.")
         case "case.received" if d.get("from"):
             return f"Created the case from the checked fax: {plural(d.get('pages', 0), 'page', 'pages')}, the cover " \
                    "sheet first."

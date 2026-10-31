@@ -43,10 +43,17 @@ class DemoLimits:
     writes_per_visitor: Window = field(default_factory=lambda: Window(60, 300))
     everyone: Window = field(default_factory=lambda: Window(5_000, 300))
     new_sandboxes: Window = field(default_factory=lambda: Window(20, 300))
+    # Starting or finishing an EHR launch makes requests to the EHR, so it is counted apart, per visitor and for all.
+    ehr_launches: Window = field(default_factory=lambda: Window(10, 300))
+    ehr_everyone: Window = field(default_factory=lambda: Window(200, 300))
 
     def new_sandbox(self, visitor: str) -> int:
         """0 if this visitor may start another demo session now; each one is a copy of the seeded cases."""
         return self.new_sandboxes.hit(visitor)
+
+    def ehr_launch(self, visitor: str) -> int:
+        """0 if this visitor may take another step of an EHR launch now, otherwise seconds to wait."""
+        return self.ehr_launches.hit(visitor) or self.ehr_everyone.hit("*")
 
     def check(self, visitor: str, write: bool) -> int:
         """0 if the request may proceed, otherwise seconds to wait. Checked narrowest first."""

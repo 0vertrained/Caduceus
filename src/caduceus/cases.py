@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import json
+import re
+import secrets
 import sqlite3
 import threading
-from datetime import datetime
+import zlib
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any, Literal
 
@@ -201,6 +204,59 @@ class DocumentRepository:
         with self._lock:
             row = self._conn.execute("SELECT data FROM documents WHERE id = ?", (doc_id,)).fetchone()
         return json.loads(row[0]) if row else None
+
+
+# A record from an EHR is named by a random key, never by anything the EHR calls the patient: the key appears in the
+# browser's address bar and so in access logs. Its notes are the pages "<key>-1", "<key>-2" and so on.
+EHR_RECORD = re.compile(r"ehr-[0-9a-f]{20}")
+
+
+def new_ehr_key() -> str:
+    return f"ehr-{secrets.token_hex(10)}"
+
+
+class EhrRecordRepository:
+    """Patients' records read from an EHR by a SMART launch (caduceus.smart), kept with the cases so a case can be
+    prepared and read from them. In the public demo they live in the visitor's own copy and go when it starts over
+    or expires. `match` is a hash of the EHR and its id for the patient, so opening the same patient again replaces
+    their record. Stored compressed: a record is a few hundred kilobytes of JSON."""
+
+    def __init__(self, conn: sqlite3.Connection):
+        self._conn = conn
+        self._lock = threading.Lock()
+        with self._lock:
+            conn.execute("CREATE TABLE IF NOT EXISTS ehr_records (key TEXT PRIMARY KEY, match TEXT UNIQUE, "
+                         "saved_at TEXT, data BLOB)")
+            conn.commit()
+
+    def save(self, key: str, match: str, data: dict[str, Any]) -> None:
+        blob = zlib.compress(json.dumps(data, separators=(",", ":")).encode())
+        with self._lock:
+            self._conn.execute("INSERT OR REPLACE INTO ehr_records(key, match, saved_at, data) VALUES (?, ?, ?, ?)",
+                               (key, match, datetime.now(UTC).isoformat(), blob))
+            self._conn.commit()
+
+    def get(self, key: str) -> dict[str, Any] | None:
+        if not EHR_RECORD.fullmatch(key):
+            return None
+        with self._lock:
+            row = self._conn.execute("SELECT data FROM ehr_records WHERE key = ?", (key,)).fetchone()
+        return json.loads(zlib.decompress(row[0])) if row else None
+
+    def find(self, match: str) -> str | None:
+        with self._lock:
+            row = self._conn.execute("SELECT key FROM ehr_records WHERE match = ?", (match,)).fetchone()
+        return row[0] if row else None
+
+    def keys(self) -> list[str]:
+        """Every record's key, the one saved longest ago first."""
+        with self._lock:
+            return [r[0] for r in self._conn.execute("SELECT key FROM ehr_records ORDER BY saved_at, key").fetchall()]
+
+    def delete(self, key: str) -> None:
+        with self._lock:
+            self._conn.execute("DELETE FROM ehr_records WHERE key = ?", (key,))
+            self._conn.commit()
 
 
 class StaleCase(Exception):

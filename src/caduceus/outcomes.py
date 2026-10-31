@@ -94,6 +94,8 @@ def outcomes(cases: list[Case], events: list[AuditEvent], faxes: list[Fax]) -> l
             ("Replies replayed, not requested again", str(replayed),
              "Identical de-identified requests are answered once."),
             ("Identifiers that reached the model", "0", "Checked on every change by the leakage suite in CI."),
+            ("Records read from an EHR", str(sum(e.action == "ehr.record_read" for e in events)),
+             "By SMART launch, over FHIR. Each access token was used for one read and kept nowhere."),
         ]},
         {"title": "Faxes read", "rows": [
             ("Faxes read inside the boundary", str(len(read)), "By OCR in the container; pages never leave."),

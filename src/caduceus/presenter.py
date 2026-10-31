@@ -8,12 +8,15 @@ from __future__ import annotations
 
 from datetime import date, datetime, timedelta
 from typing import Any
+from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
 from caduceus.audit.log import AuditEvent
+from caduceus.auth import DEV_USERS
 from caduceus.cases import Case, Fax, State
-from caduceus.criteria.dsl import CriteriaSet
+from caduceus.criteria.dsl import AllOf, AnyOf, ConditionRule, CriteriaSet
 from caduceus.drafting import age_on, patient_name
+from caduceus.fhir.record import codings, condition_is_active, condition_onset, display
 from caduceus.fhir.store import FhirStore, document_text, fax_image
 from caduceus.intake import fields_in_words
 from caduceus.payer import EXPEDITED_DECISION_HOURS, RULE_PLANS, STANDARD_DECISION_DAYS
@@ -107,6 +110,58 @@ def payer_clock(case: Case, now: datetime, tz: ZoneInfo) -> dict[str, Any] | Non
                         else f"{STANDARD_DECISION_DAYS} calendar days") + " under the CMS rule."}
 WITH_CLINICIAN = {State.AWAITING_ATTESTATION, State.AWAITING_NOTE}
 WAITING = WITH_CLINICIAN | {State.RETURNED, State.SUBMITTED}
+SEX = {"female": "Female", "male": "Male", "other": "Other", "unknown": "Unknown"}
+
+
+def host(url: str | None) -> str:
+    """An EHR named by its address's host, as a person would read it: "launch.smarthealthit.org"."""
+    return (urlsplit(url).hostname or url) if url else "the EHR"
+
+
+def lately(days: int | None) -> str:
+    if days is None:
+        return "the whole record"
+    return "the last year" if days <= 366 else f"the last {round(days / 365)} years"
+
+
+def diagnosis_codes(library: dict[str, CriteriaSet]) -> set[tuple[str, str]]:
+    """Every diagnosis code an approved criterion looks for: what makes a diagnosis worth naming on the record page."""
+    found: set[tuple[str, str]] = set()
+
+    def walk(rule: Any) -> None:
+        if isinstance(rule, AnyOf | AllOf):
+            for r in rule.rules:
+                walk(r)
+        elif isinstance(rule, ConditionRule):
+            found.update((c.uri, c.code) for c in rule.codes)
+
+    for criteria in library.values():
+        for c in criteria.criteria:
+            walk(c.rule)
+    return found
+
+
+def answered(s: dict[str, Any]) -> str:
+    """How much of a service's criteria the record answers: "The record answers 1 of the 4 criteria." """
+    n, total = s["met"] + s["unmet"], s["total"]
+    return (f"The record answers all {total} criteria." if n == total else
+            f"The record answers none of the {total} criteria." if not n else
+            f"The record answers {n} of the {total} criteria.")
+
+
+def answers(s: dict[str, Any]) -> str:
+    """That, and what follows from it: "The record answers 1 of the 4 criteria. Dr. Ana Reyes will be asked to confirm
+    the other 3." """
+    unmet, unknown = s["unmet"], s["unknown"]
+    words = [answered(s)]
+    if unmet:
+        words.append(f"{'One is' if unmet == 1 else f'{unmet} are'} not met, so the request cannot be approved as "
+                     "it stands.")
+    if unknown:
+        who = s.get("clinician") or "The ordering clinician"
+        everything = unknown == s["total"]
+        words.append(f"{who} will be asked to confirm {'all of them' if everything else f'the other {unknown}'}.")
+    return " ".join(words)
 
 
 class Presenter:
@@ -118,6 +173,10 @@ class Presenter:
         if case.patient_id not in self._patients:
             self._patients[case.patient_id] = self.store.record(case.patient_id).patient
         return self._patients[case.patient_id]
+
+    def forget(self, patient_id: str) -> None:
+        """The record changed (the EHR shared it again): read the patient afresh next time."""
+        self._patients.pop(patient_id, None)
 
     def row(self, case: Case, now: datetime) -> dict[str, Any]:
         p = self.patient(case)
@@ -323,6 +382,64 @@ class Presenter:
                       else f" Before that, the clinic was asked for {fields_in_words(last.get('missing', []))}.")
         return {"from": clinic, "by": who(confirmed), "at": moment(confirmed.ts, now, self.tz),
                 "corrected": corrected or None, "asked_clinic": bool(asked), "words": words}
+
+    def came_from_ehr(self, case: Case, events: list[AuditEvent], record: dict[str, Any] | None,
+                      now: datetime) -> dict[str, Any] | None:
+        """How a case started from inside an EHR came to be: from which EHR, who started it and when."""
+        started = next((e for e in events if e.action == "case.received"
+                        and e.detail.get("source") == "smart_launch"), None)
+        if started is None:
+            return None
+        where, at = host(started.detail.get("iss")), moment(case.received_at, now, self.tz)
+        words = f"Opened from the EHR at {where} by a SMART launch. {who(started)} started the case {at}"
+        words += f", from the record the EHR shared {moment(record['read_at'], now, self.tz)}." if record else "."
+        return {"from": where, "by": who(started), "at": at, "words": words}
+
+    def ehr_record(self, data: dict[str, Any], preview: list[dict[str, Any]], cases: list[Case],
+                   now: datetime) -> dict[str, Any]:
+        """A record an EHR shared, before a case is started from it: the patient, what the record holds in plain
+        words (with the diagnoses the criteria look for named), and how much of each service's criteria it answers."""
+        p, today = data["patient"], now.astimezone(self.tz).date()
+        as_of = date.fromisoformat(data["as_of"])
+        conditions = [r for r in data["resources"] if r.get("resourceType") == "Condition"]
+        active = [r for r in conditions if condition_is_active(r, as_of)]
+        wanted = diagnosis_codes(self.library)
+        relevant = []
+        for r in sorted(active, key=lambda r: condition_onset(r) or as_of):
+            if wanted & set(codings(r)):
+                since = condition_onset(r)
+                relevant.append(f"{display(r)}, on the record since {long_date(since)}" if since else display(r))
+        counts, windows, held_back = data["counts"], data["windows"], set(data["not_shared"])
+
+        def row(what: str, kind: str, words: str) -> dict[str, str]:
+            return {"what": what, "words": "The EHR did not share these." if kind in held_back else words}
+
+        n = {k: counts.get(k, 0) for k in ("Condition", "Procedure", "Observation")}
+        notes = len(data["notes"])
+        holds = [
+            row("Diagnoses", "Condition", f"{n['Condition']} on the record, {len(active)} of them active."
+                if n["Condition"] else "None on the record."),
+            row("Procedures", "Procedure", f"{n['Procedure'] or 'None'} in {lately(windows.get('Procedure'))}."),
+            row("Measurements and test results", "Observation",
+                f"{n['Observation'] or 'None'} in {lately(windows.get('Observation'))}."),
+            row("Notes", "DocumentReference", f"The {notes} newest, which become the case’s pages." if notes > 1
+                else "The newest, which becomes the case’s page." if notes else "None the case can show as a page."),
+        ]
+        by = DEV_USERS.get(data.get("read_by", ""))
+        return {
+            "key": data["key"],
+            "patient": {"name": patient_name(p), "born": long_date(date.fromisoformat(p["birthDate"])),
+                        "age": age_on(p, today), "sex": SEX.get(p.get("gender", ""), "Not recorded")},
+            "source": {"host": host(data["iss"]), "read": moment(data["read_at"], now, self.tz),
+                       "by": by.name if by else data.get("read_by")},
+            "holds": holds, "relevant": relevant,
+            "reads": ("Caduceus asked the EHR only for what the coverage criteria can use: every diagnosis, procedures "
+                      f"from {lately(windows.get('Procedure'))}, measurements and test results from "
+                      f"{lately(windows.get('Observation'))}, and the newest notes."),
+            "services": [s | {"lead": answered(s), "answers": answers(s)} for s in preview],
+            "cases": [{"id": c.id, "service": c.service["short"], "status": status(c)}
+                      for c in sorted(cases, key=lambda c: c.id)],
+        }
 
     def attestation(self, case: Case, summary: str, now: datetime) -> dict[str, Any]:
         p = self.patient(case)
