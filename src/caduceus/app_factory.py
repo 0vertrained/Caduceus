@@ -29,6 +29,7 @@ from caduceus.router.providers import (
     Provider,
     StubProvider,
 )
+from caduceus.storage import AuditStore, CaseStore
 from caduceus.workflow import Workflow
 
 
@@ -110,8 +111,8 @@ class Settings:
 class Services:
     settings: Settings
     tz: ZoneInfo
-    audit: AuditLog
-    cases: CaseRepository
+    audit: AuditStore
+    cases: CaseStore
     store: FhirStore
     workflow: Workflow
     authenticator: Authenticator
