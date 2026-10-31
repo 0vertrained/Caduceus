@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Seed a throwaway database, serve the built UI and API, walk the real screens with axe-core, then stop.
+# Seed a throwaway database, serve the built UI and API (and a fake SMART server for the EHR launch), walk the
+# real screens with axe-core, then stop.
 #   scripts/e2e.sh [screenshot-dir]
 # Needs: the Python package installed, ui/dist built, and Node with the Playwright library + Chromium.
 set -euo pipefail
@@ -9,8 +10,9 @@ export PYTHONPATH="$PWD/src${PYTHONPATH:+:$PYTHONPATH}"
 
 out="${1:-ui/test-results}"
 port="${E2E_PORT:-8765}"
+smart_port="${E2E_SMART_PORT:-8766}"
 work="$(mktemp -d)"
-trap 'kill "${server:-0}" 2>/dev/null || true; rm -rf "$work"' EXIT
+trap 'kill "${server:-0}" "${smart:-0}" 2>/dev/null || true; rm -rf "$work"' EXIT
 
 export CADUCEUS_DB="$work/e2e.sqlite3"
 export CADUCEUS_DEID_KEY="${CADUCEUS_DEID_KEY:-e2e-only-signing-key-at-least-32-bytes-long}"
@@ -23,13 +25,23 @@ export CADUCEUS_PAYER_REVIEW_SECONDS="${CADUCEUS_PAYER_REVIEW_SECONDS:-4}"  # th
 CADUCEUS_EXTERNAL_PROVIDER=stub CADUCEUS_AUTH_MODE=dev python scripts/record_completions.py "$work/recorded.json" >/dev/null
 export CADUCEUS_MODEL_RECORDINGS="$work/recorded.json"
 
+# A fake SMART on FHIR server plays the EHR (tests/fake_smart.py), so the walk never calls the real launcher: the
+# API discovers it, exchanges the code with it and reads the record from it, and the browser is sent to its
+# authorize page and back. It answers on this machine only.
+export CADUCEUS_SMART_ISS="http://127.0.0.1:$smart_port/v/r4/fhir"
+export CADUCEUS_SMART_REDIRECT_URIS="http://127.0.0.1:$port/smart/callback"
+python -m tests.fake_smart --port "$smart_port" &
+smart=$!
+
 python -m caduceus.seed
 uvicorn caduceus.api:create_app --factory --host 127.0.0.1 --port "$port" --log-level warning &
 server=$!
 for _ in $(seq 1 40); do
-  curl -fsS "http://127.0.0.1:$port/api/health" >/dev/null 2>&1 && break
+  curl -fsS "http://127.0.0.1:$port/api/health" >/dev/null 2>&1 \
+    && curl -fsS "$CADUCEUS_SMART_ISS/.well-known/smart-configuration" >/dev/null 2>&1 && break
   sleep 0.25
 done
 
 rm -rf "$out" && mkdir -p "$out"
-NODE_PATH="${NODE_PATH:-$(npm root -g)}" node ui/e2e/run.mjs "http://127.0.0.1:$port" "$out" | tee "$out/report.json"
+E2E_SMART_ISS="$CADUCEUS_SMART_ISS" NODE_PATH="${NODE_PATH:-$(npm root -g)}" \
+  node ui/e2e/run.mjs "http://127.0.0.1:$port" "$out" | tee "$out/report.json"

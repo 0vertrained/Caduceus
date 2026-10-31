@@ -383,6 +383,98 @@ await page.getByRole("status").filter({ hasText: "The external model is off." })
 await axe(page, "23b-admin-external-off");
 await page.getByRole("button", { name: "Turn the external model back on" }).click();
 await page.getByRole("status").filter({ hasText: "The external model is on again." }).waitFor();
+// Opening Caduceus from an EHR. A fake SMART server plays the EHR (tests/fake_smart.py, started by scripts/e2e.sh)
+// and the public launcher's page is answered here, so nothing leaves this machine. This part runs with the site's
+// own Content Security Policy enforced, unlike the rest of the walk: the launch needs no change to it, because the
+// browser only navigates to the EHR and back and talks to nothing but /api.
+const ehrIss = process.env.E2E_SMART_ISS;
+if (!ehrIss) report.failures.push("ehr: E2E_SMART_ISS is not set; run the walk through scripts/e2e.sh");
+const strict = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+await share(strict);
+await strict.addInitScript(() => document.addEventListener("securitypolicyviolation",
+  (e) => console.error(`CSP violation: ${e.violatedDirective} ${e.blockedURI}`)));
+const asked = [];
+await strict.route(/^https?:\/\/(?!127\.0\.0\.1[:/]|localhost[:/])/, async (route) => {
+  const url = new URL(route.request().url());
+  if (url.host !== "launch.smarthealthit.org") {
+    report.failures.push(`ehr: the browser tried to reach ${url.host}`);
+    return route.abort();
+  }
+  // The launcher, answered here: it opens the app's launch URL with its FHIR server and the launch, as it does.
+  asked.push(url);
+  const opened = `${url.searchParams.get("launch_url")}?${new URLSearchParams({ iss: ehrIss, launch: url.searchParams.get("launch") })}`;
+  return route.fulfill({ status: 200, contentType: "text/html", body: "<!doctype html><html lang=\"en\"><title>SMART launcher</title>" +
+    `<main><h1>SMART App Launcher (stand-in)</h1><a href="${opened.replace(/&/g, "&amp;")}">Launch</a></main></html>` });
+});
+const ehr = await strict.newPage();
+const blocked = [];
+ehr.on("console", (m) => { if (m.text().startsWith("CSP violation")) blocked.push(m.text()); });
+
+// The entry on the Help page, before signing in: the launcher, set up for Caduceus.
+await ehr.goto(base + "/help#ehr");
+const entry = ehr.getByRole("link", { name: "Open the SMART launcher" });
+const link = new URL(await entry.getAttribute("href"));
+const options = JSON.parse(Buffer.from(link.searchParams.get("launch"), "base64url").toString());
+const preset = { host: "launch.smarthealthit.org", launch_url: `${base}/smart/launch`, fhir_version: "r4", launchType: 0,
+  simulateEhr: 0, redirect: `${base}/smart/callback`, client: "caduceus-demo", clientType: 0, pkce: 2 };
+const linked = { host: link.host, launch_url: link.searchParams.get("launch_url"), fhir_version: link.searchParams.get("fhir_version"),
+  launchType: options[0], simulateEhr: options[6], redirect: options[8], client: options[9], clientType: options[14], pkce: options[15] };
+if (JSON.stringify(linked) !== JSON.stringify(preset)) report.failures.push(`ehr: launcher link ${JSON.stringify(linked)}`);
+await axe(ehr, "22-help-ehr");
+await entry.click();
+await ehr.getByRole("link", { name: "Launch" }).click();
+// Launch, the EHR's authorize page, back with a code: the record the EHR shared, in the visitor's own copy.
+await ehr.waitForURL(/\/smart\/record\/ehr-[0-9a-f]{20}/, { timeout: 30_000 });
+if (/[?&](code|state)=/.test(ehr.url())) report.failures.push(`ehr: the code stayed in the address ${ehr.url()}`);
+await ehr.getByRole("heading", { name: "What the record holds" }).waitFor();
+await ehr.getByText("Dolores Montoya", { exact: true }).first().waitFor();  // the demo's PA specialist launched it
+const recordUrl = ehr.url();
+await shot(ehr, "23-ehr-record");
+await axe(ehr, "23-ehr-record");
+// Starting with nothing chosen: the summary says what to choose and takes the person there.
+await ehr.getByRole("radio", { name: "Total knee replacement" }).check();
+await ehr.getByRole("button", { name: "Start the case" }).click();
+const problems = ehr.getByRole("alert").filter({ hasText: "There is a problem" });
+await problems.getByRole("link", { name: "Choose which knee is to be replaced" }).waitFor();
+await problems.getByRole("link", { name: "Choose the health plan" }).waitFor();
+if (!(await ehr.evaluate(() => document.activeElement?.classList.contains("error-summary")))) {
+  report.failures.push("ehr: the error summary did not take focus");
+}
+await shot(ehr, "24-ehr-errors");
+await axe(ehr, "24-ehr-errors");
+// Before the case opens, how much of the policy the record answers; the choices are in the address.
+await ehr.getByRole("radio", { name: "MRI of the lumbar spine" }).check();
+await ehr.getByText(/^The record answers 1 of the 4 criteria\. Dr\.\sAna Reyes will be asked to confirm the other 3\.$/).waitFor();
+await ehr.getByLabel("Health plan").selectOption("Medicare");
+if (!/service=72148/.test(ehr.url()) || !/plan=Medicare/.test(ehr.url())) report.failures.push(`ehr: choices not in the address ${ehr.url()}`);
+await ehr.getByRole("radio", { name: "MRI of the lumbar spine" }).press("Enter");  // the form submits with Enter
+await ehr.getByRole("heading", { name: "Coverage criteria" }).waitFor({ timeout: 40_000 });
+await ehr.waitForURL(/\/cases\/EHR-0001$/, { timeout: 5_000 })
+  .catch(() => report.failures.push(`ehr: expected case EHR-0001, got ${ehr.url()}`));
+await ehr.getByText(/^Opened from the EHR at 127\.0\.0\.1 by a SMART launch\. Dolores Montoya started the case/).waitFor();
+await ehr.getByText(/^One of 4 criteria are met\. Dr\.\sAna Reyes needs to confirm 3 items/).waitFor();
+await shot(ehr, "25-case-from-ehr");
+await axe(ehr, "25-case-from-ehr");
+// A sign-in that did not start here, and an EHR Caduceus does not know: plain words, and nowhere to go but back.
+await ehr.goto(`${base}/smart/callback?code=made-up&state=${"x".repeat(43)}`);
+await ehr.getByRole("alert").filter({ hasText: "This sign-in has already been used, or it did not start here." }).waitFor();
+if (ehr.url().includes("code=")) report.failures.push("ehr: a refused code stayed in the address");
+await axe(ehr, "26-ehr-callback-refused");
+await ehr.goto(`${base}/smart/launch?iss=${encodeURIComponent("https://ehr.invalid/fhir")}&launch=abc`);
+await ehr.getByRole("alert").filter({ hasText: "Caduceus is not set up to open from that EHR" }).waitFor();
+await axe(ehr, "27-ehr-launch-refused");
+// The record again, now with its request listed, at 320 CSS px; then the entry on the queue.
+await ehr.setViewportSize({ width: 320, height: 800 });
+await ehr.goto(recordUrl);
+await ehr.getByRole("heading", { name: "Requests already started" }).waitFor();
+await shot(ehr, "28-ehr-record-320px");
+await axe(ehr, "28-ehr-record-320px");
+await ehr.setViewportSize({ width: 1280, height: 900 });
+await ehr.goto(base + "/");
+await ehr.getByRole("link", { name: "Open a patient from the SMART launcher" }).waitFor();
+if (asked.length !== 1) report.failures.push(`ehr: the launcher page was asked for ${asked.length} times`);
+if (blocked.length) report.failures.push(`ehr: Content Security Policy blocked ${blocked.join("; ")}`);
+await strict.close();
 
 await browser.close();
 console.log(JSON.stringify(report, null, 2));
