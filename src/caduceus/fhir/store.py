@@ -55,21 +55,29 @@ def document_text(doc: dict) -> str:
 
 
 class LocalBundleStore:
-    def __init__(self, data_dir: Path):
-        self._patients = data_dir / "fhir" / "patients"
-        self._overlays = data_dir / "fhir" / "overlays"
+    """Bundles on disk, from one data directory or several (the demo adds data/showcase to data). Each directory
+    holds fhir/patients/<patient id>.json and fhir/overlays/<case id>.json; an id is looked up in each in turn."""
+
+    def __init__(self, data_dir: Path, *more: Path):
+        self._roots = [d / "fhir" for d in (data_dir, *more)]
         self._docs: dict[str, dict] = {}
         self._index: list[dict] | None = None
-        for f in sorted(self._overlays.glob("*.json")):
-            for e in json.loads(f.read_text())["entry"]:
-                r = e["resource"]
-                if r["resourceType"] == "DocumentReference":
-                    self._docs[r["id"]] = r
+        for root in self._roots:
+            for f in sorted((root / "overlays").glob("*.json")):
+                for e in json.loads(f.read_text())["entry"]:
+                    r = e["resource"]
+                    if r["resourceType"] == "DocumentReference":
+                        self._docs[r["id"]] = r
+
+    def _file(self, kind: str, name: str) -> Path:
+        """The first directory's file of that name, or the first directory's path, so a missing one says where."""
+        paths = [root / kind / f"{name}.json" for root in self._roots]
+        return next((p for p in paths if p.exists()), paths[0])
 
     def record(self, patient_id: str, overlay_case: str | None = None) -> PatientRecord:
-        rec = PatientRecord.from_bundle(json.loads((self._patients / f"{patient_id}.json").read_text()))
+        rec = PatientRecord.from_bundle(json.loads(self._file("patients", patient_id).read_text()))
         if overlay_case:
-            overlay = json.loads((self._overlays / f"{overlay_case}.json").read_text())
+            overlay = json.loads(self._file("overlays", overlay_case).read_text())
             rec.extend(e["resource"] for e in overlay["entry"])
         return rec
 
@@ -80,7 +88,7 @@ class LocalBundleStore:
         """Each patient's Patient resource, read once: a bundle holds the whole record, and a search needs only this."""
         if self._index is None:
             self._index = []
-            for f in sorted(self._patients.glob("*.json")):
+            for f in [f for root in self._roots for f in sorted((root / "patients").glob("*.json"))]:
                 bundle = json.loads(f.read_text())
                 self._index.append(next(e["resource"] for e in bundle["entry"]
                                         if e["resource"]["resourceType"] == "Patient"))

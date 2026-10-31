@@ -1,4 +1,5 @@
-"""Create the demo database: one case per scenario in data/cases/cases.json, prepared by the agent.
+"""Create the demo database: one case per scenario in data/cases/cases.json (and data/showcase with
+CADUCEUS_SHOWCASE=1), prepared by the agent.
 
 Clinical dates are fixed by the dataset (as of October 28, 2026). Received and due times are set relative to the
 moment you seed, so there is always a mix of urgent, due-today and later work.
@@ -20,7 +21,7 @@ from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from caduceus.app_factory import Services, Settings, build_services
+from caduceus.app_factory import Services, Settings, build_services, scenarios
 from caduceus.cases import Case, Fax
 
 
@@ -29,7 +30,7 @@ def seed(services: Services, now: datetime | None = None, by_fax: bool = False) 
     to be read by the agent and confirmed by a person before they become cases."""
     now = now or datetime.now(UTC)
     data = services.settings.data_dir
-    cases = json.loads((data / "cases" / "cases.json").read_text())
+    cases = scenarios(*services.settings.scenario_dirs())
     manifest = data / "faxes" / "faxes.json"
     faxed = ({m["expected"]["referral"]: (fax_id, m["file"]) for fax_id, m in json.loads(manifest.read_text()).items()}
              if by_fax and manifest.exists() and services.workflow.faxes else {})

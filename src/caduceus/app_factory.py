@@ -77,6 +77,14 @@ class Settings:
     demo_reset_hours: str = _env("CADUCEUS_DEMO_RESET_HOURS", "6")
     # Shared with Netlify: when set, only requests Netlify proxied and signed (x-nf-sign) are answered.
     proxy_signing_key: str | None = _env("CADUCEUS_PROXY_SIGNING_KEY")
+    # 1 adds the showcase cases (data/showcase, scripts/build_showcase.py) after the dataset's own: the public demo
+    # turns it on. Off by default, so the tests and the eval gate see the dataset alone. Local bundles only.
+    showcase: str = _env("CADUCEUS_SHOWCASE", "0")
+
+    def scenario_dirs(self) -> list[Path]:
+        """Where the scenarios and their records are: the data directory, then the showcase when it is on."""
+        on = self.showcase.strip().lower() in ("1", "true", "yes")
+        return [self.data_dir, *([self.data_dir / "showcase"] if on else [])]
 
     def check(self) -> None:
         if self.auth_mode not in ("dev", "oidc", "demo"):
@@ -119,7 +127,8 @@ def build_services(settings: Settings | None = None, conn: sqlite3.Connection | 
             Path(s.db_path).parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(s.db_path, check_same_thread=False)
     audit, cases, filed = AuditLog(conn), CaseRepository(conn), DocumentRepository(conn)
-    record: FhirStore = HapiFhirStore(s.fhir_base_url) if s.fhir_base_url else LocalBundleStore(s.data_dir)
+    record: FhirStore = (HapiFhirStore(s.fhir_base_url) if s.fhir_base_url
+                         else LocalBundleStore(*s.scenario_dirs()))
     store = WithFiledDocuments(record, filed)
     policies = s.data_dir / "policies"
     lock = load_lock(policies)
@@ -140,7 +149,7 @@ def build_services(settings: Settings | None = None, conn: sqlite3.Connection | 
     workflow = Workflow(cases, audit, store, library, engine, Drafter(router, deid),
                         MockPayer(published={c.key: c.content_sha256() for c in current.values()},
                                   review_seconds=float(s.payer_review_seconds)),
-                        faxes=FaxRepository(conn), catalog=_catalog(s.data_dir, current),
+                        faxes=FaxRepository(conn), catalog=_catalog(*s.scenario_dirs(), current=current),
                         fax_dir=s.data_dir / "faxes", tz=tz, filed=filed)
     auth = Authenticator(s.auth_mode, s.oidc_jwks_url, s.oidc_issuer, s.oidc_audience)
     return Services(s, tz, audit, cases, store, workflow, auth, router, conn)
@@ -152,11 +161,16 @@ CLINICS = {"pract-patel": "Mesa Verde Sleep Center", "pract-lee": "Mesa Verde Or
            "pract-reyes": "Mesa Verde Orthopedics, Santa Fe"}
 
 
-def _catalog(data_dir: Path, current: dict | None = None) -> dict[str, Any]:
+def scenarios(*dirs: Path) -> list[dict]:
+    """The scenarios (cases/cases.json) of each data directory, in order."""
+    return [c for d in dirs if (d / "cases" / "cases.json").exists()
+            for c in json.loads((d / "cases" / "cases.json").read_text())]
+
+
+def _catalog(*dirs: Path, current: dict | None = None) -> dict[str, Any]:
     """The services, payers and ordering clinicians a referral may name, from the scenario data, and the clinic each
     clinician works at."""
-    path = data_dir / "cases" / "cases.json"
-    cases = json.loads(path.read_text()) if path.exists() else []
+    cases = scenarios(*dirs)
     clinicians = {c["ordering_clinician"]["name"]: c["ordering_clinician"] for c in cases}
     # The health plan on file for each patient. The synthetic records hold no Coverage resource, so it comes from the
     # scenario data, and only where that data names one plan for the patient.
