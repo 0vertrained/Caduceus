@@ -4,6 +4,8 @@
 # Needs: the Python package installed, ui/dist built, and Node with the Playwright library + Chromium.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# Walk this checkout's code, even when the virtualenv's editable install points at another one (a git worktree).
+export PYTHONPATH="$PWD/src${PYTHONPATH:+:$PYTHONPATH}"
 
 out="${1:-ui/test-results}"
 port="${E2E_PORT:-8765}"
