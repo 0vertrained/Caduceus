@@ -201,6 +201,10 @@ function CaseHeader({ c, setCase }: { c: CaseView; setCase: (c: CaseView) => voi
             <dd className={`facts__value${c.due.urgent ? " facts__value--urgent" : ""}`}>{glue(`${c.due.words}, ${c.due.sub}`)}</dd></div>
           <div className="facts__item"><dt className="facts__term">Requested</dt>
             <dd className="facts__value">{c.service.display}</dd></div>
+          {c.side && (
+            <div className="facts__item"><dt className="facts__term">Side</dt>
+              <dd className="facts__value">{c.side === "right" ? "Right" : "Left"}</dd></div>
+          )}
           <div className="facts__item"><dt className="facts__term">Ordered by</dt>
             <dd className="facts__value">{glue(c.ordering_clinician.name)}, {c.ordering_clinician.specialty}</dd></div>
           <Urgency c={c} setCase={setCase} />
