@@ -1,10 +1,9 @@
-"""The workflow through the HTTP API, the tool gateway and the MCP servers."""
+"""The workflow through the HTTP API, the tool gateway and the MCP servers, on SQLite and on Postgres."""
 
 from __future__ import annotations
 
 import asyncio
 import json
-import sqlite3
 from datetime import UTC, datetime, timedelta
 
 import httpx
@@ -12,7 +11,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from caduceus.api import create_app
-from caduceus.app_factory import Settings, build_services
+from caduceus.app_factory import Settings
 from caduceus.auth import AGENT, DEV_USERS, Principal, Role
 from caduceus.deid.safe_harbor import SafeHarborDeidentifier
 from caduceus.drafting import Drafter, patient_context
@@ -39,10 +38,9 @@ class Clock:
 
 
 @pytest.fixture()
-def env():
+def env(backend):
     clock = Clock(T0)
-    svc = build_services(Settings(data_dir=DATA, db_path=":memory:", auth_mode="dev", deid_key=TEST_KEY.decode()),
-                         conn=sqlite3.connect(":memory:", check_same_thread=False))
+    svc = backend.services(auth_mode="dev", deid_key=TEST_KEY.decode())
     svc.workflow.now = clock
     seed(svc, now=T0)
     client = TestClient(create_app(svc, dispatch_interval=None))
