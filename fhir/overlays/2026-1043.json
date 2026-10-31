@@ -1,0 +1,285 @@
+{
+ "resourceType": "Bundle",
+ "id": "a0d6c821-8402-53f1-a053-616dda70e8dc",
+ "type": "collection",
+ "entry": [
+  {
+   "fullUrl": "urn:uuid:5e2198a7-65f2-5614-942a-8d4b26be1c0d",
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "5e2198a7-65f2-5614-942a-8d4b26be1c0d",
+    "status": "current",
+    "type": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "packet-page",
+       "display": "Referral form"
+      }
+     ],
+     "text": "Referral form"
+    },
+    "subject": {
+     "reference": "Patient/061e1951-5fbf-0420-cdd1-892b66d6cba7"
+    },
+    "date": "2026-10-26T09:00:00-06:00",
+    "description": "Referral form",
+    "author": [
+     {
+      "display": "Dr. Ana Reyes"
+     }
+    ],
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "title": "Referral form",
+       "data": "UmVxdWVzdGVkIHNlcnZpY2U6IE1SSSBvZiB0aGUgbHVtYmFyIHNwaW5lIHdpdGhvdXQgY29udHJhc3QgKENQVCA3MjE0OCkuIERpYWdub3NpczogTTU0LjUwLCBsb3cgYmFjayBwYWluLiBPcmRlcmluZyBjbGluaWNpYW46IERyLiBBbmEgUmV5ZXMsIE9ydGhvcGVkaWNzLiBQcmlvcml0eTogcm91dGluZS4="
+      }
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:ef71281f-97d2-5df3-980c-f8d14eeba1d1",
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "ef71281f-97d2-5df3-980c-f8d14eeba1d1",
+    "status": "current",
+    "type": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "packet-page",
+       "display": "Visit note"
+      }
+     ],
+     "text": "Visit note"
+    },
+    "subject": {
+     "reference": "Patient/061e1951-5fbf-0420-cdd1-892b66d6cba7"
+    },
+    "date": "2026-10-14T09:00:00-06:00",
+    "description": "Visit note",
+    "author": [
+     {
+      "display": "Dr. Ana Reyes"
+     }
+    ],
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "title": "Visit note",
+       "data": "T3J0aG9wZWRpYyBmb2xsb3ctdXAuIFBhdGllbnQgcmVwb3J0cyBsb3cgYmFjayBwYWluIHJhZGlhdGluZyB0byB0aGUgbGVmdCBidXR0b2NrLCBvbmdvaW5nIGZvciBhcHByb3hpbWF0ZWx5IDkgd2Vla3MuIFBhaW4gaXMgd29yc2Ugd2l0aCBwcm9sb25nZWQgc2l0dGluZyBhbmQgZWFzZXMgd2l0aCB3YWxraW5nLiBQbGFuOiBNUkkgb2YgdGhlIGx1bWJhciBzcGluZSB3aXRob3V0IGNvbnRyYXN0IHRvIGV2YWx1YXRlIGZvciBkaXNjIHBhdGhvbG9neS4="
+      }
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:6859cb91-7891-511e-a114-52e9e9234e67",
+   "resource": {
+    "resourceType": "Condition",
+    "id": "6859cb91-7891-511e-a114-52e9e9234e67",
+    "subject": {
+     "reference": "Patient/061e1951-5fbf-0420-cdd1-892b66d6cba7"
+    },
+    "clinicalStatus": {
+     "coding": [
+      {
+       "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+       "code": "active",
+       "display": "active"
+      }
+     ],
+     "text": "active"
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://hl7.org/fhir/sid/icd-10-cm",
+       "code": "M54.50",
+       "display": "Low back pain, unspecified"
+      }
+     ],
+     "text": "Low back pain, unspecified"
+    },
+    "onsetDateTime": "2026-08-26",
+    "recordedDate": "2026-08-26",
+    "extension": [
+     {
+      "url": "http://mesaverde.example/fhir/StructureDefinition/source-sentence",
+      "extension": [
+       {
+        "url": "document",
+        "valueReference": {
+         "reference": "DocumentReference/ef71281f-97d2-5df3-980c-f8d14eeba1d1"
+        }
+       },
+       {
+        "url": "sentence",
+        "valueString": "Patient reports low back pain radiating to the left buttock, ongoing for approximately 9 weeks."
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:83d4acde-3b5a-52a7-a11e-e26f0dec2ae9",
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "83d4acde-3b5a-52a7-a11e-e26f0dec2ae9",
+    "status": "current",
+    "type": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "packet-page",
+       "display": "Therapy summary"
+      }
+     ],
+     "text": "Therapy summary"
+    },
+    "subject": {
+     "reference": "Patient/061e1951-5fbf-0420-cdd1-892b66d6cba7"
+    },
+    "date": "2026-08-15T09:00:00-06:00",
+    "description": "Therapy summary",
+    "author": [
+     {
+      "display": "Mesa Verde Physical Therapy"
+     }
+    ],
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "title": "Therapy summary",
+       "data": "UGh5c2ljYWwgdGhlcmFweSBkaXNjaGFyZ2Ugc3VtbWFyeS4gUGF0aWVudCBjb21wbGV0ZWQgNiB3ZWVrcyBvZiBwaHlzaWNhbCB0aGVyYXB5IHdpdGggbWluaW1hbCBpbXByb3ZlbWVudCBpbiBwYWluIG9yIGZ1bmN0aW9uLiBBIGhvbWUgZXhlcmNpc2UgcHJvZ3JhbSB3YXMgcHJvdmlkZWQu"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:89e2b06d-ca0b-5b77-99a4-67e95af7780a",
+   "resource": {
+    "resourceType": "Procedure",
+    "id": "89e2b06d-ca0b-5b77-99a4-67e95af7780a",
+    "status": "completed",
+    "subject": {
+     "reference": "Patient/061e1951-5fbf-0420-cdd1-892b66d6cba7"
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "97110",
+       "display": "Therapeutic exercise"
+      }
+     ],
+     "text": "Therapeutic exercise"
+    },
+    "performedPeriod": {
+     "start": "2026-07-02",
+     "end": "2026-08-15"
+    },
+    "extension": [
+     {
+      "url": "http://mesaverde.example/fhir/StructureDefinition/source-sentence",
+      "extension": [
+       {
+        "url": "document",
+        "valueReference": {
+         "reference": "DocumentReference/83d4acde-3b5a-52a7-a11e-e26f0dec2ae9"
+        }
+       },
+       {
+        "url": "sentence",
+        "valueString": "Patient completed 6 weeks of physical therapy with minimal improvement in pain or function."
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:05966be1-40b8-572c-bc1f-fa33a199e28c",
+   "resource": {
+    "resourceType": "DocumentReference",
+    "id": "05966be1-40b8-572c-bc1f-fa33a199e28c",
+    "status": "current",
+    "type": {
+     "coding": [
+      {
+       "system": "http://mesaverde.example/fhir/CodeSystem/caduceus",
+       "code": "packet-page",
+       "display": "Radiology report"
+      }
+     ],
+     "text": "Radiology report"
+    },
+    "subject": {
+     "reference": "Patient/061e1951-5fbf-0420-cdd1-892b66d6cba7"
+    },
+    "date": "2026-09-01T09:00:00-06:00",
+    "description": "Radiology report",
+    "author": [
+     {
+      "display": "Mesa Verde Imaging"
+     }
+    ],
+    "content": [
+     {
+      "attachment": {
+       "contentType": "text/plain",
+       "title": "Radiology report",
+       "data": "THVtYmFyIHNwaW5lIHJhZGlvZ3JhcGhzLCB0d28gdmlld3MuIEZpbmRpbmdzOiBEZWdlbmVyYXRpdmUgZGlzYyBkaXNlYXNlIGF0IEw0IHRvIEw1IHdpdGggbWlsZCBuYXJyb3dpbmcuIE5vIGFjdXRlIGZyYWN0dXJlIG9yIG1hbGFsaWdubWVudC4gSW1wcmVzc2lvbjogZGVnZW5lcmF0aXZlIGNoYW5nZXMsIG5vIGFjdXRlIGFibm9ybWFsaXR5Lg=="
+      }
+     }
+    ]
+   }
+  },
+  {
+   "fullUrl": "urn:uuid:7f317d23-0ce5-558c-a79c-6df9c0959a7e",
+   "resource": {
+    "resourceType": "Procedure",
+    "id": "7f317d23-0ce5-558c-a79c-6df9c0959a7e",
+    "status": "completed",
+    "subject": {
+     "reference": "Patient/061e1951-5fbf-0420-cdd1-892b66d6cba7"
+    },
+    "code": {
+     "coding": [
+      {
+       "system": "http://www.ama-assn.org/go/cpt",
+       "code": "72100",
+       "display": "X-ray lumbosacral spine, 2 or 3 views"
+      }
+     ],
+     "text": "X-ray lumbosacral spine, 2 or 3 views"
+    },
+    "performedDateTime": "2026-09-01T10:00:00-06:00",
+    "extension": [
+     {
+      "url": "http://mesaverde.example/fhir/StructureDefinition/source-sentence",
+      "extension": [
+       {
+        "url": "document",
+        "valueReference": {
+         "reference": "DocumentReference/05966be1-40b8-572c-bc1f-fa33a199e28c"
+        }
+       },
+       {
+        "url": "sentence",
+        "valueString": "Degenerative disc disease at L4 to L5 with mild narrowing. No acute fracture or malalignment."
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ]
+}
