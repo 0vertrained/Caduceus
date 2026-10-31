@@ -535,6 +535,15 @@ mark { background: var(--mark); color: var(--ink); padding: 0.05em 0.15em; margi
   color: var(--ink); padding: var(--space-3) var(--space-4); border-radius: var(--radius-control); }
 .draft-notice svg { color: var(--caution); flex: none; margin-top: 3px; }
 .countdown { color: var(--ink-2); font-weight: 400; font-variant-numeric: tabular-nums; }
+/* A button whose action is under way keeps its words and adds a turning ring, after a moment, so a quick answer
+   does not flash one. With reduced motion the ring stays still. */
+.btn[data-busy]::after {
+  content: ""; flex: none; width: 0.9em; height: 0.9em; border-radius: 50%; border: 2px solid currentColor;
+  border-right-color: transparent; opacity: 0; animation: busy-in 0s linear 150ms forwards, busy-turn 0.8s linear infinite;
+}
+@keyframes busy-in { to { opacity: 1; } }
+@keyframes busy-turn { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .btn[data-busy]::after { animation: busy-in 0s linear 150ms forwards; } }
 
 .app { min-height: 100vh; display: flex; flex-direction: column; }
 .app__main { flex-grow: 1; display: flex; flex-direction: column; }

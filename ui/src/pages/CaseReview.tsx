@@ -663,7 +663,7 @@ function DecisionBar({ c, setCase, reload }: { c: CaseView; setCase: (c: CaseVie
     ro.observe(el);
     return () => { ro.disconnect(); document.documentElement.style.removeProperty("--bar-space"); };
   }, []);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);  // the action under way, so its button shows it
   const [error, setError] = useState<string | null>(null);
   const [returning, setReturning] = useState(false);
   const [reason, setReason] = useState("");
@@ -675,7 +675,7 @@ function DecisionBar({ c, setCase, reload }: { c: CaseView; setCase: (c: CaseVie
   }, [undoLeft, c.undo, reload]);
 
   async function act(path: string, body?: unknown) {
-    setBusy(true);
+    setBusy(path);
     setError(null);
     try {
       setCase(await api<CaseView>(`/api/cases/${c.id}/${path}`, { method: "POST", body: body ? JSON.stringify(body) : undefined }));
@@ -684,19 +684,21 @@ function DecisionBar({ c, setCase, reload }: { c: CaseView; setCase: (c: CaseVie
     } catch (e) {
       setError((e as ApiError).message);
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }
+  // Every button waits while one action runs; the one that started it says so.
+  const pending = (path: string) => ({ disabled: busy !== null, "data-busy": busy === path || undefined });
 
   const undo = c.undo && undoLeft > 0 ? (
-    <button type="button" className="btn btn--secondary btn--large" disabled={busy} onClick={() => act("undo")}>
+    <button type="button" className="btn btn--secondary btn--large" {...pending("undo")} onClick={() => act("undo")}>
       Undo <span className="countdown" aria-hidden="true">({undoLeft} seconds)</span>
     </button>
   ) : null;
 
   // While the case waits on the clinician: a nudge, at most every 10 minutes (the summary says when the next can go).
   const remind = c.actions.can_remind ? (
-    <button type="button" className="btn btn--secondary btn--large" disabled={busy} onClick={() => act("remind")}>
+    <button type="button" className="btn btn--secondary btn--large" {...pending("remind")} onClick={() => act("remind")}>
       Remind {c.ordering_clinician.name}</button>
   ) : null;
   let summary: ReactNode = glue(c.summary);
@@ -713,11 +715,12 @@ function DecisionBar({ c, setCase, reload }: { c: CaseView; setCase: (c: CaseVie
         )}
         {/* No disabled "Approve and send" beside it: the summary already says why it cannot be approved yet. */}
         {c.actions.can_request_attestation ? (
-          <button type="button" className="btn btn--primary btn--large" disabled={busy} onClick={() => act("request-attestation")}>
+          <button type="button" className="btn btn--primary btn--large" {...pending("request-attestation")} onClick={() => act("request-attestation")}>
             Send to {c.ordering_clinician.name} to attest
           </button>
         ) : (
-          <button type="button" className="btn btn--primary btn--large" disabled={busy || !c.actions.can_approve}
+          <button type="button" className="btn btn--primary btn--large" {...pending("approve")}
+                  disabled={busy !== null || !c.actions.can_approve}
                   aria-describedby="bar-summary" onClick={() => act("approve")}>Approve and send</button>
         )}
       </>
@@ -735,12 +738,12 @@ function DecisionBar({ c, setCase, reload }: { c: CaseView; setCase: (c: CaseVie
       <>
         {c.actions.can_send_note ? (
           <>{c.actions.can_return && returnButton(false)}
-            <button type="button" className="btn btn--primary btn--large" disabled={busy} onClick={() => act("send-note")}>
+            <button type="button" className="btn btn--primary btn--large" {...pending("send-note")} onClick={() => act("send-note")}>
               Send the note to {c.payer.name}
             </button></>
         ) : c.actions.can_ask_for_note ? (
           <>{c.actions.can_return && returnButton(false)}
-            <button type="button" className="btn btn--primary btn--large" disabled={busy} onClick={() => act("request-note")}>
+            <button type="button" className="btn btn--primary btn--large" {...pending("request-note")} onClick={() => act("request-note")}>
               Ask {c.ordering_clinician.name} for the note
             </button></>
         ) : c.actions.can_return ? returnButton(true) : null}
@@ -754,7 +757,7 @@ function DecisionBar({ c, setCase, reload }: { c: CaseView; setCase: (c: CaseVie
             Return for correction</button>
         )}
         {c.actions.can_send_appeal && (
-          <button type="button" className="btn btn--primary btn--large" disabled={busy} onClick={() => act("send-appeal")}>
+          <button type="button" className="btn btn--primary btn--large" {...pending("send-appeal")} onClick={() => act("send-appeal")}>
             Send the appeal to {c.payer.name}</button>
         )}
       </>
@@ -772,7 +775,7 @@ function DecisionBar({ c, setCase, reload }: { c: CaseView; setCase: (c: CaseVie
       <span className="visually-hidden">{undo ? " after 30 seconds, unless you undo it" : c.actions.can_recall ? ", unless you recall it first" : ""}</span>.</span></>;
     // After the undo window, until the outbox sends it, any specialist can still recall it.
     const recall = !undo && c.actions.can_recall ? (
-      <button type="button" className="btn btn--secondary btn--large" disabled={busy} onClick={() => act("recall")}>Recall the {what}</button>
+      <button type="button" className="btn btn--secondary btn--large" {...pending("recall")} onClick={() => act("recall")}>Recall the {what}</button>
     ) : null;
     actions = <>{undo ?? recall}<Link to="/" className="btn btn--primary btn--large">Next case</Link></>;
   } else if (c.state === "returned") {
@@ -781,7 +784,7 @@ function DecisionBar({ c, setCase, reload }: { c: CaseView; setCase: (c: CaseVie
       <>
         {undo}
         {c.actions.can_resubmit && (
-          <button type="button" className="btn btn--secondary btn--large" disabled={busy} onClick={() => act("resubmitted")}>
+          <button type="button" className="btn btn--secondary btn--large" {...pending("resubmitted")} onClick={() => act("resubmitted")}>
             The clinic resubmitted</button>
         )}
         <Link to="/" className="btn btn--primary btn--large">Next case</Link>
@@ -805,7 +808,7 @@ function DecisionBar({ c, setCase, reload }: { c: CaseView; setCase: (c: CaseVie
             <textarea id="return-reason" className="input textarea textarea--short" value={reason}
                       onChange={(e) => setReason(e.target.value)} onKeyDown={submitOnModEnter} />
             <div className="decision-bar__actions">
-              <button type="submit" className="btn btn--primary" disabled={busy}>Return to {c.ordering_clinician.name}</button>
+              <button type="submit" className="btn btn--primary" {...pending("return")}>Return to {c.ordering_clinician.name}</button>
               <button type="button" className="btn btn--secondary" onClick={() => setReturning(false)}>Cancel</button>
             </div>
           </form>
