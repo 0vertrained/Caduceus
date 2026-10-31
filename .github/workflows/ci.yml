@@ -219,7 +219,7 @@ jobs:
           checkov -d . --framework terraform --quiet --compact
       - name: Compose file is valid
         working-directory: .
-        run: CADUCEUS_DEID_KEY=ci-only-placeholder docker compose config --quiet
+        run: CADUCEUS_DEID_KEY=ci-only-placeholder CADUCEUS_DB_PASSWORD=ci-only-placeholder docker compose config --quiet
 
   dataset:
     name: Synthea builds from source; dataset regenerates byte-identically
