@@ -70,6 +70,7 @@ export function Header({ me, onSignOut }: { me: Me | null; onSignOut: () => void
           <nav className="header__links" aria-label="Pages">
             {me && me.role !== "clinician" && <NavLink to="/outcomes" className="header__link">Outcomes</NavLink>}
             {me && me.role !== "clinician" && <NavLink to="/policies" className="header__link">Policies</NavLink>}
+            {me?.role === "admin" && <NavLink to="/admin" className="header__link">Administration</NavLink>}
             <NavLink to="/help" className="header__link">Help</NavLink>
           </nav>
           <div className="segmented" role="group" aria-labelledby="text-size-label">

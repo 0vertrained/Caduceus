@@ -10,6 +10,7 @@ import { QueuePage } from "./pages/Queue";
 import { SignInPage } from "./pages/SignIn";
 import { IntakePage } from "./pages/Intake";
 import { OutcomesPage } from "./pages/Outcomes";
+import { AdminPage } from "./pages/Admin";
 import { PoliciesPage } from "./pages/Policies";
 
 export function App() {
@@ -68,6 +69,7 @@ export function App() {
             <Route path="/intake/:id" element={<IntakePage />} />
             <Route path="/outcomes" element={<OutcomesPage />} />
             <Route path="/policies" element={me.role === "clinician" ? <Navigate to="/" replace /> : <PoliciesPage />} />
+            <Route path="/admin" element={me.role === "admin" ? <AdminPage /> : <Navigate to="/" replace />} />
             <Route path="/help" element={<HelpPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

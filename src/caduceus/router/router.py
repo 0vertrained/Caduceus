@@ -21,6 +21,7 @@ import os
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
+from typing import Any
 
 from opentelemetry import trace
 
@@ -49,6 +50,7 @@ class Router:
                  capture_deid_content: bool | None = None):
         self._in_vpc = in_vpc
         self._external = external
+        self._external_off = False  # an administrator's switch: nothing goes out until it is turned back on
         self._deid = deid
         self._capture = (os.environ.get("CADUCEUS_CAPTURE_DEID_CONTENT") == "1"
                          if capture_deid_content is None else capture_deid_content)
@@ -56,6 +58,21 @@ class Router:
     @property
     def external_enabled(self) -> bool:
         return self._external is not None
+
+    @property
+    def external_on(self) -> bool:
+        """Configured, and not switched off by an administrator."""
+        return self._external is not None and not self._external_off
+
+    def switch_external(self, on: bool) -> None:
+        """Off: de-identified work runs on the in-VPC model when there is one, else falls back to the template."""
+        self._external_off = not on
+
+    def describe(self) -> dict[str, Any]:
+        """Which models each route would use, for the administrator: names only, never keys or addresses."""
+        def about(p: Provider | None) -> dict[str, Any] | None:
+            return None if p is None else {"name": p.name, "model": p.model}
+        return {"in_vpc": about(self._in_vpc), "external": about(self._external), "external_on": self.external_on}
 
     def complete_phi(self, task: str, system: str, user: str, case_id: str, max_tokens: int = 800) -> RoutedCompletion:
         if self._in_vpc is None:
@@ -96,10 +113,12 @@ class Router:
             if self._deid.residual_identifiers(part.text, ctx):
                 raise UnstampedPayload("a known identifier is present in stamped text; refusing")
         user = "\n\n".join(p.text for p in parts)
-        provider = self._external or self._in_vpc
+        external = None if self._external_off else self._external
+        provider = external or self._in_vpc
         if provider is None:
-            raise InVpcUnavailable("no model is configured")
-        route = "external" if self._external is not None else "deid_in_vpc"
+            raise InVpcUnavailable("no model is configured" if self._external is None
+                                   else "the external model is switched off and there is no in-VPC model")
+        route = "external" if external is not None else "deid_in_vpc"
         with tracer.start_as_current_span(f"chat {provider.model}") as span:
             self._annotate(span, provider, route, task, case_id, user)
             if self._capture:

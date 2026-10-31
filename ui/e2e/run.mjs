@@ -370,6 +370,19 @@ await page.getByRole("heading", { name: "Total knee arthroplasty" }).waitFor();
 await page.getByRole("link", { name: /^LCD L36007/ }).waitFor();
 await shot(page, "22-policies");
 await axe(page, "22-policies");
+// The administrator: how the deployment is set up, and the external model's off switch, then on again.
+await page.getByRole("button", { name: "Sign out" }).click();
+await signIn(page, "Avery Chen");
+await page.getByRole("link", { name: "Administration" }).waitFor();  // only an administrator has the link
+await page.goto(base + "/admin");  // not a click: signing in ends by going to the queue, which would race it
+await page.getByRole("heading", { name: "Where patient information can go" }).waitFor();
+await shot(page, "23-admin");
+await axe(page, "23-admin");
+await page.getByRole("button", { name: "Turn off the external model" }).click();
+await page.getByRole("status").filter({ hasText: "The external model is off." }).waitFor();
+await axe(page, "23b-admin-external-off");
+await page.getByRole("button", { name: "Turn the external model back on" }).click();
+await page.getByRole("status").filter({ hasText: "The external model is on again." }).waitFor();
 
 await browser.close();
 console.log(JSON.stringify(report, null, 2));

@@ -22,7 +22,7 @@ from pydantic import BaseModel, Field
 
 from caduceus.app_factory import Services, Settings, build_services
 from caduceus.audit.log import TamperDetected
-from caduceus.auth import AuthError, Principal, Role
+from caduceus.auth import DEV_USERS, AuthError, Principal, Role
 from caduceus.cases import Case, Fax, StaleCase, State
 from caduceus.fhir.store import fax_image
 from caduceus.intake import FaxReadingUnavailable
@@ -179,6 +179,10 @@ def visitor_of(request: Request) -> str:
 
 
 # Free text is bounded here so a request cannot park megabytes in a case; the workflow gives the friendly limits.
+class SwitchBody(BaseModel):
+    on: bool
+
+
 class ReturnBody(BaseModel):
     reason: str = Field(max_length=2_000)
 
@@ -609,6 +613,45 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
     def coverage_policies(who: Principal = Depends(role(Role.PA_SPECIALIST, Role.ADMIN, Role.AUDITOR))) -> dict:
         wf = live.svc.workflow
         return {"services": policies(wf.library, wf.engine.approved)}
+
+    @app.get("/api/admin")
+    def administration(who: Principal = Depends(role(Role.ADMIN))) -> dict:
+        """How this deployment is set up, for its administrator: where patient information can go, what holds the
+        cases and records, how people sign in, and whether the audit log and the policies are intact."""
+        svc, s = live.svc, live.svc.settings
+        events = svc.audit.events()
+        try:
+            intact, count = True, svc.audit.verify()
+        except TamperDetected:
+            intact, count = False, len(events)
+        routes = svc.router.describe() if svc.router else {"in_vpc": None, "external": None, "external_on": False}
+        return {
+            "routes": routes,
+            "database": ("Postgres" if svc.database is not None else
+                         "SQLite in memory, a copy for each visitor" if live.demo else "SQLite"),
+            "records": "A HAPI FHIR server" if s.fhir_base_url else "FHIR bundles on disk",
+            "sign_in": {"oidc": "Your identity provider (OpenID Connect)",
+                        "demo": "Demo sign-in: anyone can choose a person",
+                        "dev": "Development sign-in"}[s.auth_mode],
+            "payer": {"review_seconds": float(s.payer_review_seconds)},
+            "people": [] if s.auth_mode == "oidc" else
+            [{"id": p.id, "name": p.name, "role": p.role.value} for p in DEV_USERS.values()],
+            "audit": {"intact": intact, "events": count,
+                      "last": moment(events[-1].ts, now(), svc.tz) if events else None},
+            "policies": [{"title": p["running"]["title"], "version": p["running"]["version"],
+                          "intact": p["running"]["intact"]}
+                         for p in policies(svc.workflow.library, svc.workflow.engine.approved)],
+        }
+
+    @app.post("/api/admin/external-route")
+    def switch_external_route(body: SwitchBody, who: Principal = Depends(role(Role.ADMIN))) -> dict:
+        """Stop, or restart, every call to the external model. Kept in the audit log, which the next start reads."""
+        svc = live.svc
+        if svc.router is None or not svc.router.external_enabled:
+            raise HTTPException(409, "No external model is configured, so there is nothing to switch.")
+        svc.router.switch_external(body.on)
+        svc.audit.append(who.id, who.role, "admin.external_route", None, {"on": body.on})
+        return administration(who)
 
     @app.get("/api/attestations")
     def my_attestations(who: Principal = Depends(role(Role.CLINICIAN))):
