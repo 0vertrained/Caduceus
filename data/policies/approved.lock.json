@@ -1,5 +1,7 @@
 {
+  "cpap-osa@2026-11": "3792d8b7526ec1edb0d5b285dad00b4fafca1bd3c966472601734499ede1c85e",
   "dev-cpap-osa@2026-09": "ca2ea51bd5b2500f62371a411fd3ad99c108a5b4ac50448d2e6ab9a9f2cee345",
   "dev-knee-arthroplasty@2026-09": "9f2883f7cf2b4b81a50807f5d23e3f3a47fc7d0f4ae64c347ad26ef6a63cae82",
-  "dev-lumbar-mri@2026-09": "ffee3b485cb612b4acc4c941ed0d1ede3e274d6aea7a877cb54ad87a3941c2b8"
+  "dev-lumbar-mri@2026-09": "ffee3b485cb612b4acc4c941ed0d1ede3e274d6aea7a877cb54ad87a3941c2b8",
+  "knee-arthroplasty@2026-11": "7a585257f3851d3943d6a69e2fff3a7af90c1c73930bdcab0e9c7e1f94fbe82d"
 }

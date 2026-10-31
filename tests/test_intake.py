@@ -91,8 +91,9 @@ def test_a_degraded_fax_needs_its_fields_corrected_first(inbox):
 def test_the_form_follows_the_page_and_starts_on_the_closest_choice_on_file(inbox):
     _, client = inbox
     item = client.get("/api/intake/FAX-0003", headers=DOLORES).json()
+    # The side follows the service: the knee criteria check it, so it is asked for when a knee service is chosen.
     assert [f["key"] for f in item["form"]] == ["referral", "patient_name", "birth_date", "member_id", "payer",
-                                                "clinician", "service_code", "diagnosis"]
+                                                "clinician", "service_code", "side", "diagnosis"]
     form = {f["key"]: f for f in item["form"]}
     # The "From:" line names the clinic, which narrows the clinicians to the ones who work there.
     assert item["clinic"] == "Mesa Verde Orthopedics, Santa Fe" and "Santa" in item["sender"]["read_as"]
