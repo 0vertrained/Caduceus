@@ -13,7 +13,7 @@ from __future__ import annotations
 import base64
 import re
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from caduceus.cases import Case
@@ -46,6 +46,12 @@ def questionnaire_response(case: Case) -> dict[str, Any]:
     }
 
 
+def priority(case: Case) -> dict[str, Any]:
+    """FHIR process priority: "stat" asks for an expedited decision."""
+    return {"coding": [{"system": "http://terminology.hl7.org/CodeSystem/processpriority",
+                        "code": "stat" if case.urgency == "expedited" else "normal"}]}
+
+
 def build_request_bundle(case: Case) -> dict[str, Any]:
     claim_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"caduceus/claim/{case.id}"))
     results = case.effective_results()
@@ -63,7 +69,7 @@ def build_request_bundle(case: Case) -> dict[str, Any]:
             "insurer": {"display": case.payer["name"]},
             "provider": {"reference": f"Practitioner/{case.ordering_clinician['id']}",
                          "display": case.ordering_clinician["name"]},
-            "priority": {"coding": [{"code": "normal"}]},
+            "priority": priority(case),
             "supportingInfo": [
                 {"sequence": i, "category": {"text": r["text"]},
                  "valueString": r.get("explanation", "") + (f" Attested by {r['attested_by']}."
@@ -114,7 +120,7 @@ def build_reply_bundle(case: Case) -> dict[str, Any]:
             "insurer": {"display": case.payer["name"]},
             "provider": {"reference": f"Practitioner/{case.ordering_clinician['id']}",
                          "display": case.ordering_clinician["name"]},
-            "priority": {"coding": [{"code": "normal"}]},
+            "priority": priority(case),
             "related": [{"claim": {"identifier": {"system": "http://mesaverde.example/payer-submission",
                                                   "value": original}},
                          "relationship": {"coding": [{
@@ -138,8 +144,12 @@ class MockPayer:
 
     def __init__(self, pend_attested: frozenset[str] = frozenset({"Humana Medicare Advantage"}),
                  published: dict[str, str] | None = None,
-                 strict_sleep_apnea: frozenset[str] = frozenset({"UnitedHealthcare Medicare Advantage"})):
+                 strict_sleep_apnea: frozenset[str] = frozenset({"UnitedHealthcare Medicare Advantage"}),
+                 review_seconds: float = 0.0):
         self._pend_attested = pend_attested
+        # How long a reviewer takes before the decision can be read (half that when expedited). Real reviews take up
+        # to the rule's limit; the demo uses about a minute, and tests use none.
+        self._review = review_seconds
         self._published = published or {}  # policy key -> content hash, as each payer publishes it
         self._strict = strict_sleep_apnea  # payers whose first-level review applies only the AHI 15 threshold
         self._submissions: dict[str, dict[str, Any]] = {}
@@ -154,7 +164,18 @@ class MockPayer:
                 "decision_timeframe": {"standard_days": STANDARD_DECISION_DAYS,
                                        "expedited_hours": EXPEDITED_DECISION_HOURS} if covered_by_rule else None}
 
-    def submit(self, bundle: dict[str, Any], payer_name: str) -> dict[str, Any]:
+    def _record(self, submission_id: str, decision: dict[str, Any], claim: dict[str, Any],
+                now: datetime | None) -> dict[str, Any]:
+        now = now or datetime.now(UTC)
+        stat = any(c.get("code") == "stat" for c in (claim.get("priority") or {}).get("coding", []))
+        wait = timedelta(seconds=self._review / (2 if stat else 1))
+        self._submissions[submission_id] = {"id": submission_id, "submitted_at": now.isoformat(),
+                                            "decision": decision, "system": REVIEW_ACTION,
+                                            "priority": "stat" if stat else "normal",
+                                            "decide_at": (now + wait).isoformat()}
+        return {"id": submission_id, "submitted_at": now.isoformat()}
+
+    def submit(self, bundle: dict[str, Any], payer_name: str, now: datetime | None = None) -> dict[str, Any]:
         claim = bundle["entry"][0]["resource"]
         if claim.get("resourceType") != "Claim" or claim.get("use") != "preauthorization" or not claim.get("item"):
             raise ValueError("not a prior-authorization request bundle")
@@ -173,11 +194,10 @@ class MockPayer:
         else:
             decision = {"code": "A1", "display": "Certified in total",
                         "authorization_number": f"AUTH{uuid.uuid4().int % 10**8:08d}"}
-        self._submissions[submission_id] = {"id": submission_id, "submitted_at": datetime.now(UTC).isoformat(),
-                                            "decision": decision, "system": REVIEW_ACTION}
-        return {"id": submission_id, "submitted_at": self._submissions[submission_id]["submitted_at"]}
+        return self._record(submission_id, decision, claim, now)
 
-    def respond(self, bundle: dict[str, Any], payer_name: str, submission_id: str) -> dict[str, Any]:
+    def respond(self, bundle: dict[str, Any], payer_name: str, submission_id: str,
+                now: datetime | None = None) -> dict[str, Any]:
         """Documentation for a pended request. The decision is recorded against the original submission."""
         claim = bundle["entry"][0]["resource"]
         if claim.get("resourceType") != "Claim" or claim.get("use") != "preauthorization":
@@ -191,12 +211,10 @@ class MockPayer:
                         "authorization_number": f"AUTH{uuid.uuid4().int % 10**8:08d}"}
         else:
             decision = {"code": "A4", "display": "Pended", "question": "Send the clinical note that was requested."}
-        received_at = datetime.now(UTC).isoformat()
-        self._submissions[submission_id] = {"id": submission_id, "submitted_at": received_at, "decision": decision,
-                                            "system": REVIEW_ACTION}
-        return {"id": submission_id, "submitted_at": received_at}
+        return self._record(submission_id, decision, claim, now)
 
-    def appeal(self, bundle: dict[str, Any], payer_name: str, submission_id: str) -> dict[str, Any]:
+    def appeal(self, bundle: dict[str, Any], payer_name: str, submission_id: str,
+               now: datetime | None = None) -> dict[str, Any]:
         """Reconsideration of a denial. The mock reviewer overturns a denial when the appeal is attached."""
         claim = bundle["entry"][0]["resource"]
         related = [r["claim"]["identifier"]["value"] for r in claim.get("related", [])]
@@ -207,10 +225,12 @@ class MockPayer:
                      "authorization_number": f"AUTH{uuid.uuid4().int % 10**8:08d}"} if letters else
                     {"code": "A3", "display": "Not certified",
                      "reason": {"criterion": "", "text": "No appeal letter was attached."}})
-        received_at = datetime.now(UTC).isoformat()
-        self._submissions[submission_id] = {"id": submission_id, "submitted_at": received_at, "decision": decision,
-                                            "system": REVIEW_ACTION}
-        return {"id": submission_id, "submitted_at": received_at}
+        return self._record(submission_id, decision, claim, now)
 
-    def status(self, submission_id: str) -> dict[str, Any]:
-        return self._submissions[submission_id]
+    def status(self, submission_id: str, now: datetime | None = None) -> dict[str, Any]:
+        """The decision once the reviewer has made it; until then, that the request is in review and by when."""
+        s = self._submissions[submission_id]
+        if (now or datetime.now(UTC)) < datetime.fromisoformat(s["decide_at"]):
+            return {"id": s["id"], "submitted_at": s["submitted_at"], "system": s["system"], "decision": None,
+                    "in_review": True, "expected_by": s["decide_at"], "priority": s["priority"]}
+        return {k: v for k, v in s.items() if k != "decide_at"} | {"in_review": False}

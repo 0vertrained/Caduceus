@@ -69,6 +69,8 @@ class Settings:
     # Seconds to wait for the external model. The demo keeps it under Netlify's 26-second proxy limit, so a slow
     # model makes a draft fall back to the template instead of making a person wait; recording allows longer.
     external_timeout: str = _env("CADUCEUS_EXTERNAL_TIMEOUT", "60")
+    # Seconds the mock payer takes to decide (half when expedited). 0 decides at once, for tests and local work.
+    payer_review_seconds: str = _env("CADUCEUS_PAYER_REVIEW_SECONDS", "0")
     # Recorded external replies (scripts/record_completions.py). The demo uses data/recorded/completions.json.
     model_recordings: str | None = _env("CADUCEUS_MODEL_RECORDINGS")
     # demo: the public demo. Development sign-in, synthetic data seeded in memory, reset on a schedule.
@@ -136,7 +138,8 @@ def build_services(settings: Settings | None = None, conn: sqlite3.Connection | 
 
     tz = ZoneInfo(s.clinic_tz)
     workflow = Workflow(cases, audit, store, library, engine, Drafter(router, deid),
-                        MockPayer(published={c.key: c.content_sha256() for c in current.values()}),
+                        MockPayer(published={c.key: c.content_sha256() for c in current.values()},
+                                  review_seconds=float(s.payer_review_seconds)),
                         faxes=FaxRepository(conn), catalog=_catalog(s.data_dir, current),
                         fax_dir=s.data_dir / "faxes", tz=tz, filed=filed)
     auth = Authenticator(s.auth_mode, s.oidc_jwks_url, s.oidc_issuer, s.oidc_audience)

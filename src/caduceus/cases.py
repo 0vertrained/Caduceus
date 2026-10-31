@@ -46,6 +46,10 @@ class Case(BaseModel):
     service: dict[str, str]
     criteria_set: str
     side: Literal["right", "left"] | None = None  # the side the request is for, when the service has one
+    # Expedited when waiting the standard time could seriously jeopardize the patient's life, health or ability to
+    # regain maximum function (the CMS rule's test). Covered plans then owe a decision in 72 hours, not 7 days.
+    urgency: Literal["standard", "expedited"] = "standard"
+    urgency_reason: str | None = None
     as_of: str
     payer: dict[str, str]
     ordering_clinician: dict[str, str]

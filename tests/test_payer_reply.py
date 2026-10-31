@@ -81,7 +81,7 @@ def test_the_payers_question_is_answered_with_the_clinicians_note(env):  # noqa:
     # Approving the reply puts it in the outbox for the same 30 seconds as a request.
     sent_to_payer: list[dict] = []
     respond = svc.workflow.payer.respond
-    svc.workflow.payer.respond = lambda bundle, *a: sent_to_payer.append(bundle) or respond(bundle, *a)
+    svc.workflow.payer.respond = lambda bundle, *a, **k: sent_to_payer.append(bundle) or respond(bundle, *a, **k)
     case = client.post(f"/api/cases/{HAROLD}/send-note", headers=DOLORES).json()
     assert case["status"]["key"] == "sending" and case["undo"]
     assert client.post(f"/api/cases/{HAROLD}/undo", headers=DOLORES).json()["status"]["key"] == "ready"
