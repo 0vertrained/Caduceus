@@ -16,6 +16,8 @@ who to act as at each step. Your queue is your own copy, so nothing you do chang
 faxed referrals, the denied CPAP request and its appeal, "See what was sent" under any draft, the case history,
 and the outcomes page.
 
+Or open it [from an EHR](docs/smart-launch.md): Help links to the SMART launcher, and Caduceus reads the chart over FHIR.
+
 **[Read the case study](docs/engagement/case-study.md)**: the problem, the decisions, what the measurements found and
 what went wrong. The engagement around it: the [discovery memo](docs/engagement/discovery-memo.md) and
 [how it would roll out at a real health system](docs/rollout-plan.md).
