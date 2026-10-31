@@ -246,6 +246,7 @@ resource "aws_ecs_task_definition" "api" {
       { name = "CADUCEUS_OIDC_ISSUER", value = var.oidc_issuer },
       { name = "CADUCEUS_OIDC_AUDIENCE", value = var.oidc_audience },
       { name = "CADUCEUS_OIDC_JWKS_URL", value = "${var.oidc_issuer}/protocol/openid-connect/certs" },
+      { name = "CADUCEUS_OIDC_CLIENT_ID", value = var.oidc_client_id },
       { name = "CADUCEUS_IN_VPC_URL", value = "http://${aws_instance.model.private_ip}:8000/v1" },
       { name = "CADUCEUS_IN_VPC_MODEL", value = var.model_name },
     ]
