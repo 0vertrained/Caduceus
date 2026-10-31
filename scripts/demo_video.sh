@@ -13,6 +13,8 @@ work="$(mktemp -d)"
 trap 'kill "${server:-0}" 2>/dev/null || true; rm -rf "$work"' EXIT
 
 export CADUCEUS_AUTH_MODE=demo CADUCEUS_DB="$work/video.sqlite3"
+# As deployed: the showcase cases, and a payer that takes a minute to decide (half when expedited).
+export CADUCEUS_SHOWCASE=1 CADUCEUS_PAYER_REVIEW_SECONDS="${CADUCEUS_PAYER_REVIEW_SECONDS:-60}"
 uvicorn caduceus.api:create_app --factory --host 127.0.0.1 --port "$port" --log-level warning &
 server=$!
 for _ in $(seq 1 60); do
