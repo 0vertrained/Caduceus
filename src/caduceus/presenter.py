@@ -451,6 +451,7 @@ class Presenter:
             "chart_summary": summary["text"],
             # How it was written: by the model inside the network, or from the record's facts.
             "chart_summary_by": {"route": summary.get("route"), "model": summary.get("model")},
+            "chart_summary_pending": bool(summary.get("pending")),  # the in-network model's is on its way
             "questions": [{"criterion_id": cid, "question": crit[cid].attestation_question or crit[cid].text,
                            "help": crit[cid].attestation_help,
                            "leads": [{k: lead[k] for k in ("title", "page", "text")} for lead in self.leads(case, cid)]}

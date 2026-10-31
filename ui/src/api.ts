@@ -263,6 +263,8 @@ export interface AttestationView {
   chart_summary: string;
   /** How the summary was written: by the model inside the network ("phi"), or from the record's facts. */
   chart_summary_by: { route: string | null; model: string | null };
+  /** True while the in-network model writes its summary; the page refreshes until it arrives. */
+  chart_summary_pending?: boolean;
   questions: { criterion_id: string; question: string; help: string | null;
                leads: { title: string; page: number; text: string }[] }[];
   payer: string;

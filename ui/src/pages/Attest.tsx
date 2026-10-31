@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api, ApiError, type AttestationRow, type AttestationView } from "../api";
 import { Check } from "../components/Icons";
@@ -35,7 +35,9 @@ export function AttestListPage() {
 
 export function AttestPage() {
   const { id } = useParams();
-  const { data, setData, error } = useResource<AttestationView>(`/api/attestations/${id}`);
+  const [waiting, setWaiting] = useState(false);
+  const { data, setData, error } = useResource<AttestationView>(`/api/attestations/${id}`, waiting ? 5000 : undefined);
+  useEffect(() => { setWaiting(Boolean(data?.chart_summary_pending)); }, [data?.chart_summary_pending]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [failure, setFailure] = useState<string | null>(null);
   const [signed, setSigned] = useState<AttestationView | null>(null);
@@ -104,8 +106,10 @@ export function AttestPage() {
       <section className="panel attest__card" aria-labelledby="chart-title">
         <h2 id="chart-title" className="attest__card-title">What the chart shows</h2>
         <p>{data.chart_summary}</p>
-        <p className="support">{data.chart_summary_by.route === "phi"
+        <p className="support" aria-live="polite">{data.chart_summary_by.route === "phi"
           ? <>Summarized by <span translate="no">{data.chart_summary_by.model}</span>, inside Mesa Verde’s network.</>
+          : data.chart_summary_pending ? "From the record’s facts, for now. The model inside Mesa Verde’s network is "
+            + "writing a summary, and it will appear here."
           : "From the record’s facts. No model was used."}</p>
       </section>
       {data.questions.map((q) => (
