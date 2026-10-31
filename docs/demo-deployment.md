@@ -21,8 +21,10 @@ not seen. Ollama Cloud is a subscription with fixed limits, so its key can use u
 and the demo refuses any metered key. Without a key the demo still runs, with drafts from the deterministic template.
 Beside the API, in the same instance, runs the model inside the network: llama.cpp and Qwen2.5-1.5B-Instruct on
 2 vCPU ([infra/model](../infra/model/Dockerfile)). It listens on 127.0.0.1, which nothing outside the instance can
-reach, has no way to call out, and writes the chart summary a clinician sees, in the background, in about half a
-minute. The [model-image](../.github/workflows/model-image.yml) workflow builds it (about half an hour, only when
+reach, is built without an HTTPS client and runs with downloads refused, and writes the chart summary a clinician
+sees, in the background, in about half a minute. Cloud Run gives both containers the instance's network, which the
+API needs for Ollama Cloud, so the model's isolation rests on how it is built and run; in production it sits in a
+subnet with no route out. The [model-image](../.github/workflows/model-image.yml) workflow builds it (about half an hour, only when
 its folder changes), checks that it answers with no network at all, scans it, and publishes it; the deploy runs the
 published one, and runs the API alone if there is none, when the summary comes from the record's facts.
 

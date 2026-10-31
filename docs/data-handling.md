@@ -30,7 +30,8 @@ real data.
    in the background. If it is down or absent, the summary is written from the record's facts without a model.
    There is no fallback to an outside model. In the public demo this model runs in the same Cloud Run instance as
    the API ([infra/model](../infra/model/Dockerfile)): it listens on 127.0.0.1, has no HTTPS client, serves
-   weights baked into its image, and runs with `--offline`. In a production deployment it runs in the VPC's private
+   weights baked into its image, and runs with `--offline`. Cloud Run gives it the instance's network, which the API
+   needs for the external model, so there its isolation rests on how it is built and run. In a production deployment it runs in the VPC's private
    subnet with no outbound route.
 3. Drafting gets de-identified facts. The de-identification service replaces identifiers with tokens, stamps the
    result with an HMAC, and the router checks the stamp and re-scans for known identifiers before the text leaves.
