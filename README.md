@@ -107,7 +107,7 @@ src/caduceus/
 ui/             React review UI; e2e/ walks it in Chromium with axe-core
 data/           synthetic patients, case overlays, criteria sets
 infra/          Terraform skeleton, Postgres audit-log SQL
-docs/           ADRs, data-handling note
+docs/           ADRs, data handling, incidents, the model bake-off
 ```
 
 ## Security posture, in brief
@@ -142,8 +142,16 @@ simulation. Synthea also runs with the network switched off (`scripts/offline.sh
 
 An in-VPC vision-language model behind the fax tool, and per-tier thresholds fitted on real faxes (ADR 6).
 Hybrid retrieval over long packets (ADR 5). The Postgres repository, then Temporal (ADR 4). OIDC sign-in in the
-UI: the API side is done and tested. HAPI FHIR and Keycloak in compose. An AWS apply. Judge-scored draft quality.
-The full red-team corpus. Expedited (72-hour) requests.
+UI: the API side is done and tested. HAPI FHIR and Keycloak in compose. An AWS apply. The full red-team corpus.
+Expedited (72-hour) requests.
+
+## Choosing the model
+
+[A bake-off](docs/model-bakeoff.md) ran each candidate on the same 17 de-identified requests, scored the replies
+with rules and a judge model, and then every reply was read against its facts. Kimi K2.6 stayed: 2 problems against
+gpt-oss 120B's 6, at 7.4 seconds a reply against 2.6. The judge was right about a third of the time, so its counts
+are not a score. The worst error in the run, a draft saying every criterion is met when one is not, is now rejected
+for every model.
 
 ## Incidents
 
