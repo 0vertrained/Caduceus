@@ -117,9 +117,11 @@ model: the check rejects none of them.
 
 - **Two contestants, not four.** DeepSeek V3.2 and GLM-5 need their Ollama Cloud names (from `/api/tags`) before
   they can run.
-- **One run, 17 requests, three services.** Replies vary between runs, and a second run would show by how much.
-  Changing the bake-off script reruns it on `main`, and the `bakeoff-results` branch keeps the latest run. The
-  numbers above are from run 41163393616, committed here.
+- **17 requests, three services, two runs.** The numbers above are from run 41163393616, committed here. A second
+  run, started by the scoring fix, pointed the same way: median 7.3 seconds against 2.3, Kimi within length on 14
+  of 17, and the judge flagging 8 Kimi replies against 13. gpt-oss did not repeat its "every criterion is met"
+  error, which shows why one run is not enough to rule an error out. That run's replies were not read by hand. The
+  `bakeoff-results` branch keeps the latest run.
 - **One human reader.** The hand review is mine. A second reviewer, ideally a utilization-review nurse, should read
   the same 34 replies.
 - **Kimi's pattern is not caught yet.** No rule detects an invented attestation step for a criterion that is not
