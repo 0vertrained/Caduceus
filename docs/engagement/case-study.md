@@ -81,6 +81,10 @@ The decisions behind it:
 | Known vulnerabilities | 0 in Python and npm packages; 2 medium in CPython with no fix released |
 | Tests | 180 |
 
+Every number here comes from synthetic data, and none is a claim of clinical or financial impact. Synthetic
+records cannot stand in for the distribution of real ones, as Synthea's own documentation warns. That is why the
+rollout plan starts with shadow mode on real cases before anyone relies on these results.
+
 ## What went wrong, and what changed
 
 **The first deploy with a model key failed at startup.** Seeding the demo drafted every case live, and the chosen
