@@ -439,24 +439,25 @@ await axe(ehr, "23-ehr-record");
 await ehr.getByRole("radio", { name: "Total knee replacement" }).check();
 await ehr.getByRole("button", { name: "Start the case" }).click();
 const problems = ehr.getByRole("alert").filter({ hasText: "There is a problem" });
-await problems.getByRole("link", { name: "Choose which knee is to be replaced" }).waitFor();
+await problems.getByRole("link", { name: "Choose which knee the request is for" }).waitFor();
 await problems.getByRole("link", { name: "Choose the health plan" }).waitFor();
 if (!(await ehr.evaluate(() => document.activeElement?.classList.contains("error-summary")))) {
   report.failures.push("ehr: the error summary did not take focus");
 }
 await shot(ehr, "24-ehr-errors");
 await axe(ehr, "24-ehr-errors");
-// Before the case opens, how much of the policy the record answers; the choices are in the address.
-await ehr.getByRole("radio", { name: "MRI of the lumbar spine" }).check();
-await ehr.getByText(/^The record answers 1 of the 4 criteria\. Dr\.\sAna Reyes will be asked to confirm the other 3\.$/).waitFor();
+// Before the case opens, how much of the policy the record answers; the choices are in the address. CPAP: the
+// record answers only the age, and nothing in it fails a criterion.
+await ehr.getByRole("radio", { name: "CPAP device" }).check();
+await ehr.getByText(/^The record answers 1 of the 4 criteria\. Dr\.\sPriya Patel will be asked to confirm the other 3\.$/).waitFor();
 await ehr.getByLabel("Health plan").selectOption("Medicare");
-if (!/service=72148/.test(ehr.url()) || !/plan=Medicare/.test(ehr.url())) report.failures.push(`ehr: choices not in the address ${ehr.url()}`);
-await ehr.getByRole("radio", { name: "MRI of the lumbar spine" }).press("Enter");  // the form submits with Enter
+if (!/service=E0601/.test(ehr.url()) || !/plan=Medicare/.test(ehr.url())) report.failures.push(`ehr: choices not in the address ${ehr.url()}`);
+await ehr.getByRole("radio", { name: "CPAP device" }).press("Enter");  // the form submits with Enter
 await ehr.getByRole("heading", { name: "Coverage criteria" }).waitFor({ timeout: 40_000 });
 await ehr.waitForURL(/\/cases\/EHR-0001$/, { timeout: 5_000 })
   .catch(() => report.failures.push(`ehr: expected case EHR-0001, got ${ehr.url()}`));
 await ehr.getByText(/^Opened from the EHR at 127\.0\.0\.1 by a SMART launch\. Dolores Montoya started the case/).waitFor();
-await ehr.getByText(/^One of 4 criteria are met\. Dr\.\sAna Reyes needs to confirm 3 items/).waitFor();
+await ehr.getByText(/^One of 4 criteria are met\. Dr\.\sPriya Patel needs to confirm 3 items/).waitFor();
 await shot(ehr, "25-case-from-ehr");
 await axe(ehr, "25-case-from-ehr");
 // A sign-in that did not start here, and an EHR Caduceus does not know: plain words, and nowhere to go but back.
