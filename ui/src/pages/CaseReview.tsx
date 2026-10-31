@@ -5,10 +5,12 @@ import { useAuthImage } from "../components/FaxImage";
 import { ChevronLeft, ChevronRight, CheckCircle, Triangle } from "../components/Icons";
 import { SealMark } from "../components/Seal";
 import { CriterionIcon, StatusWord, criterionWord } from "../components/Status";
-import { countWords, glue, midSentence, useResource, useSecondsLeft, useTitle } from "../hooks";
+import { countWords, glue, midSentence, oneLine, useResource, useSecondsLeft, useTitle } from "../hooks";
 
-type Panel = { kind: "draft" } | { kind: "edit" } | { kind: "sent" }
-  | { kind: "page"; docId: string; sentence: string | null; supports: string | null };
+// A page opens to show a criterion's evidence, or, with `lead`, a passage that may answer one the record could not.
+type PagePanel = { kind: "page"; docId: string; sentence: string | null; supports: string | null;
+                   lead?: { start: number; end: number } };
+type Panel = { kind: "draft" } | { kind: "edit" } | { kind: "sent" } | PagePanel;
 
 const REMOVED: Record<string, [string, string]> = {
   NAME: ["name part", "name parts"], DATE: ["date", "dates"], ADDRESS: ["street address", "street addresses"],
@@ -132,7 +134,39 @@ function CaseHeader({ c }: { c: CaseView }) {
   );
 }
 
-function Criteria({ c, open, showing }: { c: CaseView; open: (p: Panel) => void; showing: string | null }) {
+/** Packet passages that may answer a criterion the record could not. Where to look, not evidence: only the
+ *  ordering clinician's answer can mark the criterion met. */
+function Leads({ c, r, open, showing }: {
+  c: CaseView; r: CriterionResult; open: (p: Panel) => void; showing: PagePanel | null;
+}) {
+  return (
+    <div className="leads">
+      <p className="leads__title" id={`leads-${r.id}`}>The packet may answer this</p>
+      <ul className="leads__list" aria-labelledby={`leads-${r.id}`}>
+        {r.leads.map((l) => {
+          const on = showing?.docId === l.document_id && showing.lead?.start === l.start;
+          return (
+            <li key={`${l.document_id}:${l.start}`} className="leads__item">
+              <q className="leads__text">{oneLine(l.text)}</q>
+              <span className="criterion__evidence">
+                <button type="button" className="link-button"
+                        onClick={() => open({ kind: "page", docId: l.document_id, sentence: l.text, supports: r.text,
+                                              lead: { start: l.start, end: l.end } })}>
+                  {glue(`Show the ${midSentence(l.title)}, page ${l.page}`)}
+                </button>
+                {on && <span className="tag tag--seal">Showing</span>}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="support">Found by searching the packet. Only {glue(c.ordering_clinician.name)}’s answer can mark
+        this met.</p>
+    </div>
+  );
+}
+
+function Criteria({ c, open, showing }: { c: CaseView; open: (p: Panel) => void; showing: PagePanel | null }) {
   const { met, unknown } = c.criteria.counts;
   const total = c.criteria.total;
   const lead = (met === 0 ? `None of ${total} are met.` : met === total ? `All ${total} are met.`
@@ -149,7 +183,7 @@ function Criteria({ c, open, showing }: { c: CaseView; open: (p: Panel) => void;
         {c.criteria.results.map((r: CriterionResult) => {
           const w = criterionWord(r.status);
           const linked = r.evidence.filter((e) => e.document_id);
-          const shown = showing === r.text;
+          const shown = showing?.supports === r.text;
           return (
             <li key={r.id} aria-current={shown ? "true" : undefined}
                 className={`criterion${r.status === "unknown" ? " criterion--attention" : ""}${shown ? " criterion--showing" : ""}`}>
@@ -161,7 +195,7 @@ function Criteria({ c, open, showing }: { c: CaseView; open: (p: Panel) => void;
                 <span className="muted">
                   {r.attested_by ? (r.status === "met" ? `${r.attested_by} confirmed this.`
                     : `${r.attested_by} said this was not done.`) :
-                    r.status === "unknown" ? "No note says this either way, so nothing was assumed." : r.explanation}
+                    r.status === "unknown" ? "The record does not say either way, so nothing was assumed." : r.explanation}
                 </span>
                 {linked.slice(0, 1).map((e) => (
                   <span key={e.document_id} className="criterion__evidence">
@@ -169,9 +203,10 @@ function Criteria({ c, open, showing }: { c: CaseView; open: (p: Panel) => void;
                             onClick={() => open({ kind: "page", docId: e.document_id!, sentence: e.sentence, supports: r.text })}>
                       Show the {pageTitle(e.document_id)}, page {e.page}
                     </button>
-                    {shown && <span className="tag tag--seal">Showing</span>}
+                    {shown && !showing?.lead && <span className="tag tag--seal">Showing</span>}
                   </span>
                 ))}
+                {r.leads.length > 0 && <Leads c={c} r={r} open={open} showing={showing} />}
               </div>
             </li>
           );
@@ -220,10 +255,17 @@ function FaxPageImage({ path }: { path: string }) {
   );
 }
 
-function Highlighted({ text, sentence }: { text: string; sentence: string | null }) {
-  const at = sentence ? text.indexOf(sentence) : -1;
+/** Where the sentence is on the page: at the offsets given when they still hold it, else its first appearance. */
+function markAt(text: string, sentence: string | null, at?: { start: number; end: number }): number {
+  if (!sentence) return -1;
+  return at && text.slice(at.start, at.end) === sentence ? at.start : text.indexOf(sentence);
+}
+
+function Highlighted({ text, sentence, at, markRef }: {
+  text: string; sentence: string | null; at: number; markRef: RefObject<HTMLElement | null>;
+}) {
   if (!sentence || at < 0) return <>{text}</>;
-  return <>{text.slice(0, at)}<mark>{sentence}</mark>{text.slice(at + sentence.length)}</>;
+  return <>{text.slice(0, at)}<mark ref={markRef}>{sentence}</mark>{text.slice(at + sentence.length)}</>;
 }
 
 function SidePanel({ c, panel, setPanel, onSaved }: {
@@ -242,9 +284,11 @@ function SidePanel({ c, panel, setPanel, onSaved }: {
   // Move focus to the panel's heading when the person changes panels, but not when the case first opens: that
   // would skip the patient's name for a screen reader and scroll past the case header.
   const opened = useRef(false);
+  const mark = useRef<HTMLElement>(null);
   useEffect(() => {
     if (opened.current) heading.current?.focus();
     opened.current = true;
+    mark.current?.scrollIntoView({ block: "nearest" });  // a long page: the highlighted sentence, not just its top
   }, [panel, page]);
 
   const pending = c.criteria.results.filter((r) => r.status === "unknown");
@@ -255,6 +299,7 @@ function SidePanel({ c, panel, setPanel, onSaved }: {
   if (panel.kind === "sent" && c.draft?.sent) return <SentPanel c={c} back={() => setPanel({ kind: "draft" })} heading={heading} />;
 
   if (panel.kind === "page") {
+    const at = page ? markAt(page.text, panel.sentence, panel.lead) : -1;
     return (
       <aside className="panel side" aria-labelledby="panel-title" aria-live="polite">
         <button type="button" className="link-button link-button--plain"
@@ -262,18 +307,23 @@ function SidePanel({ c, panel, setPanel, onSaved }: {
         {!page ? <p role="status" className="muted">{error ?? "Opening the page."}</p> : (
           <>
             <h2 id="panel-title" ref={heading} tabIndex={-1} className="section-title">{page.title}</h2>
-            {panel.sentence && page.text.includes(panel.sentence) && (
+            {at >= 0 && (panel.lead ? (
+              <p className="support side__note">
+                <mark>Highlighted</mark> is the passage that may answer: {panel.supports}. It is not evidence: only
+                {" "}{glue(c.ordering_clinician.name)}’s answer can mark it met.
+              </p>
+            ) : (
               <p className="support side__note">
                 <mark>Highlighted</mark> is the sentence that supports: {panel.supports}.
               </p>
-            )}
+            ))}
             {page.image && <FaxPageImage path={page.image} />}
             <div className="paper">
               <p className="paper__head">
                 <span>Page {page.page} of {page.pages}</span>
                 {(page.date || page.author) && <span>{[page.date, page.author].filter(Boolean).join(" · ")}</span>}
               </p>
-              <Highlighted text={page.text} sentence={panel.sentence} />
+              <Highlighted text={page.text} sentence={panel.sentence} at={at} markRef={mark} />
             </div>
           </>
         )}
@@ -694,7 +744,7 @@ export function CaseReviewPage() {
           <Denial key={c.appeal.draft?.text} c={c} onSaved={setData} />
         )}
         <div className="case-body">
-          <Criteria c={c} open={setPanel} showing={panel.kind === "page" ? panel.supports : null} />
+          <Criteria c={c} open={setPanel} showing={panel.kind === "page" ? panel : null} />
           <SidePanel key={`${c.id}-${c.draft?.text?.length}`} c={c} panel={panel} setPanel={setPanel} onSaved={setData} />
         </div>
         <CaseHistory c={c} />

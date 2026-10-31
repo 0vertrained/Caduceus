@@ -152,10 +152,7 @@ class Presenter:
                 doc_id = (e.get("source_document") or "").split("/")[-1] or None
                 evidence.append({"display": e["display"], "date": e["date"], "document_id": doc_id,
                                  "page": pages.get(doc_id) if doc_id else None, "sentence": e.get("source_sentence")})
-            leads = [] if r["status"] != "unknown" or r.get("attested_by") else [
-                {"document_id": lead["doc_id"], "page": lead["page"], "text": lead["text"],
-                 "title": (self.store.document(lead["doc_id"]) or {}).get("description", "Page")}
-                for lead in (case.leads or {}).get(r["criterion_id"], [])]
+            leads = [] if r["status"] != "unknown" or r.get("attested_by") else self.leads(case, r["criterion_id"])
             results.append({"id": r["criterion_id"], "text": r["text"], "status": r["status"],
                             "explanation": r["explanation"], "attested_by": r.get("attested_by"),
                             "policy_sentence": r["policy_sentence"],
@@ -218,6 +215,13 @@ class Presenter:
         } | ({"actions": {k: False if k.startswith("can_") else v for k, v in actions.items()},
               "summary": "Read only. Only a prior-authorization specialist can act on a case."}
              if read_only else {})
+
+    def leads(self, case: Case, criterion_id: str) -> list[dict[str, Any]]:
+        """Where the packet may answer a criterion the record could not: each passage, its page and where on it."""
+        return [{"document_id": lead["doc_id"], "page": lead["page"], "text": lead["text"],
+                 "start": lead["start"], "end": lead["end"],
+                 "title": (self.store.document(lead["doc_id"]) or {}).get("description", "Page")}
+                for lead in (case.leads or {}).get(criterion_id, [])]
 
     def payer_review(self, case: Case, now: datetime) -> dict[str, Any] | None:
         """While the payer is reviewing: when it said it would decide, in words."""
@@ -315,7 +319,9 @@ class Presenter:
             "service": case.service["display"], "ordered": long_date(case.received_at.astimezone(self.tz).date()),
             "chart_summary": summary,
             "questions": [{"criterion_id": cid, "question": crit[cid].attestation_question or crit[cid].text,
-                           "help": crit[cid].attestation_help} for cid in case.attestation_requested],
+                           "help": crit[cid].attestation_help,
+                           "leads": [{k: lead[k] for k in ("title", "page", "text")} for lead in self.leads(case, cid)]}
+                          for cid in case.attestation_requested],
             "payer": case.payer["name"],
             "requested_by": case.attestation_requested_by or "The prior authorization team",
             "note_request": None,

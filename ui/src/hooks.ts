@@ -57,6 +57,11 @@ export function useTitle(title: string | null) {
   }, [title]);
 }
 
+/** A passage as one line: OCR's line breaks undone, a word broken across lines rejoined. */
+export function oneLine(text: string): string {
+  return text.replace(/(\w)-\n(\w)/g, "$1$2").replace(/\s+/g, " ").trim();
+}
+
 /** Lower the first letter for use mid-sentence, leaving acronyms and names like MRI, CPAP or X-ray alone. */
 export function midSentence(text: string): string {
   if (text.length > 1 && (/[A-Z]/.test(text[1]) || text[1] === "-")) return text;
