@@ -47,6 +47,7 @@
       "display": "Total knee replacement",
       "short": "Total knee replacement"
     },
+    "side": "right",
     "criteria_set": "dev-knee-arthroplasty@2026-09",
     "as_of": "2026-10-28",
     "payer": {
@@ -194,6 +195,7 @@
       "display": "Total knee replacement",
       "short": "Total knee replacement"
     },
+    "side": "right",
     "criteria_set": "dev-knee-arthroplasty@2026-09",
     "as_of": "2026-10-28",
     "payer": {
@@ -305,6 +307,7 @@
       "display": "Total knee replacement",
       "short": "Total knee replacement"
     },
+    "side": "right",
     "criteria_set": "dev-knee-arthroplasty@2026-09",
     "as_of": "2026-10-28",
     "payer": {
