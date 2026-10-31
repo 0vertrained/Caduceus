@@ -39,10 +39,15 @@ class _Strict(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
 
+Side = Literal["right", "left", "bilateral"]
+
+
 class Code(_Strict):
     system: str
     code: str
     display: str | None = None
+    # The side the code itself names, as ICD-10-CM does (M17.11 is the right knee). None: the code has no side.
+    side: Side | None = None
 
     @property
     def uri(self) -> str:
@@ -57,6 +62,8 @@ class ConditionRule(_Strict):
     min_duration_days: int | None = None
     active_only: bool = True
     label: str = "diagnosis"
+    # The diagnosis must be on the side the request names: a knee replacement needs osteoarthritis of that knee.
+    same_side: bool = False
 
 
 class ProcedureRule(_Strict):
@@ -80,6 +87,10 @@ class ObservationRule(_Strict):
     lt: float | None = None
     value_code: Code | None = None
     label: str = "finding"
+    # The finding must be dated on or before the most recent of these procedures in the window: a face-to-face
+    # evaluation comes before the sleep test it justifies.
+    before_procedure: list[Code] | None = None
+    before_label: str = "the procedure"
 
 
 class AnyOf(_Strict):
@@ -128,6 +139,8 @@ class Source(_Strict):
     title: str
     url: str | None = None
     note: str | None = None
+    document: str | None = None  # the NCD or LCD number, such as "NCD 240.4" or "L33718"
+    retrieved: date | None = None
 
 
 class CriteriaSet(_Strict):
@@ -140,6 +153,9 @@ class CriteriaSet(_Strict):
     approved_at: date | None = None
     source: Source
     criteria: list[Criterion]
+    # The approved set this one replaces. A superseded set stays loadable, so cases evaluated under it can be
+    # explained, but new cases use the newest approved set for their service.
+    supersedes: str | None = None
 
     @model_validator(mode="after")
     def _approval_fields(self) -> CriteriaSet:
@@ -155,5 +171,21 @@ class CriteriaSet(_Strict):
         return f"{self.id}@{self.version}"
 
     def content_sha256(self) -> str:
-        canonical = json.dumps(self.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))
+        canonical = json.dumps(_without_later_defaults(self.model_dump(mode="json")), sort_keys=True,
+                               separators=(",", ":"))
         return hashlib.sha256(canonical.encode()).hexdigest()
+
+
+# Fields added to the language after sets were approved. Left at their defaults they are not part of a set's
+# content, so adding a field never changes the hash of a set a reviewer already approved.
+LATER_DEFAULTS = {"side": None, "same_side": False, "before_procedure": None, "before_label": "the procedure",
+                  "supersedes": None, "document": None, "retrieved": None}
+
+
+def _without_later_defaults(value):
+    if isinstance(value, dict):
+        return {k: _without_later_defaults(v) for k, v in value.items()
+                if not (k in LATER_DEFAULTS and v == LATER_DEFAULTS[k])}
+    if isinstance(value, list):
+        return [_without_later_defaults(v) for v in value]
+    return value
