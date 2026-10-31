@@ -29,6 +29,7 @@ from caduceus.fhir.record import (
     procedure_period,
 )
 from caduceus.fhir.store import FhirStore, document_text
+from caduceus.retrieval import criterion_query, search
 
 
 class ToolForbidden(Exception):
@@ -51,10 +52,10 @@ class ToolSpec:
 
 ALLOWLIST: dict[str, frozenset[str]] = {
     "enrichment": frozenset({"ehr.get_patient_summary", "ehr.list_active_conditions", "ehr.list_procedures",
-                             "ehr.search_observations", "documents.list_packet", "policies.criteria_set_for",
-                             "payer.coverage_requirements"}),
+                             "ehr.search_observations", "documents.list_packet", "documents.search_packet",
+                             "policies.criteria_set_for", "payer.coverage_requirements"}),
     "drafting": frozenset({"documents.list_packet", "documents.get_page"}),
-    "review": frozenset({"tickets.set_state", "documents.get_page"}),
+    "review": frozenset({"tickets.set_state", "documents.get_page", "documents.search_packet"}),
     "intake": frozenset({"documents.read_fax"}),
     "submission": frozenset({"payer.submit", "payer.respond", "payer.appeal"}),
     "follow_up": frozenset({"payer.status", "tickets.set_state"}),
@@ -151,7 +152,18 @@ def build_gateway(audit: AuditLog, store: FhirStore, library: dict[str, Criteria
         return {"id": doc_id, "title": doc.get("description"), "date": doc.get("date"),
                 "author": (doc.get("author") or [{}])[0].get("display"), "text": document_text(doc)}
 
+    def search_packet(packet: list[str], criteria_set: str, criterion_id: str, k: int = 5) -> list[dict]:
+        """The packet passages most likely to bear on one criterion. The query comes only from the approved
+        criteria set, so text in the packet cannot steer what is searched for."""
+        criterion = next(c for c in library[criteria_set].criteria if c.id == criterion_id)
+        pages = [document_text(store.document(d) or {}) for d in packet]
+        return [{"doc_id": packet[h.passage.page - 1], "page": h.passage.page, "text": h.passage.text,
+                 "start": h.passage.start, "end": h.passage.end} for h in search(pages, criterion_query(criterion),
+                                                                                  max(1, min(k, 10)))]
+
     gw.register(ToolSpec("documents.list_packet", "documents", READ, list_packet, "Pages of a referral packet."))
+    gw.register(ToolSpec("documents.search_packet", "documents", READ, search_packet,
+                         "Packet passages that bear on one criterion, found inside the boundary."))
     gw.register(ToolSpec("documents.read_fax", "documents", frozenset({Role.AGENT_RUNTIME}), read_fax,
                          "Read a faxed referral cover sheet with OCR inside the boundary."))
     gw.register(ToolSpec("documents.get_page", "documents", READ, get_page, "Text of one packet page."))

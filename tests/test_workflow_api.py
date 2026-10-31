@@ -391,3 +391,17 @@ def test_an_auditor_reads_the_queue_and_cases_but_cannot_act(env):
     assert case["summary"].startswith("Read only.")
     assert client.post("/api/cases/2026-1041/approve", headers=SAM).status_code == 409
     assert client.get("/api/cases/2026-1041", headers=DOLORES).json()["read_only"] is False
+
+
+def test_packet_search_finds_the_unanswered_criterion_and_only_in_allowed_steps(env):
+    """The search returns pages of the case's own packet, its query comes from the criteria set, never from the
+    packet, and the gateway refuses it outside enrichment and review."""
+    svc, _, _ = env
+    case = svc.cases.get("2026-1043")
+    hits = svc.workflow.gateway.call(DEV_USERS["dolores"], case.id, "review", "documents.search_packet",
+                                     packet=case.packet, criteria_set=case.criteria_set,
+                                     criterion_id="conservative_care", k=3)
+    assert hits and hits[0]["doc_id"] in case.packet and "physical therapy" in hits[0]["text"].lower()
+    with pytest.raises(ToolNotAllowed):
+        svc.workflow.gateway.call(AGENT, case.id, "submission", "documents.search_packet", packet=case.packet,
+                                  criteria_set=case.criteria_set, criterion_id="conservative_care")
