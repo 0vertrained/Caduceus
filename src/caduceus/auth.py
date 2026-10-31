@@ -67,10 +67,13 @@ class Authenticator:
         token = authorization.split(" ", 1)[1]
         try:
             key = self._jwks.get_signing_key_from_jwt(token).key  # type: ignore[union-attr]
+            # A token with no expiry would be good forever, and one with no subject names no one: both are refused.
             claims = jwt.decode(token, key, algorithms=["RS256", "ES256"], audience=self._audience,
-                                issuer=self._issuer)
+                                issuer=self._issuer, options={"require": ["exp", "iss", "aud", "sub"]})
         except jwt.PyJWTError as e:
             raise AuthError(f"invalid token: {type(e).__name__}") from e
+        if not isinstance(claims["sub"], str) or not claims["sub"]:
+            raise AuthError("token has no subject")
         try:
             role = Role(claims[self._role_claim])
         except (KeyError, ValueError) as e:
