@@ -159,6 +159,7 @@ export interface CaseView {
   packet: { id: string; page: number; title: string }[];
   criteria: {
     title: string; version: string; source_kind: string; checked_at: string | null;
+    source: { document: string; title: string; url: string | null; retrieved: string | null } | null;
     counts: { met: number; unmet: number; unknown: number }; total: number; results: CriterionResult[];
   };
   draft: {
