@@ -1,32 +1,24 @@
--- Postgres version of the append-only audit log used in the deployed environment.
--- The application role may INSERT and SELECT; nobody but the break-glass owner can UPDATE or DELETE.
+-- Privileges for the deployed database, where the service never connects as the owner. The tables, the audit log's
+-- append-only trigger among them, are created by the migrations in src/caduceus/migrations, which the owner applies
+-- (python -m caduceus.postgres migrate). Run this after them, as the owner, and again after any migration that adds
+-- a table.
+--
+--   caduceus_admin    owns the schema and applies migrations; break-glass only (the RDS master user)
+--   caduceus_app      the service: reads and writes cases, faxes and filed documents, and may only INSERT and SELECT
+--                     the audit log, so it can add to the record but never change it
+--   caduceus_auditor  reads the audit log
+--
+-- The roles, and how they sign in (IAM authentication for caduceus_app), are made outside this file.
 
-CREATE TABLE IF NOT EXISTS audit_events (
-    seq        BIGSERIAL PRIMARY KEY,
-    ts         TIMESTAMPTZ NOT NULL DEFAULT now(),
-    actor      TEXT NOT NULL,
-    role       TEXT NOT NULL,
-    case_id    TEXT,
-    action     TEXT NOT NULL,
-    detail     JSONB NOT NULL,
-    prev_hash  CHAR(64) NOT NULL,
-    hash       CHAR(64) NOT NULL
-);
+REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+REVOKE ALL ON cases, faxes, documents, audit_events, schema_migrations FROM PUBLIC;
+GRANT USAGE ON SCHEMA public TO caduceus_app, caduceus_auditor;
 
-CREATE INDEX IF NOT EXISTS audit_case ON audit_events (case_id, seq);
+-- At start the service checks that no migration is pending; it applies none itself.
+GRANT SELECT ON schema_migrations TO caduceus_app;
+GRANT SELECT, INSERT, UPDATE ON cases, faxes, documents TO caduceus_app;
 
-REVOKE ALL ON audit_events FROM PUBLIC;
+-- No UPDATE, DELETE or TRUNCATE: the log is append-only, and the trigger refuses them even to the owner. seq is an
+-- identity column, so INSERT needs no grant on its sequence.
 GRANT SELECT, INSERT ON audit_events TO caduceus_app;
-GRANT USAGE ON SEQUENCE audit_events_seq_seq TO caduceus_app;
 GRANT SELECT ON audit_events TO caduceus_auditor;
-
--- Defence in depth: even the owner gets an error unless the trigger is explicitly disabled.
-CREATE OR REPLACE FUNCTION audit_events_append_only() RETURNS trigger AS $$
-BEGIN
-    RAISE EXCEPTION 'audit log is append-only';
-END;
-$$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS audit_no_update_delete ON audit_events;
-CREATE TRIGGER audit_no_update_delete BEFORE UPDATE OR DELETE ON audit_events
-    FOR EACH ROW EXECUTE FUNCTION audit_events_append_only();

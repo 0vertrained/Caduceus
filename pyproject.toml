@@ -16,6 +16,10 @@ dependencies = [
   "mcp>=2.3",
   "pyjwt[crypto]>=2.15.1",
   "tzdata>=2026.6",  # the IANA zone database, so clinic time works on minimal images that ship none
+  # Postgres, for a deployment (CADUCEUS_DATABASE_URL). The binary build brings its own libpq, so the Wolfi image
+  # needs no system package; Dependabot proposes its releases with the rest.
+  "psycopg[binary]>=3.3.6,<4",
+  "psycopg-pool>=3.3.3,<4",
 ]
 
 [project.optional-dependencies]
@@ -31,6 +35,9 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"caduceus.migrations" = ["*.sql"]  # applied at startup, so they ship with the package
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
