@@ -19,6 +19,12 @@
 # Postgres takes the password only when it first creates the volume. To change it later, change it in the database
 # (ALTER ROLE caduceus PASSWORD ...) and then in .env; or start over with `docker compose down -v`, which deletes
 # the volume and every case in it.
+#
+# Sign-in with OpenID Connect against a local Keycloak, as the health system's identity provider (docs/sign-in.md):
+# set CADUCEUS_AUTH_MODE=oidc, CADUCEUS_KEYCLOAK_ADMIN_PASSWORD and CADUCEUS_KEYCLOAK_USER_PASSWORD in .env, then
+#   docker compose --profile oidc up --build
+# Keycloak imports infra/keycloak/mesaverde-realm.json when it starts. The browser reaches it on 127.0.0.1:8080, and
+# the API reaches it on an internal network for its signing keys.
 
 name: caduceus
 
@@ -35,9 +41,12 @@ services:
       CADUCEUS_IN_VPC_URL: ${CADUCEUS_IN_VPC_URL:-}
       CADUCEUS_IN_VPC_MODEL: ${CADUCEUS_IN_VPC_MODEL:-qwen2.5-1.5b-instruct}
       CADUCEUS_EXTERNAL_API_KEY: ${CADUCEUS_EXTERNAL_API_KEY:-}
-      CADUCEUS_OIDC_JWKS_URL: ${CADUCEUS_OIDC_JWKS_URL:-}
-      CADUCEUS_OIDC_ISSUER: ${CADUCEUS_OIDC_ISSUER:-}
-      CADUCEUS_OIDC_AUDIENCE: ${CADUCEUS_OIDC_AUDIENCE:-}
+      # Read only with CADUCEUS_AUTH_MODE=oidc. By default the local Keycloak below: the issuer is the address the
+      # browser uses, which its tokens name; the signing keys come over the internal network.
+      CADUCEUS_OIDC_ISSUER: ${CADUCEUS_OIDC_ISSUER:-http://localhost:8080/realms/mesaverde}
+      CADUCEUS_OIDC_JWKS_URL: ${CADUCEUS_OIDC_JWKS_URL:-http://keycloak:8080/realms/mesaverde/protocol/openid-connect/certs}
+      CADUCEUS_OIDC_AUDIENCE: ${CADUCEUS_OIDC_AUDIENCE:-caduceus-api}
+      CADUCEUS_OIDC_CLIENT_ID: ${CADUCEUS_OIDC_CLIENT_ID:-caduceus-ui}
     ports:
       - "127.0.0.1:8000:8000"   # development sign-in is for this machine only
     depends_on:
@@ -47,7 +56,7 @@ services:
     tmpfs: [/tmp]
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
-    networks: [edge, model, data]
+    networks: [edge, model, data, auth]
 
   db:
     # TODO: pin by digest (postgres:17@sha256:...), as the Dockerfile's base images are; the registry could not be
@@ -69,6 +78,50 @@ services:
       retries: 20
       start_period: 10s
 
+  keycloak:
+    # The identity provider for OIDC sign-in on this machine: the mesaverde realm, its caduceus-ui client and the six
+    # people of the development roster. Passwords come from .env into the realm file's placeholders; none is written
+    # down here or there. Its database lives in the container, so `docker compose down` starts it over from the file.
+    # TODO: pin by digest (quay.io/keycloak/keycloak:26.8.1@sha256:...), as the Dockerfile's base images are; the
+    # registry could not be reached when this was written.
+    profiles: [oidc]
+    image: quay.io/keycloak/keycloak:26.8.1
+    entrypoint: ["/bin/bash", "-c"]
+    # Refuses to start without both passwords, rather than make accounts with empty ones.
+    command:
+      - |
+        unset_() { echo "Set $$1 in .env, 12 characters or more (docs/sign-in.md)." >&2; exit 1; }
+        [ "$${#KC_BOOTSTRAP_ADMIN_PASSWORD}" -ge 12 ] || unset_ CADUCEUS_KEYCLOAK_ADMIN_PASSWORD
+        [ "$${#CADUCEUS_KEYCLOAK_USER_PASSWORD}" -ge 12 ] || unset_ CADUCEUS_KEYCLOAK_USER_PASSWORD
+        exec /opt/keycloak/bin/kc.sh start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${CADUCEUS_KEYCLOAK_ADMIN_PASSWORD:-}
+      CADUCEUS_KEYCLOAK_USER_PASSWORD: ${CADUCEUS_KEYCLOAK_USER_PASSWORD:-}  # ${...} in the realm file reads it
+      KC_HOSTNAME: http://localhost:8080   # the address the browser uses, so the issuer every token names
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - ./infra/keycloak/mesaverde-realm.json:/opt/keycloak/data/import/mesaverde-realm.json:ro
+    ports:
+      - "127.0.0.1:8080:8080"   # the browser signs in here; this machine only
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    networks: [login, auth]     # login: for the published port; auth: internal, the API fetches signing keys
+    healthcheck:
+      # Readiness, on the management port, with bash alone: the image has no curl.
+      test:
+        - CMD
+        - bash
+        - -c
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/9000 &&
+          printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 &&
+          grep -q UP <&3
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
   # The same image the demo runs beside the API (infra/model): llama.cpp and Qwen2.5-1.5B, weights baked in at build
   # time, served offline. The build downloads the source and weights; the running container has no route out.
   model:
@@ -89,6 +142,9 @@ networks:
   model:
     internal: true
   data:
+    internal: true
+  login: {}                     # Keycloak's published port: publishing one needs a network with a way out
+  auth:
     internal: true
 
 volumes:
