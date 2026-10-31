@@ -9,7 +9,6 @@ import pytest
 from fastapi.testclient import TestClient
 
 from caduceus.api import create_app
-from caduceus.app_factory import Settings, build_services
 from caduceus.auth import AGENT
 from caduceus.intake import check, read_fax
 from caduceus.seed import seed
@@ -22,8 +21,8 @@ MANIFEST = json.loads((DATA / "faxes" / "faxes.json").read_text())
 
 
 @pytest.fixture()
-def inbox():
-    svc = build_services(Settings(data_dir=DATA, db_path=":memory:", auth_mode="dev"))
+def inbox(backend):
+    svc = backend.services(auth_mode="dev")
     svc.workflow.now = Clock(T0)
     seed(svc, now=T0, by_fax=True)
     return svc, TestClient(create_app(svc, dispatch_interval=None))
@@ -265,7 +264,7 @@ def test_a_fax_too_poor_to_read_is_sent_back_in_one_step(inbox):
     assert "too poor to read. Please fax the whole referral again" in fax["request"]["text"]
 
 
-def test_the_cover_sheet_is_page_one_and_the_case_says_it_came_by_fax(inbox):
+def test_the_cover_sheet_is_page_one_and_the_case_says_it_came_by_fax(inbox, backend):
     from caduceus.seed import clone_demo_services
     svc, client = inbox
     made = client.post("/api/intake/FAX-0001/confirm", headers=DOLORES, json={"values": form_start(client, "FAX-0001")})
@@ -285,8 +284,10 @@ def test_the_cover_sheet_is_page_one_and_the_case_says_it_came_by_fax(inbox):
     visit = case["packet"][1]["id"]
     assert client.get(f"/api/cases/2026-1023/pages/{visit}", headers=DOLORES).json()["image"] is None
     assert client.get(f"/api/cases/2026-1023/pages/{visit}/image", headers=DOLORES).status_code == 404
-    # Filed with the cases, so a demo visitor's copy (and a restart) keeps it.
-    assert clone_demo_services(svc, T0, T0).store.document("cover-fax-0001")["description"] == "Fax cover sheet"
+    # Filed with the cases, so a restart keeps it, and so does a demo visitor's copy (the demo is always SQLite).
+    assert backend.services(auth_mode="dev").store.document("cover-fax-0001")["description"] == "Fax cover sheet"
+    if backend.name == "sqlite":
+        assert clone_demo_services(svc, T0, T0).store.document("cover-fax-0001")["description"] == "Fax cover sheet"
 
     note = case["came_by_fax"]
     assert note["from"] == "Mesa Verde Sleep Center" and note["by"] == "Dolores Montoya" and note["corrected"] is None
