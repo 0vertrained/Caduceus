@@ -203,6 +203,9 @@ class Presenter:
             "received": long_date(case.received_at.astimezone(self.tz).date()), "due": due(case.due_at, now, self.tz),
             "packet": packet,
             "criteria": {"title": cset.title, "version": cset.version, "source_kind": cset.source.kind,
+                         "source": cset.source.document and {
+                             "document": cset.source.document, "title": cset.source.title, "url": cset.source.url,
+                             "retrieved": long_date(cset.source.retrieved) if cset.source.retrieved else None},
                          "checked_at": clock(case.checked_at, self.tz) if case.checked_at else None,
                          "counts": counts, "total": total, "results": results},
             "draft": case.draft,

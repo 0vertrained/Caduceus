@@ -312,8 +312,15 @@ function Criteria({ c, open, showing }: { c: CaseView; open: (p: Panel) => void;
         <p>
           Checked today at {c.criteria.checked_at} against the {c.criteria.version} version of the coverage policy for{" "}
           {midSentence(c.criteria.title)}
-          {c.criteria.source_kind === "development-paraphrase" ? " (development criteria)" : ""}. A criterion is marked
-          met only when its evidence is found in the record.
+          {c.criteria.source ? (
+            <>, compiled from Medicare’s{" "}
+              {c.criteria.source.url ? (
+                <a href={c.criteria.source.url} target="_blank" rel="noopener noreferrer" translate="no">
+                  {c.criteria.source.document}<span className="visually-hidden"> (opens in a new tab)</span></a>
+              ) : <span translate="no">{c.criteria.source.document}</span>}
+              {c.criteria.source.retrieved ? `, retrieved ${c.criteria.source.retrieved}` : ""}</>
+          ) : c.criteria.source_kind === "development-paraphrase" ? " (development criteria)" : ""}. A criterion is
+          marked met only when its evidence is found in the record.
         </p>
         {c.requirements && (c.requirements.matches ? (
           <p>{c.payer.name} confirmed through its coverage-requirements service, at {c.requirements.checked_at}, that
