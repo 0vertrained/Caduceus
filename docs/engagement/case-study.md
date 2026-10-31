@@ -38,21 +38,28 @@ Four constraints shaped the design:
 
 A referral moves through these steps:
 
-1. **Fax intake.** OCR runs inside the container. Every field has a confidence and its region on the page, and
-   unsure fields go to a person, who checks each one against the image.
+1. **Fax intake, or the EHR.** OCR runs inside the container. Every field has a confidence and its region on the
+   page, and unsure fields go to a person, who checks each one against the image. A case can also start inside
+   the EHR: a SMART launch reads the chart over FHIR.
 2. **The record check.** A deterministic engine evaluates the patient's FHIR record against an approved criteria
    set, locked by hash. It answers met, unmet or unknown, with the sentence behind each. Missing evidence is
-   never "met".
-3. **The clinician's attestation.** Only the unknowns go to the ordering clinician, as plain questions on a phone.
-4. **The draft.** A model writes the justification from de-identified facts. The interface shows exactly what was
+   never "met". The knee and CPAP criteria quote Medicare's own policy text, and can require the side the request
+   names, or that one event came before another.
+3. **Where to look.** For each criterion the record cannot answer, retrieval inside the boundary finds the packet
+   passages that may, and shows them, never as evidence.
+4. **The clinician's attestation.** Only the unknowns go to the ordering clinician, as plain questions on a phone,
+   with those passages and a summary of the chart written by the small model inside the network.
+5. **The draft.** A model writes the justification from de-identified facts. The interface shows exactly what was
    sent to it.
-5. **Approval.** A specialist approves. The request then waits 30 seconds in an outbox, where it can be undone, and
-   can be recalled until it is sent.
-6. **The payer.** A coverage-requirements check at intake blocks approval if the payer's policy has changed. The
-   request carries its documentation answers. A payer question goes back to the clinician for a signed note, and a
-   denial gets an appeal drafted from the policy, which a person approves.
-7. **The record of it all.** Every step is in an append-only, hash-chained log. An outcomes page counts the work
-   from that log.
+6. **Approval.** A specialist approves, marking the request expedited if waiting could harm the patient. The request
+   then waits 30 seconds in an outbox, where it can be undone, and can be recalled until it is sent.
+7. **The payer.** A coverage-requirements check at intake blocks approval if the payer's policy has changed. The
+   request carries its documentation answers. The payer takes time to decide and says when, within 7 days or 72
+   hours. A payer question goes back to the clinician for a signed note, and a denial gets an appeal drafted from
+   the policy, which a person approves.
+8. **The record of it all.** Every step is in an append-only, hash-chained log. An outcomes page counts the work
+   from that log; a policies page shows each criterion's source and approval; an administration page shows where
+   patient information can go, with a switch for the external model.
 
 The decisions behind it:
 
@@ -64,6 +71,8 @@ The decisions behind it:
 | A database state machine with an outbox, Temporal later ([ADR 4](../adr/0004-state-machine-then-temporal.md)) | Exactly-once sending and undo, without new infrastructure | Timers and retries are hand-written |
 | Low-confidence extraction goes to a person ([ADR 6](../adr/0006-confidence-routing.md)) | A wrong fax field is worse than a slow one | Specialists check some fields by hand |
 | A public demo that holds only a fixed-quota model key | Anyone can use it, and no one can run up a bill | Replies are recorded at deploy time, and live calls time out at 20 seconds |
+| A 1.5-billion-parameter model on a CPU, beside the API, for identifiable work, never on a request's path | The identifiable route runs in the demo too, with no GPU, on a server built without an HTTPS client; nobody waits on it | A summary takes about half a minute, and its quality has not yet been read against its facts |
+| Criteria compiled from the payer's own words, one reviewed version per change | Every criterion traces to a quoted sentence, and nothing runs that a reviewer did not approve | Compiling is hand work, and the hard sets, labelled for the earlier versions, do not measure the new ones |
 
 ## How it is checked
 
@@ -76,10 +85,11 @@ The decisions behind it:
 | [Hard sets](../hard-evaluation.md), held-out first run: engine agreement on messy records | 0.885 on 156 criteria; 4 unsafe errors |
 | The same, after fixes (no longer held out) | 0.942; 2 unsafe errors, both needing a criteria change |
 | Packet retrieval, held-out: the evidence in the top 5 passages | 0.899 (plain BM25: 0.512); text-only evidence 14 of 15 |
+| Where to look, as shown: the evidence among the passages offered | 0.953 on dev; 0.721 on held-out, measured after the held-out run |
 | [Model bake-off](../model-bakeoff.md): replies with a problem, read by hand | Kimi K2.6 2 of 17; gpt-oss 120B 6 of 17 (2 misstatements, 4 overstatements) |
-| Accessibility, axe-core WCAG 2.2 AA | 0 violations on 32 screens; no sideways scroll at 320 px |
+| Accessibility, axe-core WCAG 2.2 AA | 0 violations on 50 screens; no sideways scroll at 320 px |
 | Known vulnerabilities | 0 in Python and npm packages; 2 medium in CPython with no fix released |
-| Tests | 180 |
+| Tests | 298, and 63 more runs of the store, audit and workflow tests on Postgres |
 
 Every number here comes from synthetic data, and none is a claim of clinical or financial impact. Synthetic
 records cannot stand in for the distribution of real ones, as Synthea's own documentation warns. That is why the
@@ -109,10 +119,22 @@ errors. Two of the three engine fixes were named from the dev split before the h
 on it and is labelled so. The two unsafe errors left are not engine bugs. "The knee to be replaced" was compiled
 as "a knee", and changing an approved criteria set is a reviewer's decision, so the change is proposed, not made.
 
+**Where to look found less than retrieval did.** Retrieval ranks a list; the screen shows a passage only when it
+shares a concept or two words with the criterion, so it is not padded with noise. On held-out phrasing that floor
+dropped real evidence: "red-f1ag" is not "flag" to a word-level check, and "gonarthrosis" is not in the vocabulary.
+The passages shown include the evidence for 95% of dev criteria but 72% of held-out ones. The fix for OCR damage is
+known, but the held-out split cannot judge it any more; that needs a new one.
+
+**Reading more of the chart changed an answer.** An EHR launch reads as far back as any running criterion looks.
+When the CPAP criteria were compiled from Medicare's text, which accepts a sleep test from any date, procedures came
+to be read whole for every launch. A test patient's physical therapy from three years ago then turned a lumbar MRI
+criterion from unknown into not met. The engine was right both times; what it was given changed. The read should
+follow the service the person chooses, and that is next.
+
 **Retrieval generalized less well than it looked.** On the dev split, the evidence was the first passage 83% of the
 time. On held-out phrasing it was first 50% of the time and in the top 5 90% of the time. Plain BM25 fell to 51%,
-so the clinical vocabulary, written before any packet existed, is what holds it up. Retrieval was not tuned after
-the held-out run.
+so the clinical vocabulary, written before any packet existed, is what holds it up. The ranking was not tuned after
+the held-out run; the list's floor and sentence splitting were, and are reported as such.
 
 ## What was cut, and why
 
@@ -123,25 +145,21 @@ built to test it. A 300-packet hand-verified set needs a utilization-review nurs
 
 Also not built:
 
-- A model inside the network (the demo has none, so its identifiable route stays unused).
 - Dense retrieval, which needs an in-VPC embedding model.
-- The Postgres case store, then Temporal.
+- Temporal, after the outbox's send-once lock moves into Postgres.
 - OIDC sign-in in the interface; the API side is done.
 - The AWS deployment: the Terraform passes Checkov but has not been applied.
-- Real payer policy text from the Medicare Coverage Database.
-- Expedited requests.
-- Usability testing with real PA staff.
+- Model-drafted criteria versions, for a reviewer to check rather than write.
+- Usability testing with real PA staff; the [test kit](../research/usability-test-kit.md) is ready.
 
 The README's [Not built yet](../../README.md#not-built-yet) section tracks the full list.
 
 ## Next
 
-1. **Criteria changes, for a reviewer.** Laterality in the knee criteria, "before the test" for the sleep
-   evaluation, and five value-set additions.
-2. **Retrieval in the interface.** Show the top passages beside an unanswered criterion, so the clinician sees
-   where to look before attesting.
+1. **What a launch reads.** Read the chart for the service the person chooses, not for every service.
+2. **Where to look, on unseen text.** A floor that recognizes OCR-damaged words, then a new held-out split.
 3. **Real data under a BAA.** De-identified real packets and a UM nurse's review of the criteria. This is the
    shadow-mode phase of the [rollout plan](../rollout-plan.md), where the synthetic numbers are tested against
    real ones.
-4. **Production shape.** A second held-out split, a CI gate of no unsafe errors, then Postgres, sign-in and the AWS
-   apply.
+4. **Production shape.** A CI gate of no unsafe errors, sign-in in the interface, the outbox lock in Postgres, and
+   the AWS apply.
