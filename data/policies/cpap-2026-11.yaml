@@ -1,0 +1,139 @@
+# Compiled from Medicare's own text: NCD 240.4 (version 3) and the DME MAC LCD L33718 (revision R11), which CGS applies
+# in Jurisdiction C, New Mexico included. Every policy_sentence is quoted word for word; sources/cpap.md lists each
+# sentence with its section, and every requirement the documents add. Replaces the development paraphrase.
+#
+# Not compiled, and why:
+# - L33718 criterion C (instruction by the supplier) happens at delivery, after authorization.
+# - The minimum event counts and the 2-hour rule (L33718; NCD 240.4 B.6): the record's index carries no event count,
+#   so the specialist checks the sleep study report.
+# - That the index comes from a study without PAP, and how hypopneas are scored: read from the report, not the chart.
+# - Continued coverage after the 12-week trial (re-evaluation, adherence) is a separate request.
+# Display names for CPT codes are this team's short names, not the AMA's descriptors.
+id: cpap-osa
+version: "2026-11"
+title: CPAP device for obstructive sleep apnea
+supersedes: dev-cpap-osa@2026-09
+service_codes:
+  - {system: hcpcs, code: E0601, display: "Continuous positive airway pressure device"}
+status: approved
+approved_by: Teresa Ortiz, UM nurse (development reviewer)
+approved_at: 2026-10-31
+source:
+  kind: mcd-mirror
+  title: Positive Airway Pressure (PAP) Devices for the Treatment of Obstructive Sleep Apnea
+  document: LCD L33718 (R11), with NCD 240.4 (version 3)
+  url: https://www.cms.gov/medicare-coverage-database/view/lcd.aspx?lcdId=33718&ver=52
+  retrieved: 2026-10-31
+  note: Applies to every payer here. Medicare Advantage plans must follow an NCD and the local LCD where they set the criteria.
+criteria:
+  - id: adult
+    text: The patient is an adult
+    kind: documentation
+    policy_sentence: The use of CPAP is covered under Medicare when used in adult patients with OSA.
+    rule: {type: age, min_years: 18, label: age}
+
+  - id: in_person_evaluation
+    text: In-person evaluation before the sleep test
+    kind: documentation
+    policy_sentence: >-
+      The beneficiary has an in-person clinical evaluation by the treating practitioner prior to the sleep test to
+      assess the beneficiary for obstructive sleep apnea.
+    attestation_question: "Did you evaluate the patient in person for obstructive sleep apnea before the sleep test?"
+    rule:
+      type: observation
+      label: in-person sleep evaluation
+      codes:
+        - {system: local, code: sleep-evaluation, display: "In-person sleep evaluation"}
+      value_code: {system: local, code: completed, display: "Completed"}
+      before_label: the sleep test
+      before_procedure: &sleep_tests
+        - {system: cpt, code: "95810", display: "Sleep lab study, attended"}
+        - {system: cpt, code: "95811", display: "Sleep lab study with CPAP titration"}
+        - {system: cpt, code: "95806", display: "Home sleep test"}
+        - {system: cpt, code: "95800", display: "Home sleep test with sleep time"}
+        - {system: cpt, code: "95801", display: "Home sleep test, three channels"}
+        - {system: hcpcs, code: G0398, display: "Home sleep test, type II"}
+        - {system: hcpcs, code: G0399, display: "Home sleep test, type III"}
+        - {system: hcpcs, code: G0400, display: "Home sleep test, type IV"}
+
+  - id: covered_sleep_test
+    text: A covered sleep test was done
+    kind: documentation
+    policy_sentence: >-
+      The sleep test must be either a polysomnogram performed in a facility-based laboratory (Type I study) or an
+      inpatient hospital-based or home-based sleep test (HST) (Types II, III, IV, Other).
+    attestation_question: "Was the patient's sleep apnea found by a sleep lab study or a home sleep test?"
+    rule:
+      type: procedure
+      label: sleep test
+      codes: *sleep_tests
+
+  - id: severity_qualifies
+    text: Sleep apnea severity qualifies
+    kind: observation
+    policy_sentence: >-
+      The apnea-hypopnea index (AHI) or Respiratory Disturbance Index (RDI) is greater than or equal to 15 events per
+      hour with a minimum of 30 events; or, The AHI or RDI is greater than or equal to 5 and less than or equal to 14
+      events per hour with a minimum of 10 events and documentation of: Excessive daytime sleepiness, impaired
+      cognition, mood disorders, or insomnia; or, Hypertension, ischemic heart disease, or history of stroke.
+    attestation_question: >-
+      Does the patient have excessive daytime sleepiness, impaired cognition, a mood disorder, insomnia, hypertension,
+      ischemic heart disease, or a history of stroke?
+    attestation_help: "This matters because the apnea-hypopnea index is between 5 and 14."
+    rule:
+      type: any_of
+      rules:
+        - type: observation
+          label: apnea-hypopnea index
+          gte: 15
+          codes: &index
+            - {system: local, code: ahi, display: "Apnea-hypopnea index"}
+            - {system: local, code: rdi, display: "Respiratory disturbance index"}
+        - type: all_of
+          rules:
+            - type: observation
+              label: apnea-hypopnea index
+              gte: 5
+              lt: 15
+              codes: *index
+            - type: any_of
+              rules:
+                - type: observation
+                  label: daytime sleepiness assessment
+                  codes:
+                    - {system: local, code: excessive-daytime-sleepiness, display: "Excessive daytime sleepiness"}
+                  value_code: {system: local, code: present, display: "Present"}
+                - type: condition
+                  label: impaired cognition, mood disorder or insomnia diagnosis
+                  codes:
+                    - {system: icd10, code: G31.84, display: "Mild cognitive impairment of uncertain or known etiology"}
+                    - {system: icd10, code: R41.81, display: "Age-related cognitive decline"}
+                    - {system: icd10, code: F32.9, display: "Major depressive disorder, single episode, unspecified"}
+                    - {system: icd10, code: F32.A, display: "Depression, unspecified"}
+                    - {system: icd10, code: F33.9, display: "Major depressive disorder, recurrent, unspecified"}
+                    - {system: icd10, code: F34.1, display: "Dysthymic disorder"}
+                    - {system: icd10, code: F39, display: "Unspecified mood [affective] disorder"}
+                    - {system: icd10, code: G47.00, display: "Insomnia, unspecified"}
+                    - {system: icd10, code: F51.01, display: "Primary insomnia"}
+                - type: condition
+                  label: hypertension diagnosis
+                  codes:
+                    - {system: icd10, code: I10, display: "Essential (primary) hypertension"}
+                    - {system: icd10, code: I11.9, display: "Hypertensive heart disease without heart failure"}
+                    - {system: icd10, code: I11.0, display: "Hypertensive heart disease with heart failure"}
+                    - {system: snomed, code: "59621000", display: "Essential hypertension"}
+                    - {system: snomed, code: "38341003", display: "Hypertensive disorder"}
+                - type: condition
+                  label: ischemic heart disease diagnosis
+                  codes:
+                    - {system: icd10, code: I25.10, display: "Atherosclerotic heart disease of native coronary artery without angina pectoris"}
+                    - {system: icd10, code: I25.2, display: "Old myocardial infarction"}
+                    - {system: icd10, code: I25.9, display: "Chronic ischemic heart disease, unspecified"}
+                    - {system: icd10, code: I20.9, display: "Angina pectoris, unspecified"}
+                    - {system: snomed, code: "414545008", display: "Ischemic heart disease"}
+                - type: condition
+                  label: history of stroke
+                  active_only: false
+                  codes:
+                    - {system: icd10, code: Z86.73, display: "Personal history of transient ischemic attack (TIA), and cerebral infarction without residual deficits"}
+                    - {system: icd10, code: I69.30, display: "Unspecified sequelae of cerebral infarction"}

@@ -1,0 +1,156 @@
+# Compiled from Medicare's own text: Novitas LCD L36007 (revision R10), Lower Extremity Major Joint Replacement, which
+# governs New Mexico (Jurisdiction H). Every policy_sentence is quoted word for word; sources/knee-arthroplasty.md lists
+# each sentence with its section. Replaces the development paraphrase.
+#
+# This set is the LCD's advanced joint disease pathway, the one for arthritis. For it, the LCD's documentation section
+# asks that all of the following are documented: arthritis on X-ray or MRI, pain with functional disability, a reasonable
+# attempt at conservative therapy, and ADLs diminished despite it. The fracture, tumor, osteonecrosis and revision
+# pathways ("three or more of the following") are not compiled.
+#
+# Operating rules of this team, not the LCD's words, each marked where it applies:
+# - the arthritis must be in the knee being replaced (the LCD states no laterality);
+# - conservative therapy is looked for in the last two years ("the current episode of care").
+# Not compiled: the contraindication for progressive neurological disease causing the pain (not decidable from codes),
+# provider qualifications, and the risk and benefit discussion for significant co-morbidities.
+# Display names for CPT codes are this team's short names, not the AMA's descriptors.
+id: knee-arthroplasty
+version: "2026-11"
+title: Total knee arthroplasty
+supersedes: dev-knee-arthroplasty@2026-09
+service_codes:
+  - {system: cpt, code: "27447", display: "Total knee arthroplasty"}
+status: approved
+approved_by: Teresa Ortiz, UM nurse (development reviewer)
+approved_at: 2026-10-31
+source:
+  kind: mcd-mirror
+  title: Lower Extremity Major Joint Replacement (Hip and Knee)
+  document: LCD L36007 (R10)
+  url: https://www.cms.gov/medicare-coverage-database/view/lcd.aspx?LCDId=36007
+  retrieved: 2026-10-31
+  note: Medicare Advantage plans in New Mexico must follow L36007, the local contractor's written coverage decision.
+criteria:
+  - id: arthritis_of_this_knee
+    text: Arthritis of the knee being replaced
+    kind: diagnosis
+    policy_sentence: >-
+      Arthritis of the knee or hip supported by X-ray or MRI.
+    attestation_question: "Is there arthritis in the knee this request is for?"
+    attestation_help: "The chart names arthritis of the knee but not which one."
+    rule:
+      type: condition
+      label: knee arthritis diagnosis
+      same_side: true  # an operating rule: the LCD states no laterality, but the surgery is on one knee
+      codes:
+        - {system: icd10, code: M17.11, side: right, display: "Unilateral primary osteoarthritis, right knee"}
+        - {system: icd10, code: M17.12, side: left, display: "Unilateral primary osteoarthritis, left knee"}
+        - {system: icd10, code: M17.0, side: bilateral, display: "Bilateral primary osteoarthritis of knee"}
+        - {system: icd10, code: M17.31, side: right, display: "Unilateral post-traumatic osteoarthritis, right knee"}
+        - {system: icd10, code: M17.32, side: left, display: "Unilateral post-traumatic osteoarthritis, left knee"}
+        - {system: icd10, code: M17.2, side: bilateral, display: "Bilateral post-traumatic osteoarthritis of knee"}
+        - {system: icd10, code: M17.10, display: "Unilateral primary osteoarthritis, unspecified knee"}
+        - {system: icd10, code: M17.9, display: "Osteoarthritis of knee, unspecified"}
+        - {system: snomed, code: "239873007", display: "Osteoarthritis of knee"}
+
+  - id: imaging_shows_arthritis
+    text: X-ray or MRI shows advanced joint disease
+    kind: observation
+    policy_sentence: >-
+      The X-ray or MRI must demonstrate one of the following: subchondral cysts, subchondral sclerosis, periarticular
+      osteophytes, joint subluxation, joint space narrowing, avascular necrosis or bone on bone articulations.
+    attestation_question: "Does an X-ray or MRI of the knee show advanced joint disease?"
+    attestation_help: "For example: joint space narrowing, osteophytes, subchondral sclerosis or cysts."
+    rule:
+      type: all_of
+      rules:
+        - type: procedure
+          label: knee X-ray or MRI
+          codes:
+            - {system: cpt, code: "73560", display: "Knee X-ray, one or two views"}
+            - {system: cpt, code: "73562", display: "Knee X-ray, three views"}
+            - {system: cpt, code: "73564", display: "Knee X-ray, four or more views"}
+            - {system: cpt, code: "73565", display: "Knee X-ray, both knees standing"}
+            - {system: cpt, code: "73721", display: "Knee MRI without contrast"}
+        - type: any_of
+          rules:
+            - type: observation
+              label: joint-space finding
+              codes:
+                - {system: local, code: knee-joint-space, display: "Knee joint space on imaging"}
+              value_code: {system: local, code: narrowed, display: "Narrowed"}
+            - type: observation
+              label: other qualifying imaging finding
+              codes:
+                - {system: local, code: knee-imaging-finding, display: "Knee imaging finding"}
+              value_code: {system: local, code: advanced-joint-disease, display: "Advanced joint disease"}
+
+  - id: conservative_therapy
+    text: A reasonable attempt at conservative therapy
+    kind: prior_treatment
+    policy_sentence: >-
+      The documentation should demonstrate a history of a reasonable attempt (typically 3 months or more) at
+      conservative therapy as appropriate for the patient in the current episode of care.
+    attestation_question: >-
+      Did the patient make a reasonable attempt at conservative therapy, such as anti-inflammatory medicine, pain
+      relief or supervised physical therapy, without enough relief?
+    attestation_help: "The policy says this usually lasts 3 months or more."
+    rule:
+      type: procedure
+      label: supervised physical therapy
+      within_days: 730  # an operating rule for "the current episode of care"
+      min_span_days: 84
+      below_minimum: unknown
+      codes:
+        - {system: cpt, code: "97110", display: "Therapeutic exercise"}
+        - {system: cpt, code: "97140", display: "Manual therapy"}
+        - {system: cpt, code: "97161", display: "Physical therapy evaluation, low complexity"}
+        - {system: cpt, code: "97162", display: "Physical therapy evaluation, moderate complexity"}
+        - {system: snomed, code: "91251008", display: "Physical therapy procedure"}
+
+  - id: functional_disability
+    text: Pain with functional disability
+    kind: documentation
+    policy_sentence: >-
+      Pain with functional disability at the hip or knee. For example, documented pain that interferes with ADLs
+      (functional disability), or pain that is increased with initiation of activities or pain that increases with
+      weight bearing, or pain precluding sleep.
+    attestation_question: "Does knee pain interfere with the patient's daily activities?"
+    attestation_help: "For example: walking, stairs, getting up from a chair, or sleep."
+    rule:
+      type: observation
+      label: functional assessment
+      codes:
+        - {system: local, code: functional-limitation, display: "Functional limitation assessment"}
+      value_code: {system: local, code: present, display: "Present"}
+
+  - id: no_active_infection
+    text: No active infection of the joint or the bloodstream
+    kind: exclusion
+    policy_sentence: Active infection of the hip or knee joint or active systemic bacteremia
+    when_absent: met
+    absent_rationale: An active joint infection or bacteremia is always charted as a diagnosis; its absence is accepted.
+    rule:
+      type: condition
+      label: joint infection or bacteremia diagnosis
+      codes:
+        - {system: icd10, code: M00.9, display: "Pyogenic arthritis, unspecified"}
+        - {system: icd10, code: M00.061, display: "Staphylococcal arthritis, right knee"}
+        - {system: icd10, code: M00.062, display: "Staphylococcal arthritis, left knee"}
+        - {system: icd10, code: M00.861, display: "Arthritis due to other bacteria, right knee"}
+        - {system: icd10, code: M00.862, display: "Arthritis due to other bacteria, left knee"}
+        - {system: icd10, code: R78.81, display: "Bacteremia"}
+
+  - id: no_wound_at_site
+    text: No skin infection or open wound at the surgical site
+    kind: exclusion
+    policy_sentence: Active skin infection or open wound within the planned surgical site of the hip or knee
+    when_absent: met
+    absent_rationale: An active skin infection or open wound at the knee is charted as a diagnosis; its absence is accepted.
+    rule:
+      type: condition
+      label: skin infection or open wound at the knee
+      codes:
+        - {system: icd10, code: L03.115, display: "Cellulitis of right lower limb"}
+        - {system: icd10, code: L03.116, display: "Cellulitis of left lower limb"}
+        - {system: icd10, code: S81.001A, display: "Unspecified open wound, right knee, initial encounter"}
+        - {system: icd10, code: S81.002A, display: "Unspecified open wound, left knee, initial encounter"}

@@ -45,8 +45,9 @@ def test_the_request_answers_the_payers_documentation_questions(env):  # noqa: F
     from caduceus.payer import build_request_bundle
     bundle = build_request_bundle(svc.cases.get(SLEEP))
     qr = next(e["resource"] for e in bundle["entry"] if e["resource"]["resourceType"] == "QuestionnaireResponse")
-    assert [i["linkId"] for i in qr["item"]] == ["osa_diagnosis", "sleep_test", "severity_qualifies", "face_to_face"]
-    assert qr["item"][2]["answer"][0]["valueCoding"]["code"] == "met"
+    assert [i["linkId"] for i in qr["item"]] == ["adult", "in_person_evaluation", "covered_sleep_test",
+                                                 "severity_qualifies"]
+    assert qr["item"][3]["answer"][0]["valueCoding"]["code"] == "met"
     claim = bundle["entry"][0]["resource"]
     assert claim["supportingInfo"][-1]["valueReference"]["reference"] == f"QuestionnaireResponse/{qr['id']}"
 
@@ -76,8 +77,9 @@ def test_a_specific_denial_gets_an_appeal_that_a_person_approves(env):  # noqa: 
     assert case["payer_clock"]["words"] == "Decided in under a minute, within the 7-day limit."
     a = case["appeal"]
     assert "below 15" in a["reason"] and a["criterion"] == "Sleep apnea severity qualifies"
-    assert "between 5 and 14" in a["policy_sentence"] and "hypertension" in a["record"].lower()
-    assert "between 5 and 14" in a["draft"]["text"] and "reversed" in a["draft"]["text"]
+    # The appeal quotes the policy the payer is bound by: L33718, word for word.
+    assert "less than or equal to 14 events per hour" in a["policy_sentence"] and "hypertension" in a["record"].lower()
+    assert "less than or equal to 14 events per hour" in a["draft"]["text"] and "reversed" in a["draft"]["text"]
     assert case["actions"]["can_send_appeal"] and case["actions"]["can_return"]
     rows = [r for g in client.get("/api/queue", headers=DOLORES).json()["groups"] for r in g["cases"]]
     assert any(r["id"] == SLEEP and r["status"]["key"] == "denied" for r in rows)

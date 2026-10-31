@@ -268,7 +268,10 @@ def form(reading: dict[str, Any], catalog: dict[str, Any]) -> dict[str, Any]:
         if key == "service_code":
             sided = sorted(code for code, s in catalog["services"].items() if s.get("needs_side"))
             if sided:
-                fields.append(side_field(by.get("diagnosis") or {}, sided))
+                side = side_field(by.get("diagnosis") or {}, sided)
+                if item["initial"] not in sided:
+                    side["problem"] = None  # the service read from the fax has no side; nothing to check yet
+                fields.append(side)
     return {"fields": fields, "clinic": clinic, "sender": {"read_as": sender["value"], "box": sender["box"]},
             "choices": {
                 "payers": sorted(catalog["payers"]),
