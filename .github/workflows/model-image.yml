@@ -40,18 +40,22 @@ jobs:
       - name: Build llama.cpp from source, every CPU variant, with the weights baked in
         run: docker build -t caduceus-model:ci infra/model
       - name: It answers with no network at all
-        # --network none: no interface but loopback. The server must start, load the model and answer from it.
+        # --network none: no interface but loopback. The server must start, load the model and answer from it. The
+        # image holds no HTTP client to ask it with, so the runner's curl asks from inside the container's own
+        # network namespace, where there is nothing but that loopback.
         run: |
           docker run -d --name model --network none caduceus-model:ci
+          pid="$(docker inspect -f '{{.State.Pid}}' model)"
+          ask() { sudo nsenter --target "$pid" --net curl -fsS --max-time 60 "$@"; }
           ok=""
           for _ in $(seq 1 90); do
-            if docker exec model wget -qO- http://127.0.0.1:8081/health >/dev/null 2>&1; then ok=1; break; fi
+            if ask http://127.0.0.1:8081/health >/dev/null 2>&1; then ok=1; break; fi
             sleep 2
           done
           docker logs model 2>&1 | tail -n 30
           [ -n "$ok" ] || { echo "::error title=Model image::The server did not become healthy"; exit 1; }
-          docker exec model wget -qO- --header 'Content-Type: application/json' \
-            --post-data '{"messages":[{"role":"user","content":"Reply with the word ready."}],"max_tokens":8,"temperature":0}' \
+          ask -H 'Content-Type: application/json' \
+            -d '{"messages":[{"role":"user","content":"Reply with the word ready."}],"max_tokens":8,"temperature":0}' \
             http://127.0.0.1:8081/v1/chat/completions > reply.json
           python3 -c "import json; r = json.load(open('reply.json')); t = r['choices'][0]['message']['content']; assert t.strip(), r; print('Reply:', t)"
           docker rm -f model
