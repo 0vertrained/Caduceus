@@ -790,7 +790,8 @@ function DecisionBar({ c, setCase, reload }: { c: CaseView; setCase: (c: CaseVie
   } else {
     actions = <Link to="/" className="btn btn--primary btn--large">Back to your queue</Link>;
     if (c.state === "approved") summary = <><CheckCircle size={26} /><span><strong>Approved by {c.payer.name}.</strong> Authorization {c.payer_response?.decision.authorization_number}.</span></>;
-    if (c.state === "submitted") summary = <span><strong>Sent to {c.payer.name}.</strong> Waiting for their decision.</span>;
+    if (c.state === "submitted") summary = <span><strong>Sent to {c.payer.name}.</strong>{" "}
+      {c.payer_review ? glue(c.payer_review.words) : "Waiting for its decision."}</span>;
   }
 
   return (
@@ -821,11 +822,12 @@ export function CaseReviewPage() {
   const [panel, setPanel] = useState<Panel>({ kind: "draft" });
   useTitle("Case review");
 
+  // While it is with the outbox or the payer: the send, then the payer's decision, arrive without a reload.
   useEffect(() => {
-    if (c?.state !== "submitted" || c.submission?.sent) return;
+    if (c?.state !== "submitted") return;
     const t = window.setInterval(() => void reload(), 4000);
     return () => window.clearInterval(t);
-  }, [c?.state, c?.submission?.sent, reload]);
+  }, [c?.state, reload]);
 
   if (error) return <div className="page"><p role="alert" className="alert">{error.message}</p><Link to="/">Back to your queue</Link></div>;
   if (!c) return <div className="page"><p role="status" className="muted">Opening the case.</p></div>;

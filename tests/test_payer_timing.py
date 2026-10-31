@@ -20,7 +20,7 @@ def test_the_payer_decides_after_its_review_and_is_asked_only_when_it_said(env):
     assert svc.workflow.dispatch_due() == [CPAP_UHC]
     case = client.get(f"/api/cases/{CPAP_UHC}", headers=DOLORES).json()
     assert case["state"] == "submitted" and case["status"]["word"] == "Waiting on the payer"
-    assert "is reviewing it" in case["payer_review"]["words"] and "reviewing it" in case["summary"]
+    assert "expected by" in case["payer_review"]["words"] and "reviewing it" in case["summary"]
     assert _tool_calls(svc, CPAP_UHC, "payer.status") == 1
 
     clock.advance(seconds=20)  # not yet due: the payer is not asked again, so waiting adds nothing to the log

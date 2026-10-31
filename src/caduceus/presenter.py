@@ -239,9 +239,10 @@ class Presenter:
         if case.state != State.SUBMITTED or not waiting.get("in_review"):
             return None
         at = datetime.fromisoformat(waiting["expected_by"])
-        return {"expected_by": at.isoformat(), "words": f"{case.payer['name']} is reviewing it. Its decision is "
-                f"expected by {moment(at, now, self.tz)}." if at > now else
-                f"{case.payer['name']} has had time to decide; its answer is being read."}
+        # Said after "Sent to <payer>.", so it names the payer as "it".
+        return {"expected_by": at.isoformat(),
+                "words": f"Its decision is expected by {moment(at, now, self.tz)}." if at > now
+                else "Its decision is due now."}
 
     def clinician_wait(self, case: Case, now: datetime) -> dict[str, Any] | None:
         """How long the case has waited on the ordering clinician, and the reminders sent, in words."""
