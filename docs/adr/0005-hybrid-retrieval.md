@@ -1,6 +1,6 @@
 # 5. Hybrid retrieval over the record: full-text and vectors, fused
 
-Status: Proposed (not built in the first slice)
+Status: Accepted, partly built: two lexical channels fused; the dense channel waits for an in-VPC embedding model
 
 ## Context
 
@@ -22,3 +22,17 @@ person confirms the sentence.
 * Embeddings must be computed in-VPC, which ties retrieval quality to the in-VPC model.
 * Needs an evaluation set of (criterion, page, sentence) labels before it ships; the eval harness gets a
   retrieval suite (recall at k).
+
+## What was built (October 31, 2026)
+
+`caduceus.retrieval` ranks a packet's sentences in process, with nothing leaving the boundary. Two channels are
+fused by Reciprocal Rank Fusion: word BM25 after clinical normalization (abbreviations and synonyms become one
+concept, so "PT x 8 wks" matches "physical therapy"), and character-trigram BM25, which survives OCR damage. Both
+are lexical, so the paraphrase case the decision names is handled by the vocabulary, not by vectors. A dense
+channel plugs in through one function once an embedding model runs in the VPC. It is in memory over one packet,
+not yet in Postgres.
+
+Measured on the [hard sets](../hard-evaluation.md): on held-out phrasing, the evidence is in the top 5 passages for
+0.899 of criteria (plain BM25: 0.512), and first for 0.496. The query comes only from the approved criteria set, so
+packet text cannot steer it, and results stay candidates: the engine still decides from structured evidence or a
+person's confirmation.
