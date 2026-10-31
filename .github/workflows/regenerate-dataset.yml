@@ -1,0 +1,68 @@
+name: regenerate-dataset
+
+# When the dataset builder changes, the data must come from Synthea, not from an edit by hand. Push the builder
+# change to the dataset-regen branch: this builds Synthea from source, regenerates data/ with the network switched
+# off (exactly as CI's dataset check does), and publishes the result to the dataset-output branch to review and
+# commit. CI's dataset check then proves the committed data regenerates byte for byte.
+on:
+  push:
+    branches: [dataset-regen]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Regenerate data/ from Synthea
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.13"
+      - run: pip install -e .
+      - name: Build Synthea from source with its libraries upgraded
+        run: make synthea
+      - name: Regenerate the dataset (Synthea runs with the network switched off)
+        run: |
+          make data PY=python
+          git diff --stat -- data/ | tail -1
+          echo "::notice title=Dataset::$(git diff --shortstat -- data/)"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dataset
+          path: |
+            data/fhir
+            data/cases
+          retention-days: 7
+
+  publish:
+    # Only this job can write to the repository, and it runs nothing but a download and a push.
+    name: Publish to the dataset-output branch
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dataset
+          path: dataset
+      - name: Push
+        env:
+          TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          git init -q -b dataset-output published && cd published || exit 1
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          cp -r ../dataset/. .
+          git add .
+          git commit -qm "Dataset regenerated from Synthea for ${GITHUB_SHA:0:7}"
+          git push -qf "https://x-access-token:${TOKEN}@github.com/${REPOSITORY}.git" dataset-output
