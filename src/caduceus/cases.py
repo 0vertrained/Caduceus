@@ -65,6 +65,9 @@ class Case(BaseModel):
     attestation_requested_by: str | None = None
     attestations: list[Attestation] = Field(default_factory=list)
     returned_reason: str | None = None
+    # Packet passages that may answer each criterion the record could not, found inside the boundary at
+    # enrichment. Candidates for a person to read, never evidence: the engine's answer does not change.
+    leads: dict[str, list[dict[str, Any]]] | None = None
     submission: dict[str, Any] | None = None
     payer_response: dict[str, Any] | None = None
     # The answer to a payer's request for more: who asked the clinician, and the note they signed (or that they

@@ -152,10 +152,15 @@ class Presenter:
                 doc_id = (e.get("source_document") or "").split("/")[-1] or None
                 evidence.append({"display": e["display"], "date": e["date"], "document_id": doc_id,
                                  "page": pages.get(doc_id) if doc_id else None, "sentence": e.get("source_sentence")})
+            leads = [] if r["status"] != "unknown" or r.get("attested_by") else [
+                {"document_id": lead["doc_id"], "page": lead["page"], "text": lead["text"],
+                 "title": (self.store.document(lead["doc_id"]) or {}).get("description", "Page")}
+                for lead in (case.leads or {}).get(r["criterion_id"], [])]
             results.append({"id": r["criterion_id"], "text": r["text"], "status": r["status"],
                             "explanation": r["explanation"], "attested_by": r.get("attested_by"),
                             "policy_sentence": r["policy_sentence"],
-                            "question": crit[r["criterion_id"]].attestation_question, "evidence": evidence})
+                            "question": crit[r["criterion_id"]].attestation_question, "evidence": evidence,
+                            "leads": leads})
         counts = case.effective_counts()
         packet = []
         for doc_id in case.packet:
