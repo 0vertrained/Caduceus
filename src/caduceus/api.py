@@ -226,9 +226,10 @@ class MatchBody(BaseModel):
 def create_app(services: Services | None = None, dispatch_interval: float | None = 5.0,
                fresh_demo: Callable[[], Services] | None = None) -> FastAPI:
     """dispatch_interval=None (tests) starts no background threads: no outbox dispatcher, no demo resets."""
+    built: Services | None = None  # what this app builds, it closes when it stops; services handed in stay open
     if services is None:
         settings = Settings()
-        services = fresh_demo_services(settings) if settings.auth_mode == "demo" else build_services(settings)
+        services = built = fresh_demo_services(settings) if settings.auth_mode == "demo" else build_services(settings)
     if fresh_demo is None and services.settings.auth_mode == "demo":
         demo_settings = services.settings
         fresh_demo = lambda: fresh_demo_services(demo_settings)  # noqa: E731
@@ -264,6 +265,8 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
                 threading.Thread(target=demo_resetter, name="demo-reset", daemon=True).start()
         yield
         stop.set()
+        if built is not None:
+            built.close()  # hands the Postgres connections back; nothing to do on SQLite
 
     app = FastAPI(title="Caduceus", version="0.1.0", lifespan=lifespan, docs_url=None, redoc_url=None)
     app.state.live = live
