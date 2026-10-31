@@ -31,7 +31,7 @@ from pathlib import Path
 from caduceus.criteria.engine import Engine
 from caduceus.criteria.loader import load_library, load_lock
 from caduceus.fhir.store import LocalBundleStore, document_text
-from caduceus.retrieval import STOP, _bm25, _ranks, criterion_query, passages, search
+from caduceus.retrieval import STOP, _bm25, _ranks, criterion_query, passages, search, where_to_look
 
 ROOT = Path(__file__).resolve().parents[3]
 COSTS = {("unmet", "met"): "unsafe", ("unknown", "met"): "unsafe", ("met", "unmet"): "wrong block",
@@ -110,6 +110,31 @@ def retrieval_suite(data: Path, policies: Path, k: int = 10) -> dict:
     return {"variants": out, "misses_at_5": misses}
 
 
+def leads_suite(data: Path, policies: Path, k: int = 3) -> dict:
+    """What "where to look" shows, exactly as the product does (the best 3 that clear the relevance floor). For a
+    criterion whose packet holds sentences about it: whether a shown passage overlaps one. For a criterion whose packet
+    holds none: how many passages are shown anyway, each one a false lead a person reads for nothing."""
+    library, store = load_library(policies), LocalBundleStore(data)
+    cases = json.loads((data / "cases" / "cases.json").read_text())
+    found, shown_without = [], []
+    for c in cases:
+        pages = [document_text(store.document(d) or {}) for d in c["packet"]]
+        cset = library[c["criteria_set"]]
+        for crit in cset.criteria:
+            hits = where_to_look(pages, cset, crit, k)
+            gold = c["evidence"].get(crit.id)
+            if gold:
+                found.append(any(h.passage.page == g["page"] and h.passage.start < g["end"]
+                                 and g["start"] < h.passage.end for h in hits for g in gold))
+            else:
+                shown_without.append(len(hits))
+    return {"k": k, "with_evidence": len(found), "recall": round(sum(found) / len(found), 3) if found else 0.0,
+            "without_evidence": len(shown_without),
+            "false_leads_per_criterion": round(sum(shown_without) / len(shown_without), 2) if shown_without else 0.0,
+            "none_shown": round(sum(1 for n in shown_without if n == 0) / len(shown_without), 3) if shown_without
+            else 0.0}
+
+
 def _recall(ranks: list[int | None], k: int) -> float:
     return round(sum(1 for r in ranks if r and r <= k) / len(ranks), 3) if ranks else 0.0
 
@@ -121,13 +146,17 @@ def main() -> None:
     args = ap.parse_args()
     data, policies = ROOT / "data" / "hard" / args.split, ROOT / "data" / "policies"
     report = {"split": args.split, "engine": engine_suite(data, policies),
-              "retrieval": retrieval_suite(data, policies)}
+              "retrieval": retrieval_suite(data, policies), "where_to_look": leads_suite(data, policies)}
     e, r = report["engine"], report["retrieval"]["variants"]
     print(f"{args.split}: engine agreement {e['agreement']} on {e['criteria']} criteria; errors {e['errors_by_cost']}")
     for name, v in r.items():
         print(f"  retrieval {name:20} recall@1 {v['recall_at_1']:.3f}  recall@5 {v['recall_at_5']:.3f}  "
               f"MRR {v['mrr']:.3f}  text-only recall@5 {v['text_only']['recall_at_5']:.3f} "
               f"({v['text_only']['queries']})")
+    w = report["where_to_look"]
+    print(f"  where to look (best {w['k']}, floor): recall {w['recall']:.3f} on {w['with_evidence']} criteria with "
+          f"evidence; {w['false_leads_per_criterion']:.2f} false leads per criterion without "
+          f"({w['without_evidence']}), none shown for {w['none_shown']:.0%}")
     if args.report:
         args.report.parent.mkdir(parents=True, exist_ok=True)
         args.report.write_text(json.dumps(report, indent=1) + "\n")
