@@ -17,11 +17,15 @@ navigates: to the EHR's authorization page and back. The API does everything els
   verifier, and keeps both in its own memory.
 - **The code exchange.** It exchanges the authorization code for an access token itself. The token never reaches
   the browser and is never written anywhere. It is used for one read, in the request that received it.
-- **One bounded read.** With that token it reads the launched patient's record, and only what the approved criteria
-  can use. The windows come from the criteria sets themselves (`caduceus.smart.lookback`):
+- **One bounded read.** With that token it reads the launched patient's record, and only the resource types the
+  running criteria can use, as far back as they look. The windows come from the criteria sets that run
+  (`caduceus.smart.lookback`):
   - every diagnosis, since a criterion may ask how long one has lasted;
-  - procedures from the last two years and measurements and test results from the last year: the longest
-    look-backs in the approved sets;
+  - procedures, and measurements and test results, as far back as the longest look-back among the running sets.
+    Today that is the whole history of both: the CPAP criteria, compiled from Medicare's text, accept a sleep test
+    from any date and ask that the evaluation came before it. (With the earlier development criteria it was two
+    years of procedures and one of measurements.) Reading for the one service the person chooses, rather than for
+    every service, is the next change;
   - the newest notes, which become the case's pages.
 - **Filing.** The record is filed with the cases. In the demo that is the visitor's own copy, so it goes when the copy
   starts over or expires. The person sees what the record holds, and how much of each service's criteria it answers,
@@ -55,8 +59,8 @@ in v1 syntax (`patient/Condition.read` and so on).
 9. With the access token, the API reads, within 20 seconds, 1,000 entries and 3 MB in all:
    - `Patient/<id>`;
    - `Condition?patient=<id>`;
-   - `Procedure?patient=<id>&date=ge<two years ago>`;
-   - `Observation?patient=<id>&date=ge<one year ago>`;
+   - `Procedure?patient=<id>`, with `&date=ge<the start of the window>` when the running criteria set one;
+   - `Observation?patient=<id>`, the same way;
    - `DocumentReference?patient=<id>&_sort=-date&_count=10`.
 
    It follows next-page links only while they stay on the FHIR server, and drops any entry about anyone else.
