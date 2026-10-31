@@ -18,24 +18,16 @@ from datetime import UTC, date, datetime, timedelta, tzinfo
 from pathlib import Path
 from typing import Any
 
-from caduceus.audit.log import AuditLog, sha256_of
+from caduceus.audit.log import sha256_of
 from caduceus.auth import AGENT, Principal, Role
-from caduceus.cases import (
-    Attestation,
-    Case,
-    CaseRepository,
-    DocumentRepository,
-    Fax,
-    FaxRepository,
-    LastAction,
-    State,
-)
+from caduceus.cases import Attestation, Case, Fax, LastAction, State
 from caduceus.criteria.dsl import CriteriaSet
 from caduceus.criteria.engine import Engine
 from caduceus.drafting import Drafter, mid_sentence, patient_name
 from caduceus.fhir.store import FhirStore
 from caduceus.intake import FORM, LABELS, check, clinic_request, cover_sheet, form, iso_date, read_fax, unchecked
 from caduceus.payer import MockPayer, build_appeal_bundle, build_reply_bundle, build_request_bundle
+from caduceus.storage import AuditStore, CaseStore, DocumentStore, FaxStore
 from caduceus.tools import ToolGateway, build_gateway
 from caduceus.words import clock, long_date, moment
 
@@ -57,11 +49,11 @@ class ActionRefused(Exception):
 
 
 class Workflow:
-    def __init__(self, cases: CaseRepository, audit: AuditLog, store: FhirStore, library: dict[str, CriteriaSet],
+    def __init__(self, cases: CaseStore, audit: AuditStore, store: FhirStore, library: dict[str, CriteriaSet],
                  engine: Engine, drafter: Drafter, payer: MockPayer,
-                 clock: Callable[[], datetime] = lambda: datetime.now(UTC), faxes: FaxRepository | None = None,
+                 clock: Callable[[], datetime] = lambda: datetime.now(UTC), faxes: FaxStore | None = None,
                  catalog: dict[str, Any] | None = None, fax_dir: Path | None = None, tz: tzinfo = UTC,
-                 filed: DocumentRepository | None = None):
+                 filed: DocumentStore | None = None):
         self.cases, self.audit, self.store, self.library = cases, audit, store, library
         self.engine, self.drafter, self.payer, self.now = engine, drafter, payer, clock
         self.faxes, self.fax_dir = faxes, fax_dir

@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from datetime import date, timedelta
 from typing import Any
 
-from caduceus.audit.log import AuditLog, sha256_of
+from caduceus.audit.log import sha256_of
 from caduceus.auth import Principal, Role
 from caduceus.criteria.dsl import CriteriaSet
 from caduceus.fhir.record import (
@@ -30,6 +30,7 @@ from caduceus.fhir.record import (
 )
 from caduceus.fhir.store import FhirStore, document_text
 from caduceus.retrieval import where_to_look
+from caduceus.storage import AuditStore
 
 
 class ToolForbidden(Exception):
@@ -66,7 +67,7 @@ READ = frozenset({Role.AGENT_RUNTIME, Role.PA_SPECIALIST, Role.ADMIN})
 
 @dataclass
 class ToolGateway:
-    audit: AuditLog
+    audit: AuditStore
     tools: dict[str, ToolSpec] = field(default_factory=dict)
 
     def register(self, spec: ToolSpec) -> None:
@@ -96,7 +97,7 @@ def _ago(as_of: date, days: int | None) -> date | None:
     return as_of - timedelta(days=days) if days is not None else None
 
 
-def build_gateway(audit: AuditLog, store: FhirStore, library: dict[str, CriteriaSet],
+def build_gateway(audit: AuditStore, store: FhirStore, library: dict[str, CriteriaSet],
                   set_state: Callable[[str, str, str], None], submit: Callable[..., dict],
                   status: Callable[[str], dict], respond: Callable[..., dict], appeal: Callable[..., dict],
                   requirements: Callable[..., dict], read_fax: Callable[[str], dict]) -> ToolGateway:
