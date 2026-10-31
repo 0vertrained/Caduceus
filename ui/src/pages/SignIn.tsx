@@ -6,6 +6,7 @@ const ROSTER = [
   { id: "dr.lee", name: "Dr. Marcus Lee", role: "Orthopedics, ordering clinician" },
   { id: "dr.patel", name: "Dr. Priya Patel", role: "Sleep medicine, ordering clinician" },
   { id: "sam", name: "Sam Whitlock", role: "Auditor" },
+  { id: "avery", name: "Avery Chen", role: "Administrator" },
 ];
 
 export function SignInPage({ onSignIn }: { onSignIn: (user: string) => void }) {

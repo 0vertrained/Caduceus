@@ -176,6 +176,10 @@ def build_services(settings: Settings | None = None, conn: sqlite3.Connection | 
     if external is not None or (recordings is not None and recordings.exists()):
         external = CachingProvider(external, recordings, model=s.external_model)
     router = Router(in_vpc, external, deid) if (in_vpc or external) else None
+    if router is not None:  # an administrator's last switch of the external route holds across restarts
+        switched = [e for e in audit.events() if e.action == "admin.external_route"]
+        if switched:
+            router.switch_external(bool(switched[-1].detail.get("on")))
 
     tz = ZoneInfo(s.clinic_tz)
     workflow = Workflow(cases, audit, store, library, engine, Drafter(router, deid),
