@@ -1,6 +1,6 @@
 # Local parity for the deployment in infra/terraform, on one machine.
 #
-#   cp .env.example .env                    # then set CADUCEUS_DEID_KEY
+#   cp .env.example .env                    # then set CADUCEUS_DEID_KEY and CADUCEUS_DB_PASSWORD
 #   docker compose up --build               # review UI and API on http://127.0.0.1:8000
 #
 # With a local model standing in for the in-VPC model (see README, "Run a local model"):
@@ -9,6 +9,17 @@
 #
 # The model server sits on an internal network with no route to the internet, as the GPU instance sits in an
 # isolated subnet in AWS. Only the API can reach it, and nothing publishes its port.
+#
+# Postgres holds the cases and the audit log, as RDS does in AWS (docs/postgres.md), on an internal network of its
+# own: only the API reaches it, nothing publishes its port, and its data lives in the pgdata volume. The API applies
+# the migrations and seeds the demo cases when it starts, if the database holds none yet.
+#
+# The database password is read from .env (CADUCEUS_DB_PASSWORD), never written here. Compose hands it to Postgres,
+# and to the API inside CADUCEUS_DATABASE_URL, so make one that needs no escaping in a URL:
+#   python -c "import secrets; print(secrets.token_urlsafe(32))"
+# Postgres takes the password only when it first creates the volume. To change it later, change it in the database
+# (ALTER ROLE caduceus PASSWORD ...) and then in .env; or start over with `docker compose down -v`, which deletes
+# the volume and every case in it.
 
 name: caduceus
 
@@ -20,6 +31,7 @@ services:
     environment:
       CADUCEUS_AUTH_MODE: ${CADUCEUS_AUTH_MODE:-dev}
       CADUCEUS_DEID_KEY: ${CADUCEUS_DEID_KEY:?Set CADUCEUS_DEID_KEY in .env (at least 32 bytes)}
+      CADUCEUS_DATABASE_URL: postgresql://caduceus:${CADUCEUS_DB_PASSWORD:?Set CADUCEUS_DB_PASSWORD in .env}@db:5432/caduceus
       CADUCEUS_CLINIC_TZ: ${CADUCEUS_CLINIC_TZ:-America/Denver}
       CADUCEUS_IN_VPC_URL: ${CADUCEUS_IN_VPC_URL:-}
       CADUCEUS_IN_VPC_MODEL: ${CADUCEUS_IN_VPC_MODEL:-llama3.1:8b}
@@ -29,13 +41,34 @@ services:
       CADUCEUS_OIDC_AUDIENCE: ${CADUCEUS_OIDC_AUDIENCE:-}
     ports:
       - "127.0.0.1:8000:8000"   # development sign-in is for this machine only
-    volumes:
-      - state:/var/lib/caduceus
+    depends_on:
+      db:
+        condition: service_healthy
     read_only: true
     tmpfs: [/tmp]
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
-    networks: [edge, model]
+    networks: [edge, model, data]
+
+  db:
+    # TODO: pin by digest (postgres:17@sha256:...), as the Dockerfile's base images are; the registry could not be
+    # reached when this was written. CI's Postgres job uses the same image.
+    image: postgres:17
+    environment:
+      POSTGRES_USER: caduceus
+      POSTGRES_DB: caduceus
+      POSTGRES_PASSWORD: ${CADUCEUS_DB_PASSWORD:?Set CADUCEUS_DB_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [data]            # internal only: no egress, no published port
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      # Over TCP, as the API connects: while Postgres first creates the volume it listens only on its local socket.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U caduceus -d caduceus"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
 
   model:
     profiles: [llm]
@@ -61,7 +94,9 @@ networks:
   edge: {}
   model:
     internal: true
+  data:
+    internal: true
 
 volumes:
-  state: {}
+  pgdata: {}
   models: {}
