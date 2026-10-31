@@ -45,6 +45,12 @@ variable "oidc_audience" {
   default = "caduceus"
 }
 
+variable "oidc_client_id" {
+  description = "The review UI's client at the clinic's identity provider: public, Authorization Code with PKCE (docs/sign-in.md)."
+  type        = string
+  default     = "caduceus-ui"
+}
+
 variable "model_instance_type" {
   description = "GPU instance for the in-VPC model server."
   type        = string

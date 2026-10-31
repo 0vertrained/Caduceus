@@ -50,6 +50,27 @@ class InsecureConfiguration(ValueError):
 DEFAULT_MODELS = {"anthropic": "claude-sonnet-5-5", "ollama": "gpt-oss:120b", "stub": "stub-1"}
 FIXED_QUOTA = {"ollama"}  # providers whose keys cannot run up a bill: the only kind the public demo may hold
 
+# OIDC sign-in. The issuer goes into the page's Content Security Policy and the client id to the browser, so both are
+# held to a plain form: no spaces, quotes, semicolons or commas, nothing that could end a header value or a directive,
+# and no user name or password in the address.
+ISSUER_CHARACTERS = re.compile(r"[A-Za-z0-9._~:/%\[\]-]+")
+CLIENT_ID = re.compile(r"[A-Za-z0-9._:-]{1,128}")
+SCOPE_TOKEN = re.compile(r"[!#-\[\]-~]+")  # RFC 6749 section 3.3
+LOOPBACK = {"localhost", "127.0.0.1", "::1"}
+
+
+def _plain_address(address: str) -> bool:
+    """https://host[:port][/path], or http:// on this machine, written with nothing that would need quoting."""
+    if not ISSUER_CHARACTERS.fullmatch(address):
+        return False
+    try:
+        url = urlsplit(address)
+        url.port  # noqa: B018 - raises ValueError for a port that is not a number in range
+    except ValueError:
+        return False
+    return bool(url.hostname) and not url.query and not url.fragment and (
+        url.scheme == "https" or (url.scheme == "http" and url.hostname in LOOPBACK))
+
 
 @dataclass
 class Settings:
@@ -67,6 +88,12 @@ class Settings:
     oidc_jwks_url: str | None = _env("CADUCEUS_OIDC_JWKS_URL")
     oidc_issuer: str | None = _env("CADUCEUS_OIDC_ISSUER")
     oidc_audience: str | None = _env("CADUCEUS_OIDC_AUDIENCE")
+    # The review UI's own client at the identity provider: public (it holds no secret), Authorization Code with PKCE.
+    # The browser learns it, the issuer and the scope from /api/auth-config (docs/sign-in.md).
+    oidc_client_id: str | None = _env("CADUCEUS_OIDC_CLIENT_ID")
+    # What the UI asks the provider for. Some providers issue a refresh token only with offline_access added; Keycloak
+    # issues one without it, and with it would issue one that outlives the session.
+    oidc_scope: str = _env("CADUCEUS_OIDC_SCOPE", "openid profile")
     deid_key: str | None = _env("CADUCEUS_DEID_KEY")
     fhir_base_url: str | None = _env("CADUCEUS_FHIR_BASE_URL")
     in_vpc_url: str | None = _env("CADUCEUS_IN_VPC_URL")
@@ -147,6 +174,29 @@ class Settings:
             if self.external_api_key and not self.in_vpc_url:
                 raise InsecureConfiguration("An external model is configured without an in-VPC model: "
                                             "PHI-route tasks would have nowhere to run.")
+            self._check_sign_in()
+
+    def _check_sign_in(self) -> None:
+        """OIDC: what the API checks tokens against, and what the browser is told (/api/auth-config)."""
+        missing = [name for name, value in (("CADUCEUS_OIDC_ISSUER", self.oidc_issuer),
+                                            ("CADUCEUS_OIDC_JWKS_URL", self.oidc_jwks_url),
+                                            ("CADUCEUS_OIDC_AUDIENCE", self.oidc_audience),
+                                            ("CADUCEUS_OIDC_CLIENT_ID", self.oidc_client_id)) if not value]
+        if missing:
+            raise InsecureConfiguration(f"OIDC sign-in needs {', '.join(missing)} (docs/sign-in.md).")
+        if not _plain_address(self.oidc_issuer or ""):
+            raise InsecureConfiguration("CADUCEUS_OIDC_ISSUER must be the identity provider's https:// address, "
+                                        "exactly as its tokens name it (http:// only on this machine: localhost or "
+                                        "127.0.0.1).")
+        if not CLIENT_ID.fullmatch(self.oidc_client_id or ""):
+            raise InsecureConfiguration("CADUCEUS_OIDC_CLIENT_ID must be the UI's client id at the identity provider: "
+                                        "up to 128 letters, digits and . _ : -, with no spaces.")
+        if self.oidc_client_id == self.oidc_audience:
+            raise InsecureConfiguration("CADUCEUS_OIDC_AUDIENCE must name the API, not the UI's client: a token issued "
+                                        "to the UI, such as its ID token, must never pass as one for the API.")
+        scopes = self.oidc_scope.split()
+        if "openid" not in scopes or not all(SCOPE_TOKEN.fullmatch(s) for s in scopes):
+            raise InsecureConfiguration("CADUCEUS_OIDC_SCOPE must be scopes separated by spaces, openid among them.")
 
 
 @dataclass

@@ -50,6 +50,17 @@ SECURITY_HEADERS = {
 }
 
 
+def security_headers(settings: Settings) -> dict[str, str]:
+    """The headers every response carries. With OIDC sign-in the page also fetches the identity provider's discovery
+    document and calls its token endpoint, so connect-src adds the issuer and the addresses under it, and nothing else:
+    sign-in and sign-out themselves are navigations, which the policy does not govern. The development and demo
+    headers stay as they are, the same as netlify.toml's."""
+    if settings.auth_mode != "oidc" or not settings.oidc_issuer:
+        return SECURITY_HEADERS
+    policy = f"{SECURITY_HEADERS['Content-Security-Policy']}; connect-src 'self' {settings.oidc_issuer.rstrip('/')}/"
+    return SECURITY_HEADERS | {"Content-Security-Policy": policy}
+
+
 DEMO_RESET_COOLDOWN = timedelta(minutes=1)
 
 
@@ -314,6 +325,7 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
     app.state.smart = smart
     app.state.view_again = VIEW_AGAIN
     windows = lookback(live.svc.workflow.in_use())  # how far back the record is read: the criteria's own windows
+    sent_headers = security_headers(live.svc.settings)
 
     @app.middleware("http")
     async def choose_sandbox(request: Request, call_next):
@@ -362,7 +374,7 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
     @app.middleware("http")
     async def headers(request: Request, call_next):
         response = await call_next(request)
-        for k, v in SECURITY_HEADERS.items():
+        for k, v in sent_headers.items():
             response.headers.setdefault(k, v)
         if request.url.path.startswith("/api/"):
             response.headers["Cache-Control"] = "no-store"
@@ -434,6 +446,15 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
     @app.get("/api/health")
     def health() -> dict:
         return {"ok": True}
+
+    @app.get("/api/auth-config")
+    def auth_config() -> dict:
+        """How the browser signs in, for anyone to read: the mode, and with OIDC what the UI's public client needs to
+        start Authorization Code with PKCE. Nothing secret is here, and nothing secret is needed: the UI holds none."""
+        s = live.svc.settings
+        if s.auth_mode != "oidc":
+            return {"mode": s.auth_mode}
+        return {"mode": "oidc", "issuer": s.oidc_issuer, "client_id": s.oidc_client_id, "scope": s.oidc_scope}
 
     @app.get("/api/demo")
     def demo_info() -> dict:
