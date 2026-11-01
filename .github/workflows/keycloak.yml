@@ -1,0 +1,74 @@
+name: keycloak
+
+# Signs in through real Keycloak, end to end: docker compose's oidc profile and the OIDC walk at Keycloak's own pages
+# (scripts/e2e-keycloak.sh). Apart from ci, so a slow image pull never holds up the demo's deploy.
+on:
+  push:
+    branches: [main]
+    paths:
+      - docker-compose.yml
+      - Dockerfile
+      - infra/keycloak/**
+      - src/caduceus/auth.py
+      - src/caduceus/api/**
+      - ui/src/auth.ts
+      - ui/src/pages/SignIn.tsx
+      - ui/e2e/oidc.mjs
+      - scripts/e2e-keycloak.sh
+      - .github/workflows/keycloak.yml
+  pull_request:
+    paths:
+      - docker-compose.yml
+      - Dockerfile
+      - infra/keycloak/**
+      - src/caduceus/auth.py
+      - src/caduceus/api/**
+      - ui/src/auth.ts
+      - ui/src/pages/SignIn.tsx
+      - ui/e2e/oidc.mjs
+      - scripts/e2e-keycloak.sh
+      - .github/workflows/keycloak.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: keycloak-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+  PLAYWRIGHT_VERSION: "1.63.0"
+
+jobs:
+  walk:
+    name: Sign in through Keycloak, end to end
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - run: npm ci --no-audit --no-fund
+        working-directory: ui
+      - name: Install Playwright and Chromium
+        run: |
+          npm install --global "playwright@${PLAYWRIGHT_VERSION}"
+          npx --yes "playwright@${PLAYWRIGHT_VERSION}" install --with-deps chromium
+      - name: Start Keycloak, Postgres and the API in oidc mode, and walk sign-in
+        run: NODE_PATH="$(npm root --global)" scripts/e2e-keycloak.sh "$RUNNER_TEMP/keycloak"
+      - name: The services' logs, passwords taken out
+        if: failure()
+        run: tail -n 120 "$RUNNER_TEMP/keycloak/compose.log" || true
+      - name: Keep the screenshots, the report and the services' logs
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: keycloak-walk
+          path: ${{ runner.temp }}/keycloak
