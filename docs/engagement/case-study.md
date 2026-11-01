@@ -48,7 +48,8 @@ A referral moves through these steps:
 3. **Where to look.** For each criterion the record cannot answer, retrieval inside the boundary finds the packet
    passages that may, and shows them, never as evidence.
 4. **The clinician's attestation.** Only the unknowns go to the ordering clinician, as plain questions on a phone,
-   with those passages and a summary of the chart written by the small model inside the network.
+   with those passages and a summary of the chart written by the small model inside the network, each of its
+   sentences checked against the record.
 5. **The draft.** A model writes the justification from de-identified facts. The interface shows exactly what was
    sent to it.
 6. **Approval.** A specialist approves, marking the request expedited if waiting could harm the patient. The request
@@ -71,7 +72,7 @@ The decisions behind it:
 | A database state machine with an outbox, Temporal later ([ADR 4](../adr/0004-state-machine-then-temporal.md)) | Exactly-once sending and undo, without new infrastructure | Timers and retries are hand-written |
 | Low-confidence extraction goes to a person ([ADR 6](../adr/0006-confidence-routing.md)) | A wrong fax field is worse than a slow one | Specialists check some fields by hand |
 | A public demo that holds only a fixed-quota model key | Anyone can use it, and no one can run up a bill | Replies are recorded at deploy time, and live calls time out at 20 seconds |
-| A 1.5-billion-parameter model on a CPU, beside the API, for identifiable work, never on a request's path | The identifiable route runs in the demo too, with no GPU, on a server built without an HTTPS client; nobody waits on it | A summary takes about half a minute, and its quality has not yet been read against its facts |
+| A 1.5-billion-parameter model on a CPU, beside the API, for identifiable work, never on a request's path | The identifiable route runs in the demo too, with no GPU, on a server built without an HTTPS client; nobody waits on it | Its sentences need a check against the record: on held-out cases it caught 3 of 4 that were wrong ([summary check](../summaries.md)) |
 | Criteria compiled from the payer's own words, one reviewed version per change | Every criterion traces to a quoted sentence, and nothing runs that a reviewer did not approve | Compiling is hand work, and the hard sets, labelled for the earlier versions, do not measure the new ones |
 
 ## How it is checked
@@ -89,7 +90,7 @@ The decisions behind it:
 | [Model bake-off](../model-bakeoff.md): replies with a problem, read by hand | Kimi K2.6 2 of 17; gpt-oss 120B 6 of 17 (2 misstatements, 4 overstatements) |
 | Accessibility, axe-core WCAG 2.2 AA | 0 violations on 50 screens; no sideways scroll at 320 px |
 | Known vulnerabilities | 0 in Python and npm packages; 2 medium in CPython with no fix released |
-| Tests | 380, and 65 more runs of the store, audit and workflow tests on Postgres |
+| Tests | 389, and 82 runs of the store, audit and workflow tests on Postgres |
 
 Every number here comes from synthetic data, and none is a claim of clinical or financial impact. Synthetic
 records cannot stand in for the distribution of real ones, as Synthea's own documentation warns. That is why the
