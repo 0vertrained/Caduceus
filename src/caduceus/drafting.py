@@ -7,12 +7,14 @@ deterministic template writes the draft instead, so the workflow never depends o
 
 from __future__ import annotations
 
+import json
 import re
 from datetime import date
 from typing import Any
 
 from caduceus.cases import Case
 from caduceus.deid.safe_harbor import PatientContext, SafeHarborDeidentifier, reidentify
+from caduceus.grounding import unsupported
 from caduceus.router import InVpcUnavailable, Router, UnstampedPayload
 from caduceus.router.router import ProviderUnavailable
 
@@ -31,18 +33,19 @@ APPEAL_SYSTEM = (
     "token such as [NAME_1] or [DATE_2] exactly as written. Write 120 to 180 words of formal, plain English, no "
     "headings, no salutation, no signature."
 )
-SUMMARY_TOKENS = 300  # two sentences; on a CPU, every token is about a seventh of a second
-# The model is given only the criteria the chart documents, and asked to say only that. What the clinician is asked
-# about, which the chart does not answer, is stated by the engine word for word (unanswered()): a small model told to
-# say what a chart lacks was seen to deny an X-ray it had just named.
+SUMMARY_TOKENS = 400  # a short sentence per documented criterion; on a CPU each token takes about 0.1 s
 SUMMARY_SYSTEM = (
-    "Summarize, for the ordering clinician, what this patient's chart documents for the criteria listed, in one or "
-    "two sentences. Use only the facts provided. Say only what the chart shows, never what it lacks."
+    "For each criterion below, write one sentence for the ordering clinician saying what this patient's chart "
+    "documents for it. Use only the facts under that criterion, and keep their numbers, dates and qualifiers as "
+    "written. Write about the criterion only: not the patient's age or sex, and nothing the facts do not say. "
+    "Answer with a JSON object that has one key per criterion id."
 )
 
 
 def patient_context(patient: dict) -> PatientContext:
-    names, phones, emails = [], [], []
+    names: list[str] = []
+    phones: list[str] = []
+    emails: list[str] = []
     for n in patient.get("name", []):
         full = " ".join(n.get("given", []) + [n.get("family", "")]).strip()
         if full:
@@ -79,29 +82,69 @@ def age_on(patient: dict, as_of: date) -> int:
     return as_of.year - born.year - ((as_of.month, as_of.day) < (born.month, born.day))
 
 
-def _facts(case: Case, patient: dict, results: list[dict] | None = None) -> str:
-    """The case's facts for a model: the patient, the service, and each criterion (or only `results`)."""
+def _patient_line(case: Case, patient: dict) -> str:
     age = age_on(patient, date.fromisoformat(case.as_of))
-    lines = [f"Patient: {patient_name(patient)}, {age}-year-old {patient.get('gender', 'patient')}.",
+    return f"Patient: {patient_name(patient)}, {age}-year-old {patient.get('gender', 'patient')}."
+
+
+def _sources(result: dict) -> list[str]:
+    return [e["source_sentence"] for e in result.get("evidence", [])[:2] if e.get("source_sentence")]
+
+
+def _facts(case: Case, patient: dict) -> str:
+    """The case's facts for a draft: the patient, the service, and every criterion with its state."""
+    lines = [_patient_line(case, patient),
              f"Requested service: {case.service['display']} ({case.service['system'].upper()} "
              f"{case.service['code']}).", "Criteria:"]
-    for r in case.effective_results() if results is None else results:
+    for r in case.effective_results():
         state = {"met": "met", "unmet": "not met", "unknown": "awaiting clinician attestation"}[r["status"]]
         lines.append(f"- {r['text']}: {state}. {r['explanation']}")
-        for e in r.get("evidence", [])[:2]:
-            if e.get("source_sentence"):
-                lines.append(f"  Source: \"{e['source_sentence']}\"")
+        lines += [f'  Source: "{s}"' for s in _sources(r)]
     return "\n".join(lines)
 
 
+def criterion_facts(result: dict) -> str:
+    """A documented criterion's facts: everything a summary sentence about it may say."""
+    return "\n".join([result["text"], result["explanation"], *(f'Source: "{s}"' for s in _sources(result))])
+
+
+def engine_sentence(result: dict) -> str:
+    """A criterion's result in the record's own words."""
+    return f"{result['text']}: {mid_sentence(result['explanation'])}"
+
+
 def unanswered(case: Case, criterion_ids: list[str]) -> list[str]:
-    """What the clinician is asked about, which the chart does not answer: a sentence each, in the engine's words."""
+    """A sentence for each criterion the clinician is asked about, which the chart does not answer."""
     return [f"The chart does not say whether this was done: {mid_sentence(r['text'])}."
             for r in case.effective_results() if r["criterion_id"] in criterion_ids]
 
 
-# A model's draft may not say every criterion is met when the facts say one is not, or is still with the clinician.
-# The model bake-off caught a candidate model doing this (docs/model-bakeoff.md); such a draft is not shown.
+def _summary_request(case: Case, patient: dict, documented: list[dict]) -> tuple[str, dict[str, Any]]:
+    """The facts the model summarizes, one block per criterion keyed by its id, and the JSON shape of its answer."""
+    facts = "\n\n".join([_patient_line(case, patient),
+                         *(f"[{r['criterion_id']}] {criterion_facts(r)}" for r in documented)])
+    ids = [r["criterion_id"] for r in documented]
+    schema = {"type": "object", "properties": {i: {"type": "string", "maxLength": 300} for i in ids},
+              "required": ids, "additionalProperties": False}
+    return facts, schema
+
+
+def _written(reply: str) -> dict[str, str] | None:
+    """The model's sentence for each criterion id, or None if the reply is not the JSON object asked for."""
+    try:
+        data = json.loads(reply)
+    except ValueError:
+        return None
+    if not isinstance(data, dict):
+        return None
+    return {k: " ".join(v.split()) for k, v in data.items() if isinstance(v, str) and v.strip()}
+
+
+def _as_sentence(text: str) -> str:
+    return text if text.endswith((".", "!", "?")) else f"{text}."
+
+
+# A draft may not claim every criterion is met while one is not, or still waits on the clinician.
 CLAIMS_ALL_MET = re.compile(
     r"\b(?:all (?:of )?(?:the )?(?:listed |documented |coverage |required )?criteria (?:are|have been|were) "
     r"(?:met|satisfied)|meets (?:all )?(?:of )?(?:the )?(?:listed |documented |coverage |required )?criteria)\b", re.I)
@@ -153,9 +196,7 @@ def template_draft(case: Case, patient: dict) -> str:
     sex = {"male": "man", "female": "woman"}.get(patient.get("gender", ""), "patient")
     parts = [f"Request for {mid_sentence(case.service['display'])} ({case.service['system'].upper()} "
              f"{case.service['code']}) for a {age}-year-old {sex}."]
-    for r in case.effective_results():
-        if r["status"] == "met":
-            parts.append(f"{r['text']}: {r['explanation']}")
+    parts += [f"{r['text']}: {r['explanation']}" for r in case.effective_results() if r["status"] == "met"]
     pending = [mid_sentence(r["text"]) for r in case.effective_results() if r["status"] == "unknown"]
     if pending:
         parts.append("Awaiting clinician attestation: " + "; ".join(pending) + ".")
@@ -207,24 +248,44 @@ class Drafter:
 
     @staticmethod
     def template_summary(case: Case, criterion_ids: list[str]) -> dict[str, Any]:
-        """What the chart shows, from the record's facts alone, without a model: at once, and always available."""
-        known = [r for r in case.effective_results() if r["status"] == "met"][:2]
-        sentences = [r["explanation"] for r in known] + unanswered(case, criterion_ids)
-        return {"text": " ".join(sentences), "route": "template", "model": None}
+        """What the chart shows, in the record's own words: at once, and always available."""
+        sentences = [engine_sentence(r) for r in case.effective_results() if r["status"] == "met"]
+        return {"text": " ".join(sentences + unanswered(case, criterion_ids)), "route": "template", "model": None}
 
-    def chart_summary(self, case: Case, patient: dict, criterion_ids: list[str]) -> dict[str, Any]:
-        """The summary by the model inside the network, which may take tens of seconds on a CPU; the template's
-        when there is no such model or it fails. The patient's details never leave the network on this route.
-        The model sees and summarizes only the criteria the chart documents; what it does not answer follows, in
-        the engine's words."""
+    def chart_summary(self, case: Case, patient: dict, criterion_ids: list[str],
+                      keep_sentences: bool = False) -> dict[str, Any]:
+        """The in-network model's summary, which may take tens of seconds on a CPU.
+
+        The model writes a sentence for each criterion the chart documents, from that criterion's facts alone. A
+        sentence that says more than its facts is replaced with the record's own words, and what the clinician is
+        asked about is always in the engine's words. The template's summary stands in when there is no such model,
+        it is down, or none of its sentences hold. `keep_sentences` adds what the model wrote for each criterion,
+        for the summary eval.
+        """
         documented = [r for r in case.effective_results() if r["status"] == "met"]
-        if not self.phi_route or not documented:
+        if self._router is None or not self._router.in_vpc_enabled or not documented:
             return self.template_summary(case, criterion_ids)
+        facts, schema = _summary_request(case, patient, documented)
         try:
-            out = self._router.complete_phi(  # type: ignore[union-attr]
-                "attestation_summary", SUMMARY_SYSTEM, _facts(case, patient, documented), case.id,
-                max_tokens=SUMMARY_TOKENS)
+            out = self._router.complete_phi("attestation_summary", SUMMARY_SYSTEM, facts, case.id,
+                                            max_tokens=SUMMARY_TOKENS, schema=schema)
         except (InVpcUnavailable, ProviderUnavailable):
             return self.template_summary(case, criterion_ids) | {"fallback_reason": "in_vpc_unavailable"}
-        text = " ".join([out.completion.text.strip(), *unanswered(case, criterion_ids)])
-        return {"text": text, "route": out.route, "model": out.completion.model}
+        written = _written(out.completion.text)
+        if written is None:
+            return self.template_summary(case, criterion_ids) | {"fallback_reason": "unreadable"} | (
+                {"reply": out.completion.text} if keep_sentences else {})
+        context = _patient_line(case, patient)
+        sentences, checked = [], []
+        for r in documented:
+            sentence = written.get(r["criterion_id"], "")
+            why = unsupported(sentence, f"{context}\n{criterion_facts(r)}") if sentence else "missing"
+            sentences.append(engine_sentence(r) if why else _as_sentence(sentence))
+            checked.append({"criterion_id": r["criterion_id"], "written": sentence, "reason": why})
+        replaced = [{"criterion_id": c["criterion_id"], "reason": c["reason"]} for c in checked if c["reason"]]
+        extra = {"sentences": checked} if keep_sentences else {}
+        if len(replaced) == len(documented):
+            return self.template_summary(case, criterion_ids) | {"fallback_reason": "unsupported",
+                                                                 "replaced": replaced} | extra
+        return {"text": " ".join(sentences + unanswered(case, criterion_ids)), "route": out.route,
+                "model": out.completion.model, "replaced": replaced} | extra

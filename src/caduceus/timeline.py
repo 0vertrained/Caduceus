@@ -92,8 +92,17 @@ def sentence(e: AuditEvent, clinician: str) -> str:
         case "attestation.requested":
             return f"Asked {clinician} to confirm {plural(len(d.get('criteria', [])), 'item', 'items')}."
         case "summary.written" if d.get("route") == "phi":
+            replaced = len(d.get("replaced") or [])
+            fixed = f" Replaced {plural(replaced, 'sentence', 'sentences')} that said more than the record with its " \
+                    "own words." if replaced else ""
             return f"Summarized the chart for {clinician} with the model inside the network, which alone may see " \
-                   "the patient's details."
+                   f"the patient's details, and checked it against the record.{fixed}"
+        case "summary.written" if d.get("fallback_reason") == "unsupported":
+            return f"Summarized the chart for {clinician} from the record's facts: every sentence the model inside " \
+                   "the network wrote said more than the record."
+        case "summary.written" if d.get("fallback_reason") == "unreadable":
+            return f"Summarized the chart for {clinician} from the record's facts: the reply from the model inside " \
+                   "the network could not be read."
         case "summary.written":
             return f"Summarized the chart for {clinician} from the record's facts, without a model."
         case "summary.error":

@@ -263,7 +263,9 @@ class Workflow:
                     self.cases.save(case)
                     self.audit.append(AGENT.id, AGENT.role, "summary.written", case_id,
                                       {"route": summary["route"], "model": summary.get("model"),
-                                       "text_sha256": sha256_of(summary["text"])})
+                                       "text_sha256": sha256_of(summary["text"]),
+                                       "replaced": summary.get("replaced", []),
+                                       "fallback_reason": summary.get("fallback_reason")})
                 elif mine and case.chart_summary.get("pending"):  # answered, undone or failed: nothing is coming
                     case.chart_summary = case.chart_summary | {"pending": False}
                     self.cases.save(case)
