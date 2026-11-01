@@ -26,7 +26,6 @@ async function axe(page, name) {
     .map((a) => a.finished.catch(() => {}))));
   await page.evaluate(axeSource);
   const result = await page.evaluate(async () =>
-    // eslint-disable-next-line no-undef
     await axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"] } }));
   const violations = result.violations.map((v) => ({ id: v.id, impact: v.impact, nodes: v.nodes.length,
     targets: v.nodes.slice(0, 3).map((n) => n.target.join(" ")) }));

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { api, ApiError, currentUser, setCurrentUser, type DemoInfo, type Me } from "./api";
 import {
@@ -81,9 +81,9 @@ export function App() {
     setChecked(true);
   };
 
+  const loadSignedIn = useEffectEvent((c: AuthConfig) => void (c.mode === "oidc" ? loadSession() : load()));
   useEffect(() => {
-    if (config) void (config.mode === "oidc" ? loadSession() : load());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (config) loadSignedIn(config);
   }, [config]);
 
   // The API refused the session's token, or it ran out and could not be renewed: back to sign-in, saying so. The

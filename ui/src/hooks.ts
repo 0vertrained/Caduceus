@@ -25,16 +25,18 @@ export function useResource<T>(path: string | null, refreshMs?: number) {
   return { data, setData, error, reload };
 }
 
+function secondsUntil(until: string | null | undefined): number {
+  return until ? Math.max(0, Math.ceil((Date.parse(until) - Date.now()) / 1000)) : 0;
+}
+
 /** Seconds left until an ISO time; ticks once a second and stops at zero. */
 export function useSecondsLeft(until: string | null | undefined) {
-  const compute = () => (until ? Math.max(0, Math.ceil((Date.parse(until) - Date.now()) / 1000)) : 0);
-  const [left, setLeft] = useState(compute);
+  const [left, setLeft] = useState(() => secondsUntil(until));
   useEffect(() => {
-    setLeft(compute());
+    setLeft(secondsUntil(until));
     if (!until) return;
-    const t = window.setInterval(() => setLeft(compute()), 1000);
+    const t = window.setInterval(() => setLeft(secondsUntil(until)), 1000);
     return () => window.clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [until]);
   return left;
 }
