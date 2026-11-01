@@ -58,7 +58,7 @@ select = ["E", "F", "I", "B", "UP", "S", "SIM", "C4", "RET", "PIE", "PERF", "T20
 ignore = ["S101"]
 
 [tool.ruff.lint.per-file-ignores]
-"src/caduceus/api.py" = ["B008"]  # FastAPI's Depends() in defaults is the framework's intended pattern
+"src/caduceus/api/app.py" = ["B008"]  # FastAPI's Depends() in defaults is the framework's intended pattern
 "tests/**" = ["S105", "S106"]     # test-only fake credentials
 # Command-line entry points, which report to the person running them. Not mcp_servers: over stdio, a stray print
 # would corrupt the protocol stream.

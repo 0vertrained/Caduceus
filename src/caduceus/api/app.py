@@ -863,7 +863,7 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
         out["undo_until"] = case.last_action.undo_until.isoformat() if case.last_action else None
         return out
 
-    ui = Path(os.environ.get("CADUCEUS_UI_DIST") or Path(__file__).resolve().parents[2] / "ui" / "dist")
+    ui = Path(os.environ.get("CADUCEUS_UI_DIST") or Path(__file__).resolve().parents[3] / "ui" / "dist")
     if ui.exists():
         app.mount("/assets", StaticFiles(directory=ui / "assets"), name="assets")
 
