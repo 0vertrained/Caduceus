@@ -352,3 +352,24 @@ def test_the_fax_tool_reads_only_the_intake_folder(inbox):
     svc, _ = inbox
     with pytest.raises(ActionRefused, match="no such fax"):
         svc.workflow.gateway.call(AGENT, "FAX-0001", "intake", "documents.read_fax", fax_file="../cases/cases.json")
+
+
+def test_a_fax_for_the_other_knee_is_a_request_of_its_own(inbox):
+    """A right knee replacement is open for the patient. A fax for her left knee is a new request; another for the
+    right is the duplicate it looks like."""
+    from caduceus.cases import Case, State
+    svc, client = inbox
+    values = form_start(client, "FAX-0002")
+    assert values["service_code"] == "27447" and values["side"] == "right"
+    patient = svc.store.find_patient("Amalia Fonseca", "1950-03-05")
+    service = svc.workflow.catalog["services"]["27447"]
+    svc.cases.save(Case(id="2026-0998", patient_id=patient, side="right",
+                        service={k: service[k] for k in ("system", "code", "display", "short")},
+                        criteria_set=service["criteria_set"], as_of="2026-10-28",
+                        payer={"name": "Medicare", "member_id_last4": "5082"},
+                        ordering_clinician=svc.workflow.catalog["clinicians"]["Dr. Marcus Lee"], packet=[],
+                        received_at=T0, due_at=T0, state=State.REVIEW))
+    right = client.post("/api/intake/FAX-0002/confirm", headers=DOLORES, json={"values": values})
+    assert right.status_code == 409 and right.json()["case_id"] == "2026-0998"
+    left = client.post("/api/intake/FAX-0002/confirm", headers=DOLORES, json={"values": values | {"side": "left"}})
+    assert left.status_code == 200 and svc.cases.get(left.json()["case_id"]).side == "left"

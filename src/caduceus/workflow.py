@@ -513,11 +513,17 @@ class Workflow:
         if self.cases.get(values["referral"]) is not None:
             raise ActionRefused(f"A case for referral {values['referral']} already exists.", field="referral",
                                 case_id=values["referral"])
-        # The same patient and service already open under another referral: a second request would be a duplicate.
-        # Refused rather than allowed with a warning; the person opens the case that exists. Only a payer's approval
-        # closes a case: a denial can still be appealed, and a returned case can still come back.
+        side = side if service.get("needs_side") else None
+        if service.get("needs_side") and side not in ("right", "left"):
+            raise ActionRefused("Say which side the request is for: the criteria check that the diagnosis is on "
+                                "that side.", field="side")
+        # The same patient, service and side already open under another referral: a second request would be a
+        # duplicate. Refused rather than allowed with a warning; the person opens the case that exists. The other
+        # knee is a request of its own. Only a payer's approval closes a case: a denial can still be appealed, and a
+        # returned case can still come back.
         same = next((c for c in sorted(self.cases.all(), key=lambda c: c.id) if c.patient_id == patient_id
-                     and c.service["code"] == values["service_code"] and c.state != State.APPROVED), None)
+                     and c.service["code"] == values["service_code"] and c.side == side
+                     and c.state != State.APPROVED), None)
         if same is not None:
             raise ActionRefused(f"Case {same.id} is already open for this patient and this service, so this referral "
                                 "would be a second request. Open that case instead.", field="service_code",
@@ -530,10 +536,6 @@ class Workflow:
                                 self.intake_form(fax)["clinic"])
             self.filed.save(cover)
             packet = [cover["id"], *packet]
-        side = side if service.get("needs_side") else None
-        if service.get("needs_side") and side not in ("right", "left"):
-            raise ActionRefused("Say which side the request is for: the criteria check that the diagnosis is on "
-                                "that side.", field="side")
         case = Case(id=values["referral"], patient_id=patient_id,
                     service={k: service[k] for k in ("system", "code", "display", "short")},
                     criteria_set=service["criteria_set"], side=side, as_of=fax.as_of,
