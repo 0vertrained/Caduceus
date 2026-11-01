@@ -1,11 +1,8 @@
-"""The five customer-system tool servers, exposed over the Model Context Protocol.
+"""The five tool servers over the Model Context Protocol, each tool a thin wrapper over the ToolGateway, so any MCP
+client meets the same role and step checks and audit records as the agent.
 
-Each tool is a thin wrapper over the ToolGateway, so the same role and workflow-step checks (and the same audit
-records) apply whether a tool is called in-process by the agent runtime or over MCP by any MCP client.
-
-Who is calling:
-* stdio transport: the identity the server was launched as (CADUCEUS_MCP_ROLE, default agent_runtime).
-* streamable HTTP transport: a bearer JWT verified against the identity provider; the role comes from a claim.
+The caller is the identity the server was launched as over stdio (CADUCEUS_MCP_ROLE, default agent_runtime), and a
+bearer JWT verified against the identity provider over streamable HTTP.
 
     python -m caduceus.mcp_servers ehr                 # stdio
     python -m caduceus.mcp_servers ehr --http 8101     # streamable HTTP, bearer tokens required
@@ -59,7 +56,6 @@ def principal_from_context(default: Principal) -> Principal:
 
 def _wrap(gateway: ToolGateway, spec: ToolSpec, who: Callable[[], Principal]) -> Callable[..., Any]:
     original = inspect.signature(spec.fn)
-
     forwards_case = "case_id" in original.parameters
 
     def tool(case_id: str, step: str, **kwargs: Any) -> Any:

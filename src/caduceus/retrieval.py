@@ -1,17 +1,8 @@
 """Find the sentences in a referral packet that bear on a criterion, inside the boundary (ADR 5).
 
-A packet is PHI, so nothing here calls a model or leaves the process. Each page is split into sentence passages,
-and two channels rank them, fused by reciprocal rank:
-
-1. Words, scored with BM25 after clinical normalization: abbreviations and synonyms become one concept token,
-   so "PT x 8 wks", "physiotherapy" and "therapeutic exercise" all match "physical therapy".
-2. Character trigrams, scored with BM25, which survive OCR damage ("rad1ographs") and words split across lines.
-
-A third channel, dense embeddings from a model inside the VPC, plugs in through `embed`. None is configured yet:
-the model hub is outside the boundary, and an embedding model must run inside it.
-
-The concept list was written from general clinical usage before the evaluation packets existed, so that the
-held-out score measures how it generalizes rather than how well it was fitted.
+Sentence passages are ranked by BM25 over words after clinical normalization ("PT x 8 wks" and "physiotherapy" both
+mean physical therapy) and over character trigrams, which survive OCR damage, fused by reciprocal rank. Dense
+embeddings plug in through `embed` once an embedding model runs inside the VPC.
 """
 
 from __future__ import annotations
@@ -178,11 +169,9 @@ def _ranks(scores: list[float]) -> list[int | None]:
 
 
 def relevant(passage: Passage, query: str, background: str = "", subject: str = "") -> bool:
-    """Enough in common with the query to show a person: a shared concept ("physical therapy", "apnea-hypopnea
-    index"), or at least two shared words. What the background names (the service itself, which every page of its
-    packet mentions) does not count. Nor is the subject enough on its own: a passage that shares only what the
-    service is about ("Diagnosis: obstructive sleep apnea") names the request; it does not answer a criterion of it.
-    Ranking alone always fills a list; this keeps weak matches out of it."""
+    """Enough in common with the query to show a person: a shared concept, or at least two shared words. What the
+    background names (the service, which every page mentions) does not count, and a passage sharing only the subject
+    ("Diagnosis: obstructive sleep apnea") names the request rather than answering a criterion."""
     shared = (set(words(passage.text)) & set(words(query))) - set(words(background)) - _UNITS
     if subject and not shared - set(words(subject)):
         return False
@@ -235,9 +224,8 @@ def criterion_query(criterion) -> str:
 
 
 def where_to_look(pages: Sequence[str], criteria_set, criterion, k: int = 3) -> list[Hit]:
-    """The passages "where to look" offers for one criterion: the best k that clear the floor. What the service itself
-    names is on every page, so it does not make a passage relevant, unless this criterion names it too ("Obstructive
-    sleep apnea is diagnosed"), and even then not on its own."""
+    """The best k passages for one criterion that clear the relevance floor. What the service names is on every page,
+    so it counts only where the criterion names it too, and never on its own."""
     named = set(words(criterion.text))
     about = " ".join([criteria_set.title] + [c.display or "" for c in criteria_set.service_codes])
     background = " ".join(w for w in words(about) if w not in named)

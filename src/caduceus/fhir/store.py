@@ -1,9 +1,5 @@
-"""Where patient records come from.
-
-`LocalBundleStore` reads the trimmed Synthea bundles plus per-case overlays from disk (development and CI).
-`HapiFhirStore` reads the same shapes from a HAPI FHIR JPA server (docker-compose and the deployed environment),
-using `Patient/{id}/$everything`.
-"""
+"""Where patient records come from: bundles and per-case overlays on disk, or a HAPI FHIR server, plus the documents
+Caduceus files itself and the records an EHR shares by SMART launch."""
 
 from __future__ import annotations
 
@@ -110,8 +106,7 @@ class Filed(Protocol):
 
 
 class WithFiledDocuments:
-    """The record's store, plus the documents Caduceus filed itself (a fax cover sheet), found by the same id lookup.
-    The filed ones live in the case database, so they survive a restart and are copied with a demo visitor's cases."""
+    """The record's store, plus the documents Caduceus filed itself (a fax cover sheet), found by the same id lookup."""
 
     def __init__(self, base: FhirStore, filed: Filed):
         self.base, self.filed = base, filed
@@ -137,9 +132,8 @@ EHR_PAGE = re.compile(r"(ehr-[0-9a-f]{20})-(\d{1,2})")
 
 
 class WithEhrRecords:
-    """The store, plus patients' records read from an EHR by a SMART launch, which a case names by their key
-    (caduceus.cases.EhrRecordRepository). Their newest notes are the case's pages. A fax is never matched to them:
-    a faxed referral is checked against the clinic's own chart."""
+    """The store, plus records read from an EHR by a SMART launch, named by their key, with their newest notes as the
+    case's pages. A fax is never matched to them: a faxed referral is checked against the clinic's own chart."""
 
     def __init__(self, base: FhirStore, kept: Kept):
         self.base, self.kept = base, kept

@@ -1,8 +1,7 @@
-"""Request limits for the public demo: generous for a person clicking through it, not for a script.
+"""Request limits for the public demo, in fixed windows held in memory (one instance serves it).
 
-Fixed windows, in memory. One instance serves the demo, so there is nothing to share between processes.
-Per-visitor limits key on the client address Netlify reports, which a determined caller can vary; the global
-ceiling cannot be varied, and it is what bounds the demo's compute bill.
+Per-visitor limits key on the client address Netlify reports, which a determined caller can vary; the global ceiling
+cannot be varied, and it is what bounds the demo's bill.
 """
 
 from __future__ import annotations
@@ -43,7 +42,7 @@ class DemoLimits:
     writes_per_visitor: Window = field(default_factory=lambda: Window(60, 300))
     everyone: Window = field(default_factory=lambda: Window(5_000, 300))
     new_sandboxes: Window = field(default_factory=lambda: Window(20, 300))
-    # Starting or finishing an EHR launch makes requests to the EHR, so it is counted apart, per visitor and for all.
+    # Each step of an EHR launch calls the EHR, so launches are counted apart.
     ehr_launches: Window = field(default_factory=lambda: Window(10, 300))
     ehr_everyone: Window = field(default_factory=lambda: Window(200, 300))
 

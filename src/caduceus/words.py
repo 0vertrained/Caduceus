@@ -1,7 +1,6 @@
 """Times and spans in the words the screens use: "1:12 pm", "today at 1:12 pm", "25 minutes".
 
-Kept apart from the presenter so the workflow can phrase a refusal ("it reached the payer at 1:42 pm") without
-importing the screens.
+Apart from the presenter, so the workflow can phrase a refusal without importing the screens.
 """
 
 from __future__ import annotations

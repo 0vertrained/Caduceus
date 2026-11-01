@@ -1,9 +1,4 @@
-"""The public demo's guided tour: where the headline case stands, and who should act next.
-
-The tour follows one case from the referral to the payer's approval. Each step names the person to act as, so a
-visitor can switch roles with one click instead of working out the cast. It reads the visitor's own copy of the
-cases, so it always describes what they see.
-"""
+"""The public demo's guided tour: where the headline case stands in the visitor's own copy, and who acts next."""
 
 from __future__ import annotations
 

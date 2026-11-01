@@ -1,8 +1,4 @@
-"""What the queue's work adds up to, computed from the audit log and the cases: never estimated, never stored.
-
-Each figure says what it counts. In the public demo the numbers describe the visitor's own copy, so they move as the
-visitor works; in a deployment they would be read per day or week from the same log.
-"""
+"""What the queue's work adds up to, counted from the audit log and the cases: never estimated, never stored."""
 
 from __future__ import annotations
 

@@ -1,20 +1,8 @@
-"""Rule-based de-identification following the HIPAA Safe Harbor method, plus tamper-evident stamps.
+"""Rule-based de-identification after the HIPAA Safe Harbor method, and tamper-evident stamps.
 
-Safe Harbor removes 18 categories of identifiers of the individual (and of relatives, employers and household
-members) and requires no actual knowledge that what remains could identify them. This module removes:
-
-* identifiers the system already knows for the case (names, date of birth, address, phone, email, MRN, member
-  and account numbers, SSN) wherever they appear, and
-* pattern matches for the categories that can appear in free text without being known in advance (dates,
-  phone and fax numbers, email addresses, SSNs, labelled record and plan numbers, URLs, IP addresses, street
-  addresses, ZIP codes next to a state, and ages over 89).
-
-Each removed value is replaced with a numbered token such as ``[NAME_1]``. The token map stays inside the VPC so
-a draft written over de-identified text can be re-identified locally. A residual check refuses to stamp any text
-in which a known identifier survived. Only stamped text may reach the external model route (see router).
-
-Rule-based removal is deliberately the first layer; a model-based NER pass is added in Phase 2 for free-text
-recall. HHS notes that properly de-identified data still carries some residual risk; so does this.
+The identifiers known for the case are removed wherever they appear, and patterns catch those free text can hold
+without being known in advance. Each becomes a numbered token such as [NAME_1]; the token map stays inside the VPC.
+Text in which a known identifier survived is never stamped, and only stamped text may reach the external model.
 """
 
 from __future__ import annotations

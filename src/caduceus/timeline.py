@@ -1,9 +1,7 @@
 """A case's audit trail in plain words, for the case page.
 
-The audit log records every event: each tool call, each view of a case, each decision. Read raw, it is a few hundred
-lines per case. Here consecutive tool calls in one workflow step become one line that names the tools, repeated
-views by one person become one line with a count, and refused tool calls are marked so they stand out. Every line
-keeps the sequence numbers and the hash of its last event, so an auditor can find it in the raw log.
+Consecutive tool calls in one workflow step become one line, as do repeated views by one person. Each line keeps its
+sequence numbers and the hash of its last event, so an auditor can find it in the raw log.
 """
 
 from __future__ import annotations

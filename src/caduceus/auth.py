@@ -1,9 +1,5 @@
-"""Who is acting, and in which role.
-
-Development uses a fixed roster selected by the `X-Caduceus-User` header (so the demo needs no identity
-provider). Deployment uses OIDC: a bearer JWT verified against the provider's JWKS, with the role taken from a
-claim. Either way every request, tool call and audit event carries a Principal.
-"""
+"""Who is acting, and in which role: a fixed roster chosen by the X-Caduceus-User header in development and the demo,
+or an OIDC bearer token verified against the provider's keys, with the role from a claim."""
 
 from __future__ import annotations
 
@@ -42,7 +38,7 @@ DEV_USERS: dict[str, Principal] = {
 
 
 class AuthError(Exception):
-    pass
+    """The request's sign-in is missing or not valid."""
 
 
 class Authenticator:
