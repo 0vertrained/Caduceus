@@ -458,8 +458,8 @@ class Presenter:
             "patient": {"name": patient_name(p), "birth_date": long_date(date.fromisoformat(p["birthDate"]))},
             "service": case.service["display"], "ordered": long_date(case.received_at.astimezone(self.tz).date()),
             "chart_summary": summary["text"],
-            # How it was written: by the model inside the network, or from the record's facts.
-            "chart_summary_by": {"route": summary.get("route"), "model": summary.get("model")},
+            "chart_summary_by": {"route": summary.get("route"), "model": summary.get("model"),
+                                 "fallback_reason": summary.get("fallback_reason")},
             "chart_summary_pending": summary_coming(summary, now),  # the in-network model's is on its way
             "questions": [{"criterion_id": cid, "question": crit[cid].attestation_question or crit[cid].text,
                            "help": crit[cid].attestation_help,
