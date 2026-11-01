@@ -32,7 +32,7 @@ resource "aws_kms_alias" "data" {
   target_key_id = aws_kms_key.data.key_id
 }
 
-# --- Database (Postgres; the case store and audit log move here from SQLite) ---------------------------
+# --- Database: Postgres, for the cases and the audit log ---------------------------------------------
 
 resource "aws_db_subnet_group" "main" {
   name       = local.name

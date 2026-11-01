@@ -40,9 +40,8 @@ jobs:
       - name: Build llama.cpp from source, every CPU variant, with the weights baked in
         run: docker build -t caduceus-model:ci infra/model
       - name: It answers with no network at all
-        # --network none: no interface but loopback. The server must start, load the model and answer from it. The
-        # image holds no HTTP client to ask it with, so the runner's curl asks from inside the container's own
-        # network namespace, where there is nothing but that loopback.
+        # --network none leaves only loopback. The image holds no HTTP client, so the runner's curl asks from inside
+        # the container's network namespace.
         run: |
           docker run -d --name model --network none caduceus-model:ci
           pid="$(docker inspect -f '{{.State.Pid}}' model)"

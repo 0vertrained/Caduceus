@@ -41,10 +41,9 @@ jobs:
       # The Netlify site's address. An EHR launch (docs/smart-launch.md) may send the browser back only to its
       # /smart/callback: the API takes that address from here, never from a request.
       SITE: https://caduceusdemo.netlify.app
-      # The draft model, on Ollama Cloud: a subscription with fixed limits, so its key cannot run up a bill. It sees
-      # only de-identified, stamped text. Its key lives in Secret Manager (infra/demo/add-model-key.sh). The deploy
-      # uses the first of these that Ollama Cloud offers the key (a name matches exactly or by its family, so
-      # "kimi-k2.6" matches "kimi-k2.6:1t"), strongest writer first.
+      # The draft model, on Ollama Cloud: fixed limits, so its key (in Secret Manager) cannot run up a bill. The deploy
+      # uses the first of these, strongest writer first, that the key is offered, by exact name or family ("kimi-k2.6"
+      # matches "kimi-k2.6:1t").
       MODEL_SECRET: caduceus-model-api-key
       MODEL_PREFERENCE: kimi-k2.6 deepseek-v3.2 glm-5 mistral-large-3 qwen3.5 deepseek-v3.1 gpt-oss:120b
       COMMIT: ${{ github.event.workflow_run.head_sha || github.sha }}
@@ -109,8 +108,7 @@ jobs:
           docker push "$image"
           echo "IMAGE=$(docker inspect --format '{{index .RepoDigests 0}}' "$image")" >> "$GITHUB_ENV"
       - name: Find the in-network model's image
-        # Published by model-image.yml. Without one, the API runs alone, and work that needs the patient's details
-        # is done from the record's facts, without a model.
+        # Published by model-image.yml. Without one, the API runs alone and summaries come from the record's facts.
         run: |
           image="${REGION}-docker.pkg.dev/${PROJECT}/caduceus/model"
           digest="$(gcloud artifacts docker images describe "$image:current" --format 'value(image_summary.digest)' 2>/dev/null || true)"
@@ -120,15 +118,11 @@ jobs:
             echo "::notice title=In-network model::No model image is published yet (model-image.yml); the API runs alone."
           fi
       - name: Deploy
-        # One instance at most: the demo keeps its cases in memory, and one instance bounds the bill. No minimum
-        # instances: idle costs nothing, and a cold start reseeds.
-        # The demo adds the three showcase cases, and its payer takes 30 seconds to decide (15 when expedited), so a
-        # visitor sees a request under review before the decision comes back.
-        # With the model: two containers in one instance. Only the API's has a port and takes traffic; the model
-        # listens on 127.0.0.1, which nothing outside the instance can reach. CPU stays on between requests
-        # (instance billing), so the model can finish a summary after the request that asked for it has returned.
-        # That revision is written out whole and replaces the service's: gcloud's per-container flags merge with the
-        # containers already there, and Cloud Run refused the result ("exactly one container with an exposed port").
+        # One instance at most, since the demo keeps its cases in memory, and none when idle. The payer takes 30
+        # seconds so a visitor sees a request under review. With the model, two containers share the instance: only
+        # the API's takes traffic, the model listens on 127.0.0.1, and CPU stays on so a summary can finish after its
+        # request returns. That revision is written out whole, because gcloud's per-container flags would merge with
+        # the containers already there.
         run: |
           secrets="CADUCEUS_PROXY_SIGNING_KEY=caduceus-proxy-signing-key:latest"
           if [ "${MODEL_KEY:-}" = 1 ]; then secrets="$secrets,CADUCEUS_EXTERNAL_API_KEY=$MODEL_SECRET:latest"; fi
@@ -139,8 +133,8 @@ jobs:
             gcloud run services describe "$SERVICE" --project "$PROJECT" --region "$REGION" \
               --format 'value(spec.template.spec.containers[].name)' 2>/dev/null | tr ';,' '\n\n' || true
           }
-          # The API alone. Flags without --container apply to the container that takes traffic, so a model container
-          # from an earlier revision would stay unless it is removed; CPU goes back to being billed per request.
+          # The API alone. Flags without --container apply only to the container that takes traffic, so an earlier
+          # revision's model container is removed explicitly.
           alone() {
             model="$(containers | grep -x model || true)"
             gcloud run deploy "$SERVICE" "${common[@]}" ${model:+--remove-containers model} --cpu-throttling \
@@ -185,9 +179,8 @@ jobs:
           echo "::notice title=Demo API::Deployed ${COMMIT:0:7} to $url; unsigned requests are refused"
 
   recordings:
-    # Publishes what the model saw and said (de-identified text only) to the model-recordings branch, where it can
-    # be reviewed and committed. A separate job, so the token that can write to the repository never runs alongside
-    # installed packages or the image build: this job only downloads one file and pushes it.
+    # Publishes what the model saw and said (de-identified text only) to the model-recordings branch for review. A
+    # separate job, so the token that can write to the repository never runs beside installed packages.
     name: Publish the recorded model replies
     needs: cloud-run
     if: needs.cloud-run.outputs.recorded == 'true'

@@ -1,12 +1,8 @@
-# One image serves the API and the built review UI.
-# The runtime is Chainguard's Wolfi base with Python 3.13 from Wolfi's own packages: a minimal glibc
-# distribution whose packages are patched for known vulnerabilities within days. The Debian-based official
-# Python image carried 236 vulnerabilities with no fix released; CI scans the image on every build.
+# One image serves the API and the built review UI, on Chainguard's Wolfi base with Wolfi's own Python 3.13: a
+# minimal distribution whose packages are patched within days. Base images are pinned by digest (Dependabot proposes
+# new ones), and CI scans the result on every build.
 
-# Base images are pinned by digest (Dependabot proposes new ones). Wolfi packages installed with apk are
-# the current patched builds at build time, and CI scans the result.
-
-# Build only: nothing from this stage ships except the static UI it produces.
+# Build only: nothing from this stage ships except the static UI.
 FROM node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da AS ui
 WORKDIR /ui
 COPY ui/package.json ui/package-lock.json ./
