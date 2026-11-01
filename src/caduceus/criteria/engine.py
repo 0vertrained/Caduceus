@@ -1,8 +1,6 @@
-"""The deterministic criteria engine. No model is called here, ever.
-
-Given an approved criteria set and a patient's FHIR record as of a date, return met / unmet / unknown for
-each criterion, with pointers to the evidence and a plain-language explanation. The guarantee the rest of
-the system relies on: when the record holds no matching evidence, the answer is `unknown`, never a guess.
+"""The deterministic criteria engine: met, unmet or unknown for each criterion of an approved set, with the evidence
+and an explanation in words. No model is called here. When the record holds no matching evidence, the answer is
+unknown, never a guess.
 """
 
 from __future__ import annotations
@@ -162,7 +160,7 @@ class Engine:
         results = [self._criterion(c, record, as_of, side) for c in criteria_set.criteria]
         return Determination(criteria_set.key, digest, as_of.isoformat(), results)
 
-    # Criterion level: applies exclusion inversion and the when_absent policy ---------------------------
+    # Criteria: exclusions invert, and when_absent applies ----------------------------------------------------
 
     def _criterion(self, c: Criterion, record: PatientRecord, as_of: date, side: str | None) -> CriterionResult:
         outcome = self._rule(c.rule, record, as_of, side)
@@ -178,7 +176,7 @@ class Engine:
                 explanation = "No excluding finding in the record, but absence is not accepted as proof."
         return CriterionResult(c.id, c.text, c.kind, status, explanation, c.policy_sentence, outcome.evidence)
 
-    # Rule level ---------------------------------------------------------------------------------------
+    # Rules ---------------------------------------------------------------------------------------------------
 
     def _rule(self, rule, record: PatientRecord, as_of: date, side: str | None = None) -> RuleOutcome:
         if isinstance(rule, ConditionRule):
@@ -401,4 +399,4 @@ class Engine:
 
 
 class UnapprovedCriteriaSet(Exception):
-    pass
+    """A draft criteria set, or one changed since a reviewer approved it."""

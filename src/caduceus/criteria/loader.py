@@ -51,8 +51,8 @@ def needs_side(criteria_set: CriteriaSet) -> bool:
 
 
 def active(library: dict[str, CriteriaSet], lock: dict[str, str]) -> dict[str, CriteriaSet]:
-    """The set each service runs under, keyed by service code: approved, hash intact, and not superseded by
-    another approved set. Superseded sets stay in the library so cases decided under them can still be shown."""
+    """The set each service runs under, by service code: approved, hash intact, and not superseded by another
+    approved set. Superseded sets stay in the library, so cases decided under them can still be shown."""
     approved = {k: s for k, s in library.items() if s.status == "approved" and lock.get(k) == s.content_sha256()}
     replaced = {s.supersedes for s in approved.values() if s.supersedes in approved}
     out: dict[str, CriteriaSet] = {}

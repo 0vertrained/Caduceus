@@ -1,7 +1,6 @@
-"""The criteria DSL: a coverage policy compiled into a small, declarative, reviewable rule set.
+"""The criteria DSL: a coverage policy compiled into a small, declarative rule set a reviewer can read.
 
-An LLM may *propose* a criteria set from policy prose, but only a set a human reviewer has approved
-(and whose content hash is in the lock file) is ever evaluated. See ADR 0002.
+Only a set a reviewer approved, with its content hash in the lock file, is ever evaluated (ADR 2).
 """
 
 from __future__ import annotations
@@ -46,8 +45,7 @@ class Code(_Strict):
     system: str
     code: str
     display: str | None = None
-    # The side the code itself names, as ICD-10-CM does (M17.11 is the right knee). None: the code has no side.
-    side: Side | None = None
+    side: Side | None = None  # the side the code itself names, as M17.11 names the right knee
 
     @property
     def uri(self) -> str:
@@ -62,8 +60,7 @@ class ConditionRule(_Strict):
     min_duration_days: int | None = None
     active_only: bool = True
     label: str = "diagnosis"
-    # The diagnosis must be on the side the request names: a knee replacement needs osteoarthritis of that knee.
-    same_side: bool = False
+    same_side: bool = False  # the diagnosis must be on the side the request names
 
 
 class ProcedureRule(_Strict):
@@ -75,8 +72,7 @@ class ProcedureRule(_Strict):
     min_span_days: int | None = None
     min_count: int | None = None
     label: str = "procedure"
-    # When a policy gives a usual length rather than a hard one ("usually 3 months or more"), a shorter course is not
-    # a failure: the clinician confirms whether it was a reasonable attempt.
+    # "unknown" where the policy gives a usual length, not a minimum: the clinician confirms a shorter course.
     below_minimum: Literal["unmet", "unknown"] = "unmet"
 
 
@@ -90,8 +86,8 @@ class ObservationRule(_Strict):
     lt: float | None = None
     value_code: Code | None = None
     label: str = "finding"
-    # The finding must be dated on or before the most recent of these procedures in the window: a face-to-face
-    # evaluation comes before the sleep test it justifies.
+    # The finding must be dated on or before the latest of these procedures in the window, as an evaluation comes
+    # before the sleep test it justifies.
     before_procedure: list[Code] | None = None
     before_label: str = "the procedure"
 
@@ -128,11 +124,11 @@ class Criterion(_Strict):
     kind: CriterionKind
     policy_sentence: str
     rule: Rule
-    # What absence of evidence means. "unknown" is the default and the only option outside exclusions:
-    # the engine never guesses. A reviewer may accept absence as satisfying an exclusion, with a rationale.
+    # Absence of evidence is "unknown": the engine never guesses. Only for an exclusion may a reviewer accept absence
+    # as "met", with a rationale.
     when_absent: Literal["unknown", "met"] = "unknown"
     absent_rationale: str | None = None
-    # How the ordering clinician is asked, in plain words, when the record cannot answer this criterion.
+    # How the ordering clinician is asked when the record cannot answer this criterion.
     attestation_question: str | None = None
     attestation_help: str | None = None
 
@@ -165,9 +161,7 @@ class CriteriaSet(_Strict):
     approved_at: date | None = None
     source: Source
     criteria: list[Criterion]
-    # The approved set this one replaces. A superseded set stays loadable, so cases evaluated under it can be
-    # explained, but new cases use the newest approved set for their service.
-    supersedes: str | None = None
+    supersedes: str | None = None  # the approved set this one replaces
 
     @model_validator(mode="after")
     def _approval_fields(self) -> CriteriaSet:
@@ -188,8 +182,8 @@ class CriteriaSet(_Strict):
         return hashlib.sha256(canonical.encode()).hexdigest()
 
 
-# Fields added to the language after sets were approved. Left at their defaults they are not part of a set's
-# content, so adding a field never changes the hash of a set a reviewer already approved.
+# Fields added to the language after sets were approved. At their defaults they are left out of a set's content, so
+# adding a field never changes the hash a reviewer approved.
 LATER_DEFAULTS = {"side": None, "same_side": False, "before_procedure": None, "before_label": "the procedure",
                   "supersedes": None, "document": None, "retrieved": None, "below_minimum": "unmet"}
 
