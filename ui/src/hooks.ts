@@ -41,8 +41,7 @@ export function useSecondsLeft(until: string | null | undefined) {
   return left;
 }
 
-/** A count for running text: "No" and "One" read as words, every other number as numerals, which scan faster
- *  (GOV.UK style: "Write all other numbers in numerals (including 2 to 9)"). */
+/** A count for running text: "No" and "One" as words, every other number as numerals, which scan faster (GOV.UK). */
 export function countWords(n: number): string {
   return n === 0 ? "No" : n === 1 ? "One" : String(n);
 }

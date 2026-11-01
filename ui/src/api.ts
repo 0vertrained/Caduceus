@@ -22,7 +22,7 @@ export function setCurrentUser(user: string | null): void {
 }
 
 // The public demo gives each browser its own copy of the cases, named by a random id kept in this browser. A link
-// carrying ?sandbox= (the tour's "link for your phone") joins the same copy from another device.
+// carrying ?sandbox= (the tour's link for a phone) joins the same copy from another device.
 const SANDBOX_KEY = "caduceus.sandbox";
 const SANDBOX_ID = /^[0-9a-f]{32}$/;
 let sandbox: string | null = null;
@@ -90,8 +90,7 @@ export async function api<T>(path: string, init: RequestInit = {}, as: "json" | 
   if (init.body) headers.set("Content-Type", "application/json");
   const res = await fetch(path, { ...init, headers, cache: "no-store" });
   if (!res.ok) {
-    // The API refused the token, or there was none left to send: it ran out, was revoked, or was never good. The
-    // session ends in this tab too. (Signed out, the UI asks the API nothing that needs signing in.)
+    // A refused token (run out, revoked or never good), or none left to send, ends the session in this tab too.
     if (oidc && res.status === 401) await endSession("ended");
     let message = "Something went wrong. Try again in a moment.";
     let refusal: Refusal = {};
@@ -238,13 +237,13 @@ export interface TimelineEntry {
 }
 export interface Timeline { events: number; can_verify: boolean; entries: TimelineEntry[] }
 
-// Exactly what the draft's model saw: de-identified by construction, so it can be kept and shown.
+/** Exactly what the draft's model saw: de-identified by construction, so it can be kept and shown. */
 export interface SentToModel {
   text: string; policy: string; text_sha256: string; vendor: string; cached: boolean;
   input_tokens: number; output_tokens: number; tokens_filled_in: number;
 }
 
-// A payer's request for more on a pended case, and where its answer stands.
+/** A payer's request for more on a pended case, and where its answer stands. */
 export interface PayerReply {
   question: string | null;
   attested: { text: string; by: string; at: string }[];

@@ -2,8 +2,7 @@ import type { CaseView, CriterionResult } from "../../api";
 import { glue, midSentence, oneLine } from "../../hooks";
 import type { PagePanel, Panel } from "./panel";
 
-/** Packet passages that may answer a criterion the record could not. Where to look, not evidence: only the
- *  ordering clinician's answer can mark the criterion met. */
+/** Packet passages that may answer a criterion the record could not: where to look, never evidence. */
 export function Leads({ c, r, open, showing }: {
   c: CaseView; r: CriterionResult; open: (p: Panel) => void; showing: PagePanel | null;
 }) {

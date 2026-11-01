@@ -13,8 +13,7 @@ import { navigable } from "../smart";
 
 const UNREACHABLE = "Caduceus could not be reached. Check your connection, then open Caduceus from the EHR again.";
 
-// Each step is taken once per page load. React runs effects twice while developing, and a launch's state is good
-// for one use only.
+// Each step runs once per page load: React runs effects twice in development, and a launch's state is good once.
 const taken = new Map<string, Promise<unknown>>();
 function once<T>(key: string, step: () => Promise<T>): Promise<T> {
   if (!taken.has(key)) taken.set(key, step());
@@ -36,8 +35,7 @@ function Working({ children }: { children: string }) {
   return <p className="lead ehr__working" role="status"><Clock size={26} /><span>{children}</span></p>;
 }
 
-/** The EHR opened Caduceus with ?iss= and ?launch=. The API checks the EHR, discovers its sign-in endpoints and
- *  returns where the browser goes next: the EHR's own page, which sends it back to /smart/callback. */
+/** The EHR opened Caduceus with ?iss= and ?launch=; the API checks the EHR and names its sign-in page to go to. */
 export function SmartLaunchPage() {
   useTitle("Opening from the EHR");
   const [params] = useSearchParams();
@@ -68,8 +66,7 @@ export function SmartLaunchPage() {
   );
 }
 
-/** The EHR sent the browser back with ?code= and ?state=. The code leaves the address bar at once (it would stay
- *  in the browser's history otherwise) and goes to the API, which exchanges it and reads the record. */
+/** Back from the EHR with ?code= and ?state=: the code leaves the address at once, so history never keeps it. */
 export function SmartCallbackPage() {
   useTitle("Reading the record from the EHR");
   const navigate = useNavigate();
@@ -121,9 +118,7 @@ function Answers({ s }: { s: EhrService }) {
 
 const FIELD = { service: "service", side: "side", payer: "plan" } as const;
 
-/** The record the EHR shared: who the patient is, what the record holds, and a request started from it. The
- *  choices live in the address (?service=, ?side=, ?plan=), so a reload keeps them and the page can be shared within
- *  this copy of the demo. */
+/** The record the EHR shared: who the patient is, what the record holds, and a request started from it. */
 export function EhrRecordPage() {
   const { key } = useParams();
   const navigate = useNavigate();
@@ -132,8 +127,8 @@ export function EhrRecordPage() {
   const [raised, setRaised] = useState<FormError[]>([]);
   const [attempt, setAttempt] = useState(0);
   const [busy, setBusy] = useState(false);
-  // The form answers at once from its own state; the address follows each change, replacing rather than adding
-  // history, so a reload keeps the choices.
+  // The form answers at once from its own state; the address follows each change (?service=, ?side=, ?plan=),
+  // replacing rather than adding history, so a reload or a shared link keeps the choices.
   const [picked, setPicked] = useState(() => ({
     service: params.get("service") ?? "", side: params.get("side") ?? "", plan: params.get("plan") ?? "" }));
   useTitle("Opened from the EHR");

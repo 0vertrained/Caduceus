@@ -17,7 +17,6 @@ export function FaxField({ f, fax, image, error, value, onValue, dob, onDob, onF
   const errId = `err-${f.key}`;
   const describedBy = [`why-${f.key}`, error && error.target !== `tick-${f.key}` ? errId : ""].filter(Boolean).join(" ");
   const invalid = Boolean(error && error.target !== `tick-${f.key}`);
-  // The line it was read from, or the whole page when the line could not be found at all.
   const named = NAMED[f.key === "side" ? "diagnosis" : f.key];  // the side is read from the diagnosis
   const crop = f.box ? <Crop src={image} size={fax.size} box={f.box} label={named} />
     : <WholePage src={image} label={named} />;

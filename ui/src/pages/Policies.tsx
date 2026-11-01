@@ -36,8 +36,7 @@ function Earlier({ s, running }: { s: PolicySet; running: string }) {
   );
 }
 
-/** The criteria each service is checked against, as a reviewer reads them: the policy's own words, where they come
- *  from, who approved them, and whether anything changed since. */
+/** Each service's criteria as a reviewer reads them: the policy's words, their source, approval and fingerprint. */
 export function PoliciesPage() {
   const { data, error } = useResource<Policies>("/api/policies");
   useTitle("Coverage policies");

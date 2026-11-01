@@ -35,7 +35,7 @@ export function Header({ me, onSignOut }: { me: Me | null; onSignOut: () => void
   const location = useLocation();
   const [query, setQuery] = useState(searchTerm(location.state));
   const navigate = useNavigate();
-  // Follow navigation: the box shows the current search, and empties when you leave the results.
+  // The box follows navigation: it shows the current search, and empties on leaving the results.
   useEffect(() => { setQuery(searchTerm(location.state)); }, [location.key, location.state]);
   const canSearch = me?.role === "pa_specialist" || me?.role === "admin";
 

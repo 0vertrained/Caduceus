@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-// The one moment of motion in the product: the seal settles when the approved count goes up.
+/** The one moment of motion in the product: the seal settles when the approved count goes up. */
 export function Seal({ count, full = false }: { count: number; full?: boolean }) {
   const previous = useRef(count);
   const [settling, setSettling] = useState(false);
@@ -24,8 +24,7 @@ export function Seal({ count, full = false }: { count: number; full?: boolean })
   );
 }
 
-/** The small seal: a fine outer ring, a firm inner ring, a check. It means one thing everywhere: a person attested.
- *  Empty (dashed, no check) where a signature is still to come. Decorative: the words beside it say who signed. */
+/** The small seal: a person attested, or, `empty`, a signature still to come. Decorative: the words say who. */
 export function SealMark({ size = 24, empty = false }: { size?: number; empty?: boolean }) {
   return (
     <svg className={`seal-mark${empty ? " seal-mark--empty" : ""}`} width={size} height={size} viewBox="0 0 24 24"
