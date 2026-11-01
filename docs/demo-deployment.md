@@ -22,7 +22,8 @@ and the demo refuses any metered key. Without a key the demo still runs, with dr
 Beside the API, in the same instance, runs the model inside the network: llama.cpp and Qwen2.5-1.5B-Instruct on
 2 vCPU ([infra/model](../infra/model/Dockerfile)). It listens on 127.0.0.1, which nothing outside the instance can
 reach, is built without an HTTPS client and runs with downloads refused, and writes the chart summary a clinician
-sees, in the background, in about half a minute. Cloud Run gives both containers the instance's network, which the
+sees, in the background, in about half a minute. It writes no drafts (`CADUCEUS_IN_VPC_DRAFTS=0`): on 2 vCPU a
+draft would take minutes, so with the outside model switched off, the template writes them. Cloud Run gives both containers the instance's network, which the
 API needs for Ollama Cloud, so the model's isolation rests on how it is built and run; in production it sits in a
 subnet with no route out. The [model-image](../.github/workflows/model-image.yml) workflow builds it (about half an hour, only when
 its folder changes), checks that it answers with no network at all, scans it, and publishes it; the deploy runs the

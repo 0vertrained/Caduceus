@@ -40,6 +40,7 @@ services:
       CADUCEUS_CLINIC_TZ: ${CADUCEUS_CLINIC_TZ:-America/Denver}
       CADUCEUS_IN_VPC_URL: ${CADUCEUS_IN_VPC_URL:-}
       CADUCEUS_IN_VPC_MODEL: ${CADUCEUS_IN_VPC_MODEL:-qwen2.5-1.5b-instruct}
+      CADUCEUS_IN_VPC_DRAFTS: ${CADUCEUS_IN_VPC_DRAFTS:-1}
       CADUCEUS_EXTERNAL_API_KEY: ${CADUCEUS_EXTERNAL_API_KEY:-}
       # Read only with CADUCEUS_AUTH_MODE=oidc. By default the local Keycloak below: the issuer is the address the
       # browser uses, which its tokens name; the signing keys come over the internal network.
