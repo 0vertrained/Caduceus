@@ -1,7 +1,5 @@
-# Target deployment for Caduceus on AWS. A skeleton: it describes the network, data and compute layout the
-# spec commits to (sections 9 and 12) and passes a static policy scan, but it has not been applied. The
-# service's Postgres repository, which RDS below is for, is on the roadmap; today the API stores state in
-# SQLite. See infra/terraform/README.md.
+# Target deployment for Caduceus on AWS: the network, data and compute layout the spec commits to (sections 9 and
+# 12). A skeleton that passes a static policy scan but has not been applied; see infra/terraform/README.md.
 
 terraform {
   required_version = ">= 1.9"

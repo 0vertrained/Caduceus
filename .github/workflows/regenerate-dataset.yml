@@ -1,9 +1,7 @@
 name: regenerate-dataset
 
-# When the dataset builder changes, the data must come from Synthea, not from an edit by hand. Push the builder
-# change to the dataset-regen branch: this builds Synthea from source, regenerates data/ with the network switched
-# off (exactly as CI's dataset check does), and publishes the result to the dataset-output branch to review and
-# commit. CI's dataset check then proves the committed data regenerates byte for byte.
+# When the dataset builder changes, the data must come from Synthea, not an edit by hand. A push to dataset-regen
+# regenerates data/ as CI's dataset check does and publishes it to the dataset-output branch to review and commit.
 on:
   push:
     branches: [dataset-regen]

@@ -92,8 +92,8 @@ jobs:
           if-no-files-found: error
 
   publish:
-    # A separate job, so the token that can write to the repository never runs alongside installed packages, the
-    # browser or the model: this job only downloads the recording and pushes it.
+    # A separate job, so the token that can write to the repository never runs beside installed packages, the
+    # browser or the model.
     name: Publish the recording to the walkthrough branch
     needs: record
     runs-on: ubuntu-24.04

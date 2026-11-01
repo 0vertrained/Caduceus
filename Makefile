@@ -5,16 +5,13 @@ SHELL := /bin/bash
 PY      ?= .venv/bin/python
 DATA    ?= data
 SYN_DIR ?= .synthea
-# Synthea is built from source at a pinned commit with its libraries upgraded (tools/synthea), not downloaded:
-# upstream's jar bundles library versions with known vulnerabilities.
+# Synthea is built from source with its libraries upgraded (tools/synthea): upstream's jar bundles vulnerable ones.
 SYN_JAR  = $(SYN_DIR)/synthea.jar
 SYN_ARGS = -s 20261029 -cs 20261029 -r 20261028 -e 20261029 -p 120 -a 55-89 \
   --exporter.fhir.export=true --exporter.ccda.export=false --exporter.csv.export=false \
   --exporter.hospital.fhir.export=false --exporter.practitioner.fhir.export=false \
   --exporter.years_of_history=5 --generate.append_numbers_to_person_names=false
-# Two inputs Synthea would otherwise take from the machine: the simulation runs until today unless -e pins an end
-# date, and timestamps are written in the local zone. Both are pinned (with the locale) so every machine, a laptop
-# in Denver or a CI runner in UTC, produces the same bytes. Mountain time suits a New Mexico health system.
+# The end date (-e), time zone and locale are pinned so every machine produces the same bytes.
 DATA_TZ   ?= America/Denver
 JAVA_PINS  = -Duser.timezone=$(DATA_TZ) -Duser.language=en -Duser.country=US -Dfile.encoding=UTF-8
 # Synthea runs with the network switched off: it needs none, and a library flaw found later cannot be reached.

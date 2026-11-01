@@ -1,12 +1,12 @@
 # syntax=docker/dockerfile:1.10
-# The model inside the network: llama.cpp's server with Qwen2.5-1.5B-Instruct (Apache 2.0), on a CPU. It does the
-# work that needs the patient's details (the clinician's chart summary), so it is built to have nothing to call out with:
-# - built from source at a pinned commit, without its HTTPS client (LLAMA_OPENSSL=OFF), its web UI (which can
-#   download models), RPC (the backend with past remote-code-execution advisories), tests or examples;
-# - the weights baked in, pinned by revision and sha256, and served with --offline;
-# - listening on 127.0.0.1 by default, a sidecar's own address: on Cloud Run only the API container takes traffic.
+# The model inside the network: llama.cpp's server with Qwen2.5-1.5B-Instruct (Apache 2.0), on a CPU. It sees the
+# patient's details, so it is built with nothing to call out with:
+# - from source at a pinned commit, without its HTTPS client, its web UI (which can download models) or RPC (the
+#   backend with past remote-code-execution advisories);
+# - with the weights baked in, pinned by revision and sha256, and served with --offline;
+# - listening on 127.0.0.1 by default, a sidecar's own address.
 # Grype cannot see a library compiled from source, so watch https://github.com/ggml-org/llama.cpp/security/advisories
-# and move the pin when one lands. CI builds this image only when this folder changes (model-image.yml).
+# and move the pin when one lands.
 
 # The same Wolfi base, at the same digest, in both stages: newer apks on an older base can fail on glibc.
 FROM cgr.dev/chainguard/wolfi-base:latest@sha256:88a20e2d017bd20cdc0cb3910de603e7bea9512a6c351a8dd3c9df212ab03d73 AS build
