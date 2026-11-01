@@ -57,6 +57,9 @@ SANDBOX_ID = re.compile(r"[0-9a-f]{32}")
 MAX_SANDBOXES = 60           # each is a few hundred kilobytes; the least recently used goes first
 TEMPLATE_MAX_AGE = timedelta(hours=6)
 DEMO_EHR_RECORDS = 3         # patients opened from an EHR that one visitor's copy holds at once
+# A view of a case is recorded once a minute per person: a page that refreshes itself while a payer or the model
+# works is one view, not one per refresh. Someone who comes back later is recorded again.
+VIEW_AGAIN = timedelta(minutes=1)
 
 
 class TooManySandboxes(Exception):
@@ -309,6 +312,7 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
     smart = SmartLaunch(settings.smart_allowed, settings.smart_redirects, settings.smart_client_id,
                         transport=ehr_transport, limits=ehr_limits)
     app.state.smart = smart
+    app.state.view_again = VIEW_AGAIN
     windows = lookback(live.svc.workflow.in_use())  # how far back the record is read: the criteria's own windows
 
     @app.middleware("http")
@@ -405,8 +409,15 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
         faxes = live.svc.workflow.faxes
         return next((f for f in faxes.all() if f.case_id == case_id), None) if faxes else None
 
+    def viewed(who: Principal, action: str, case_id: str) -> None:
+        """Record that a person opened a case, unless they did within the last minute (VIEW_AGAIN)."""
+        last = next((e for e in reversed(live.svc.audit.events(case_id)) if e.actor == who.id and e.action == action),
+                    None)
+        if last is None or datetime.now(UTC) - datetime.fromisoformat(last.ts) >= app.state.view_again:
+            live.svc.audit.append(who.id, who.role, action, case_id)
+
     def view(case: Case, who: Principal) -> dict:
-        live.svc.audit.append(who.id, who.role, "case.viewed", case.id)
+        viewed(who, "case.viewed", case.id)
         out = live.presenter.case(load(case.id), now(), who.id, read_only=who.role != Role.PA_SPECIALIST)
         fax = fax_of(case.id)
         out["came_by_fax"] = fax and live.presenter.came_by_fax(
@@ -798,7 +809,7 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
         case = load(case_id)
         if case.ordering_clinician["id"] != who.clinician_id:
             raise HTTPException(403, "Only the ordering clinician can see this request.")
-        live.svc.audit.append(who.id, who.role, "attestation.viewed", case_id)
+        viewed(who, "attestation.viewed", case_id)
         return live.presenter.attestation(case, summary_of(case), now())
 
     @app.post("/api/attestations/{case_id}")
