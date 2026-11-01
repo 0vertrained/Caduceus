@@ -15,7 +15,7 @@ from caduceus.auth import Principal, Role
 from caduceus.smart import LaunchRefused, SmartLaunch
 from caduceus.workflow import ActionRefused
 
-DEMO_EHR_RECORDS = 3         # patients opened from an EHR that one visitor's copy holds at once
+DEMO_EHR_RECORDS = 3  # patients opened from an EHR that one visitor's copy holds at once
 
 router = APIRouter()
 
@@ -28,14 +28,13 @@ SmartDep = Annotated[SmartLaunch, Depends(get_smart)]
 
 
 def ehr_step(request: Request, live: Live, smart: SmartLaunch) -> str | None:
-    """Checks before a step of a launch talks to the EHR: the launch is set up here, the request names the
-    visitor's own copy of the demo (a shared record never lands in the shared set), and the launch limits."""
+    """The checks before a step of a launch talks to the EHR; returns the visitor's sandbox id in the demo."""
     # Not set up, or nowhere to keep what a launch reads (the Postgres store keeps no EHR records yet): refused
     # before anything is fetched, rather than after reading a whole record only to drop it.
     if not smart.enabled or live.svc.workflow.launched is None:
         raise HTTPException(404, "Opening Caduceus from an EHR is not set up here.")
     sandbox = request.headers.get(SANDBOX_HEADER) if live.demo else None
-    if live.demo and not sandbox:
+    if live.demo and not sandbox:  # a record from an EHR never lands in the demo's shared set
         raise HTTPException(400, "Open this page from the Caduceus demo site.")
     limits = request.app.state.demo_limits
     wait = limits.ehr_launch(visitor_of(request)) if limits else 0

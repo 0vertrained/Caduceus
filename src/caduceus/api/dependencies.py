@@ -39,7 +39,7 @@ Specialist = Annotated[Principal, Depends(role(Role.PA_SPECIALIST))]
 Clinician = Annotated[Principal, Depends(role(Role.CLINICIAN))]
 Admin = Annotated[Principal, Depends(role(Role.ADMIN))]
 AuditorOrAdmin = Annotated[Principal, Depends(role(Role.AUDITOR, Role.ADMIN))]
-# Everyone who reads the queue and its cases. An ordering clinician sees only what is asked of them.
+# Everyone who works the queue or oversees it; an ordering clinician sees only what is asked of them.
 TeamMember = Annotated[Principal, Depends(role(Role.PA_SPECIALIST, Role.ADMIN, Role.AUDITOR))]
 
 

@@ -12,8 +12,8 @@ from caduceus.auth import Principal, Role
 from caduceus.cases import EHR_RECORD, Case, Fax
 from caduceus.drafting import Drafter
 
-# A view of a case is recorded once a minute per person: a page that refreshes itself while a payer or the model
-# works is one view, not one per refresh. Someone who comes back later is recorded again.
+# A page that refreshes itself while a payer or the model works is one view, not one per refresh; someone who comes
+# back later is recorded again.
 VIEW_AGAIN = timedelta(minutes=1)
 
 
@@ -37,7 +37,6 @@ def load_case(live: Live, case_id: str) -> Case:
 
 
 def fax_of(live: Live, case_id: str) -> Fax | None:
-    """The fax a case was created from, if it came by fax."""
     faxes = live.svc.workflow.faxes
     return next((f for f in faxes.all() if f.case_id == case_id), None) if faxes else None
 
@@ -48,7 +47,7 @@ def summary_of(case: Case) -> dict:
 
 
 def record_view(request: Request, who: Principal, action: str, case_id: str) -> None:
-    """Record that a person opened a case, unless they did within the last minute (VIEW_AGAIN)."""
+    """Audit that a person opened a case, unless they did within the last VIEW_AGAIN."""
     live: Live = request.app.state.live
     last = next((e for e in reversed(live.svc.audit.events(case_id)) if e.actor == who.id and e.action == action),
                 None)

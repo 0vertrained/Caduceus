@@ -40,6 +40,7 @@ def fax_view(live: Live, fax: Fax, detail: bool = False) -> dict:
 
 
 def read_new_faxes(live: Live) -> bool:
+    """Read the faxes that have arrived; False where this deployment cannot read faxes."""
     try:
         live.svc.workflow.read_faxes()
         return True
