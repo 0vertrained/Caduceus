@@ -27,8 +27,10 @@ what went wrong. The engagement around it: the [discovery memo](docs/engagement/
 [usability test kit](docs/research/usability-test-kit.md). Running it: the [runbook](docs/runbook.md) and the
 [admin guide](docs/admin-guide.md).
 
-**[Watch the 98-second walkthrough](https://caduceusdemo.netlify.app/demo.mp4)**: a faxed referral, the evidence,
-the clinician's attestation, the payer's question and the clinician's note, a denial and its appeal, the audit trail.
+**[Watch the 2½-minute walkthrough](https://caduceusdemo.netlify.app/demo.mp4)**: a faxed referral, the evidence,
+the clinician's attestation under a chart summary written inside the network, three cases built to show one thing
+each, the payer's question and the clinician's note, a denial and its appeal, the audit trail and the
+administration page. It was recorded with the in-network model running, as the demo runs.
 
 | The queue, with referrals that arrived by fax | Checking a poor fax against the page |
 |---|---|
@@ -36,15 +38,23 @@ the clinician's attestation, the payer's question and the clinician's note, a de
 
 | Evidence for a criterion | What was sent to the model |
 |---|---|
-| ![A criterion beside the visit note, with the supporting sentence highlighted](docs/screenshots/case-evidence.png) | ![The exact de-identified text Kimi K2.6 saw, with every placeholder marked](docs/screenshots/sent-to-model.png) |
+| ![A criterion beside the visit note, with the supporting sentence highlighted](docs/screenshots/case-evidence.png) | ![What Kimi K2.6 was sent: identifiers taken out, the stamp verified, the text scanned again](docs/screenshots/sent-to-model.png) |
+
+| The chart summary a clinician reads, written inside the network | Criteria compiled from Medicare's own words |
+|---|---|
+| ![Dr. Reyes's request to attest: what her patient's chart documents, summarized by Qwen2.5-1.5B inside Mesa Verde's network, then what it does not say, from the record's facts](docs/screenshots/attest.png) | ![The CPAP policy's source, the reviewer who approved it, and the fingerprint that locks it](docs/screenshots/policies.png) |
+
+| An expedited request | Where to look in a 9-page packet | The other knee |
+|---|---|---|
+| ![A CPAP request marked expedited, with the clinician's reason on the case](docs/screenshots/expedited.png) | ![A passage in outside therapy notes that may answer a criterion, shown as where to look, not as evidence](docs/screenshots/where-to-look.png) | ![A request for the right knee stopped, because the chart documents the left](docs/screenshots/other-knee.png) |
 
 | The payer asks a question | A denial, and the appeal drafted from the policy |
 |---|---|
 | ![Humana asks for the note behind the clinician's attestation](docs/screenshots/payer-question.png) | ![UnitedHealthcare's specific reason, the policy sentence and the record, side by side](docs/screenshots/denial.png) |
 
-| The case history, sealed | Outcomes, counted from the audit log |
-|---|---|
-| ![Every step, who took it and when, in plain words](docs/screenshots/history.png) | ![A ledger of what the agent and people did, and where patient information went](docs/screenshots/outcomes.png) |
+| The case history, sealed | Where patient information can go | Outcomes, counted from the audit log |
+|---|---|---|
+| ![Every step, who took it and when, in plain words](docs/screenshots/history.png) | ![The administration page: the model inside the network, the de-identified one outside it, and the switch that turns it off](docs/screenshots/admin.png) | ![A ledger of what the agent and people did, and where patient information went](docs/screenshots/outcomes.png) |
 
 ## What is built, and how it is checked
 
