@@ -675,7 +675,8 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
             intact, count = True, svc.audit.verify()
         except TamperDetected:
             intact, count = False, len(events)
-        routes = svc.router.describe() if svc.router else {"in_vpc": None, "external": None, "external_on": False}
+        routes = svc.router.describe() if svc.router else {"in_vpc": None, "external": None, "external_on": False,
+                                                            "drafts_in_vpc": False}
         return {
             "routes": routes,
             "database": ("Postgres" if svc.database is not None else

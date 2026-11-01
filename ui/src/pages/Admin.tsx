@@ -5,7 +5,7 @@ import { glue, useResource, useTitle } from "../hooks";
 
 interface Model { name: string; model: string }
 interface AdminView {
-  routes: { in_vpc: Model | null; external: Model | null; external_on: boolean };
+  routes: { in_vpc: Model | null; external: Model | null; external_on: boolean; drafts_in_vpc: boolean };
   database: string; records: string; sign_in: string;
   payer: { review_seconds: number };
   people: { id: string; name: string; role: string }[];
@@ -23,6 +23,8 @@ function ExternalSwitch({ view, onChange }: { view: AdminView; onChange: (v: Adm
   const [error, setError] = useState<string | null>(null);
   const [said, setSaid] = useState("");
   const on = view.routes.external_on;
+  // Where drafts go without it: the model inside the network, unless it is kept for work on patients' details alone.
+  const instead = view.routes.drafts_in_vpc ? "inside the network" : "from the template";
   const flip = async () => {
     setBusy(true);
     setError(null);
@@ -38,8 +40,8 @@ function ExternalSwitch({ view, onChange }: { view: AdminView; onChange: (v: Adm
   return (
     <div className={`admin__switch${on ? "" : " admin__switch--off"}`}>
       <p><strong>{on ? "The external model is on." : "The external model is off."}</strong> {on
-        ? "Turning it off stops every call to it at once. Drafts are then written inside the network, or from the template."
-        : "Nothing is sent to it. Drafts are written inside the network, or from the template, until it is turned back on."}
+        ? `Turning it off stops every call to it at once. Drafts are then written ${instead}.`
+        : `Nothing is sent to it. Drafts are written ${instead} until it is turned back on.`}
       </p>
       <button type="button" className={`btn ${on ? "btn--secondary" : "btn--primary"} btn--start`} disabled={busy}
               data-busy={busy || undefined} onClick={() => void flip()}>

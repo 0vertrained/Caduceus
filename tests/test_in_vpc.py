@@ -149,3 +149,19 @@ def test_a_summary_that_was_lost_is_not_waited_for(env):
     assert client.get(f"/api/attestations/{CASE}", headers=REYES).json()["chart_summary_pending"] is True
     svc.workflow.now = lambda: T0 + timedelta(minutes=6)
     assert client.get(f"/api/attestations/{CASE}", headers=REYES).json()["chart_summary_pending"] is False
+
+
+def test_where_the_in_network_model_is_kept_for_summaries_a_switched_off_route_drafts_from_the_template(env):
+    """The demo's model runs on a CPU: a draft on a request's path would outlast the request. With
+    CADUCEUS_IN_VPC_DRAFTS=0, turning the external model off sends drafts to the template, not to that model."""
+    svc, client, model, _ = env
+    deid = svc.workflow.drafter._deid
+    in_vpc = svc.router._in_vpc
+    kept = Router(in_vpc, OpenAICompatibleProvider("http://outside/v1", "kimi-k2.6", client=httpx.Client(
+        transport=httpx.MockTransport(lambda r: httpx.Response(500)))), deid, drafts_in_vpc=False)
+    kept.switch_external(False)
+    assert kept.describe()["drafts_in_vpc"] is False and kept.describe()["external_on"] is False
+    model.sent.clear()
+    case = svc.cases.get(CASE)
+    draft = Drafter(kept, deid).draft(case, svc.store.record(case.patient_id, case.id).patient)
+    assert draft["route"] == "template" and model.sent == []

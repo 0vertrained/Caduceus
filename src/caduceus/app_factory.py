@@ -71,6 +71,9 @@ class Settings:
     fhir_base_url: str | None = _env("CADUCEUS_FHIR_BASE_URL")
     in_vpc_url: str | None = _env("CADUCEUS_IN_VPC_URL")
     in_vpc_model: str = _env("CADUCEUS_IN_VPC_MODEL", "llama3.1:8b")
+    # Whether the in-VPC model also writes de-identified drafts when the external model is off or absent. "0" keeps
+    # it for PHI work alone, as the demo does: a small model on a CPU would hold a request past its time limit.
+    in_vpc_drafts: str = _env("CADUCEUS_IN_VPC_DRAFTS", "1")
     # The external model only ever sees de-identified, stamped text (the router enforces it). anthropic is billed
     # per token; ollama (Ollama Cloud) is a subscription with fixed limits; stub is for development and tests.
     external_provider: str = _env("CADUCEUS_EXTERNAL_PROVIDER", "anthropic")
@@ -205,7 +208,7 @@ def build_services(settings: Settings | None = None, conn: sqlite3.Connection | 
                   else s.data_dir / "recorded" / "completions.json" if s.auth_mode == "demo" else None)
     if external is not None or (recordings is not None and recordings.exists()):
         external = CachingProvider(external, recordings, model=s.external_model)
-    router = Router(in_vpc, external, deid) if (in_vpc or external) else None
+    router = Router(in_vpc, external, deid, drafts_in_vpc=s.in_vpc_drafts != "0") if (in_vpc or external) else None
     if router is not None:  # an administrator's last switch of the external route holds across restarts
         switched = [e for e in audit.events() if e.action == "admin.external_route"]
         if switched:
