@@ -232,8 +232,10 @@ await shot(page, "05-case-sent-for-attestation");
 await axe(page, "05-case-sent-for-attestation");
 const caseUrl = page.url();
 
-// The clinician, on a phone.
-const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, bypassCSP: true });
+// The clinician, on a phone: another device, at an address of its own, so its requests count toward the demo's
+// limits apart from the desk's, as they would.
+const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true,
+  bypassCSP: true, extraHTTPHeaders: { "x-nf-client-connection-ip": "198.51.100.23" } });
 await share(phone);
 const doc = await phone.newPage();
 await signIn(doc, "Dr. Ana Reyes");
@@ -389,9 +391,8 @@ await page.getByRole("status").filter({ hasText: "The external model is on again
 // browser only navigates to the EHR and back and talks to nothing but /api.
 const ehrIss = process.env.E2E_SMART_ISS;
 if (!ehrIss) report.failures.push("ehr: E2E_SMART_ISS is not set; run the walk through scripts/e2e.sh");
-// It comes as a visitor of its own, at the address Netlify would report, in the same copy. Here the API serves the
-// UI's files too, and they count toward the demo's 300 requests per visitor in five minutes: the walk as one
-// visitor would come close to that, and the last pages would be refused.
+// It comes as a visitor of its own, at the address Netlify would report, in the same copy: the walk as one visitor
+// would come close to the demo's 300 API requests per visitor in five minutes, and the last pages would be refused.
 const strict = await browser.newContext({ viewport: { width: 1280, height: 900 },
   extraHTTPHeaders: { "x-nf-client-connection-ip": "203.0.113.7" } });
 await share(strict);

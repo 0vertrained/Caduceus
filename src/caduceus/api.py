@@ -351,9 +351,11 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
 
     @app.middleware("http")
     async def limit_demo_requests(request: Request, call_next):
-        """Runs after the signature check: only requests that came through the site count."""
+        """Runs after the signature check: only requests that came through the site count. Only the API's: the
+        demo's pages and their files are Netlify's to serve, so here they come only from a walk on one machine."""
         limits = request.app.state.demo_limits
-        if limits is not None and request.url.path not in NOT_COUNTED:
+        path = request.url.path
+        if limits is not None and path.startswith("/api/") and path not in NOT_COUNTED:
             visitor = visitor_of(request)
             wait = limits.check(visitor, write=request.method in ("POST", "PUT", "PATCH", "DELETE"))
             if wait:
