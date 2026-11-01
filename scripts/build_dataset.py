@@ -1,16 +1,10 @@
-"""Build the Caduceus development dataset from a raw Synthea export.
+"""Build the development dataset from a raw Synthea export, deterministically for a given export.
 
     python scripts/build_dataset.py --synthea <synthea-out>/fhir --out data
 
-1. Pick living Synthea patients whose generated history fits each scenario (for example, a patient Synthea gave
-   essential hypertension for the CPAP case that qualifies through a comorbidity).
-2. Trim each bundle to the recent, relevant part of the record (Synthea writes full lifetimes).
-3. Write a per-case overlay: the referral packet as DocumentReference pages, and the structured resources the
-   criteria need, each pointing back to the sentence in the note it came from.
-4. Write data/cases/cases.json with the expected determination for every criterion. Labels are known by
-   construction, which is what makes the evals honest.
-
-Everything is deterministic for a given Synthea export.
+Each scenario gets a living Synthea patient whose history fits it, trimmed to the recent record, and an overlay with
+the referral packet's pages and the resources the criteria need, each pointing at the sentence it came from. The
+expected answer for every criterion is known by construction.
 """
 
 from __future__ import annotations
@@ -186,8 +180,7 @@ def knee(o: Overlay, variant: str, synthea_oa: bool) -> dict:
     s1 = "Right knee pain for several years, now limiting walking to one block and making stairs difficult."
     visit, _ = o.note("visit", "Visit note", d(20), clin["name"], ["Orthopedic consultation.", s1,
                       "Exam shows crepitus and reduced range of motion."])
-    # The orthopedist charts the knee with its side, even when the problem list (Synthea) says only "knee": a
-    # knee replacement is for one knee, and the criteria check that the diagnosis is on that side.
+    # Charted with its side even where Synthea's problem list says only "knee": the criteria check the side.
     o.condition("oa", ICD10, "M17.11", "Unilateral primary osteoarthritis, right knee", 900, visit, s1)
     labels = {"oa_diagnosis": "met"}
 
@@ -266,7 +259,7 @@ def cpap(o: Overlay, variant: str, synthea_osa: bool) -> dict:
 
 
 SCENARIOS = [
-    # case id, service, variant, patient requirement, payer, due offset (hours from seeding), urgency
+    # case id, service, variant, patient requirement, payer, hours from seeding until due
     ("2026-1043", "lumbar", "undocumented_red_flags", {"without": ["278860009"]}, "Humana Medicare Advantage", 1.5),
     ("2026-1041", "knee", "all_met", {"with": ["239873007"]}, "Medicare", 4),
     ("2026-1038", "cpap", "mild_with_htn", {"with": ["59621000"]}, "UnitedHealthcare Medicare Advantage", 4),
@@ -345,8 +338,8 @@ def main() -> None:
     ap.add_argument("--out", type=Path, default=Path("data"))
     args = ap.parse_args()
 
-    # Order by the patient's id, which is in the data, not by file name: Synthea names files after patients, and
-    # an accented name ("González") is spelled differently on disk depending on the machine's locale.
+    # By patient id, not file name: Synthea names files after patients, and an accented name is spelled differently
+    # on disk depending on the machine's locale.
     loaded = []
     for f in args.synthea.glob("*.json"):
         if f.name.startswith(("hospital", "practitioner")):

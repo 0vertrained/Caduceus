@@ -2,26 +2,11 @@
 
     python scripts/build_hard_set.py --out data/hard
 
-Two splits from two seeds: `dev` (18 cases) for developing retrieval and fixing the engine, and `heldout`
-(36 cases), which is run once and never tuned against. Held-out packets also use different wording: every
-evidence phrase bank is split, so retrieval meets phrasings it was never developed on.
-
-For each case, every criterion is given a state from a fixed list (below). The state fixes three things:
-- the structured FHIR resources the engine reads,
-- the sentences that go into the packet, and which of them bear on the criterion (the retrieval gold),
-- the expected determination, written from the approved criteria set and its policy sentence, never by running
-  the engine. Information that is only in the packet's text does not make a criterion met: the engine reads the
-  structured record, and text-only evidence is what retrieval and the clinician's attestation are for.
-
-Most states are ordinary. The rest are record problems seen in real charts: a diagnosis entered in error, a code
-retired from ICD-10-CM, therapy still in progress, the wrong knee, a sleep evaluation dated after the test, an
-X-ray of the chest instead of the spine, a duration known only from when a problem was charted. The list was
-written by the engine's author, after reading the engine, so for the engine this is a stress test of known record
-shapes, not a blind benchmark. For retrieval it is held out: the wording was written after retrieval was committed.
-
-Packets have 7 to 14 pages in a shuffled order: fax cover, referral form, problem and medication lists, visit
-notes with copied-forward text, therapy notes, imaging and sleep reports, labs, insurance and questionnaires.
-A quarter of pages carry OCR damage. Everything is synthetic: no name, date or number belongs to a real person.
+Two splits from two seeds: `dev` (18 cases) and `heldout` (36 cases, never tuned against, worded from its own phrase
+banks). Each criterion gets a state from the lists below, and the state fixes the structured resources, the packet
+sentences that bear on the criterion, and the expected answer, written from the policy rather than by running the
+engine. Text found only in the packet never makes a criterion met. Packets run to 7-14 shuffled pages, a quarter of
+them OCR-damaged, and everything is synthetic.
 """
 
 from __future__ import annotations

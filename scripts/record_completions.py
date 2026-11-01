@@ -1,12 +1,8 @@
-"""Record the external model's replies for the public demo, so it can start without calling the model.
+"""Record the external model's replies for the public demo, so a cold start replays them instead of calling it.
 
-Runs the demo's story through the real pipeline with a live model on the de-identified route: every case is
-seeded and drafted, every case with an unanswered criterion is attested "yes" by its ordering clinician and drafted
-again, and every case ready to send is approved and sent, so a denial's appeal is drafted too. Every reply is
-written to a JSON file, keyed by the exact request (model, instructions, text and limit). Replies already in the
-file are reused, not requested again. Only de-identified text was ever sent, so the file holds no PHI, and it
-records exactly what went out and what came back. The demo's deploy runs this before it builds the image, so a cold
-start replays these replies instead of calling the model.
+Runs the demo's story through the real pipeline on the de-identified route (drafts, attestations, approvals and an
+appeal) and writes each reply keyed by its exact request, reusing replies already recorded. Only de-identified text
+is ever sent, so the file holds no PHI.
 
     CADUCEUS_EXTERNAL_PROVIDER=ollama CADUCEUS_EXTERNAL_API_KEY=... \\
         python scripts/record_completions.py data/recorded/completions.json
@@ -71,7 +67,7 @@ def main(argv: list[str] | None = None) -> int:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(recorded, indent=1, sort_keys=True) + "\n")
     print(f"{len(recorded)} replies from {next(iter(recorded.values()))['model']} recorded in {out}")
-    if missed:  # partial is still useful: those cases fall back to the template, and the deploy says which
+    if missed:  # those cases fall back to the template
         print(f"Not recorded, after 3 tries: {', '.join(missed)} ({'; '.join(reasons)})", file=sys.stderr)
     return 0
 

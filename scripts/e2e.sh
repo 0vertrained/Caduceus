@@ -25,9 +25,7 @@ export CADUCEUS_PAYER_REVIEW_SECONDS="${CADUCEUS_PAYER_REVIEW_SECONDS:-4}"  # th
 CADUCEUS_EXTERNAL_PROVIDER=stub CADUCEUS_AUTH_MODE=dev python scripts/record_completions.py "$work/recorded.json" >/dev/null
 export CADUCEUS_MODEL_RECORDINGS="$work/recorded.json"
 
-# A fake SMART on FHIR server plays the EHR (tests/fake_smart.py), so the walk never calls the real launcher: the
-# API discovers it, exchanges the code with it and reads the record from it, and the browser is sent to its
-# authorize page and back. It answers on this machine only.
+# A fake SMART server (tests/fake_smart.py) plays the EHR on this machine, so the walk never calls the real launcher.
 export CADUCEUS_SMART_ISS="http://127.0.0.1:$smart_port/v/r4/fhir"
 export CADUCEUS_SMART_REDIRECT_URIS="http://127.0.0.1:$port/smart/callback"
 python -m tests.fake_smart --port "$smart_port" &

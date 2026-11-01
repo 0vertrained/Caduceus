@@ -1,12 +1,8 @@
 #!/usr/bin/env bash
-# Run a command with the network switched off: a new network namespace holding only an unconfigured loopback.
-# Synthea runs this way: it needs no network, so a flaw found later in one of its libraries cannot be reached.
+# Run a command with the network switched off, so a flaw found later in one of its libraries cannot be reached:
+# a new network namespace on Linux, sandbox-exec on macOS. A probe confirms nothing outside is reachable first, and
+# where isolation is not possible the script refuses unless CADUCEUS_ALLOW_NETWORK=1.
 #   scripts/offline.sh java -jar synthea.jar ...
-#
-# Linux: unshare, as root, through passwordless sudo (dropping back to the calling user), or in an
-# unprivileged user namespace. macOS: sandbox-exec with outbound and inbound networking denied. Before the
-# command runs, a probe confirms nothing outside is reachable. Anywhere isolation is not possible the script
-# refuses, unless CADUCEUS_ALLOW_NETWORK=1 says to run with the network on.
 set -euo pipefail
 [ $# -gt 0 ] || { echo "usage: $0 command [args...]" >&2; exit 2; }
 

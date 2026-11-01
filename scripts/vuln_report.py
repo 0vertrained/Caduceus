@@ -2,7 +2,7 @@
 
     python scripts/vuln_report.py grype.json --label "Container image" --fail-on fixed
 
---fail-on fixed  fail when any finding has a released fix (we can and must act on it)
+--fail-on fixed  fail when any finding has a released fix, which can be acted on
 --fail-on any    fail on every finding, fixed or not
 --fail-on none   report only
 
@@ -89,7 +89,6 @@ def main(argv: list[str] | None = None) -> int:
                 f"{len(unfixed)} without one ({counts(unfixed)})")
     title = escape_property(args.label)
     print(f"::notice title={title}::{escape(headline)}")
-    # The full list, split across notices because one annotation holds about 4,000 characters.
     groups = chunks([escape(describe(f)) for f in items])[: MAX_ANNOTATIONS - 1]
     for n, group in enumerate(groups, 1):
         print(f"::notice title={escape_property(f'{args.label} - every finding, part {n} of {len(groups)}')}::"

@@ -1,14 +1,9 @@
-"""Which model should write the drafts? The same de-identified requests, every candidate model, the same checks.
+"""Which model should write the drafts? Every candidate on the same de-identified requests, with the same checks:
+deterministic rules, and a judge model that is not a contestant listing claims the facts do not support. Only what the
+router lets leave is ever sent.
 
     python scripts/bakeoff.py capture evals/bakeoff/requests.json      # the demo's requests, via a stub (local)
     OLLAMA_API_KEY=... python scripts/bakeoff.py run evals/bakeoff/requests.json out/   # every model (CI)
-
-Each reply is scored two ways.
-- Rules (deterministic): placeholders invented, numbers not in the facts, length against the instructions, the
-  criteria it mentions, that a pending attestation is stated, and for appeals that the reason and policy are quoted.
-- A judge model that is not a contestant reads the facts and the reply and lists any claim the facts do not support.
-
-Only de-identified text is involved: the requests are what the router lets leave, and nothing else is sent.
 """
 
 from __future__ import annotations
@@ -26,8 +21,8 @@ JUDGES = ["qwen3.5", "mistral-large-3", "deepseek-v3.1"]
 TOKEN = re.compile(r"\[[A-Z_]+_\d+\]")
 NUMBER = re.compile(r"(?<![\w\[])\d+(?:\.\d+)?(?![\w\]])")
 WORDS = {"draft_request": (90, 140), "draft_appeal": (120, 180)}
-# Models write typographic hyphens, dashes and quotes ("apnea\u2011hypopnea", \u201c...\u201d). Compare plain forms,
-# or a faithful quote is scored as missing.
+# Models write typographic hyphens, dashes and quotes. Comparing plain forms keeps a faithful quote from scoring as
+# missing.
 PLAIN = str.maketrans({c: "-" for c in "\u2010\u2011\u2012\u2013\u2014\u2015\u2212"}
                       | {c: '"' for c in "\u201c\u201d\u201e"} | {c: "'" for c in "\u2018\u2019"}
                       | {c: " " for c in "\u00a0\u202f\u2009"})

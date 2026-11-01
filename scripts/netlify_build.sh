@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# Netlify's build for the public demo front end. Netlify runs it from ui/ (the base directory in netlify.toml).
-# It writes the API's address into the proxy rule, then builds the UI. Netlify reads redirect rules after the
-# build, so the address lives in the site's environment, not in the repository.
+# Netlify's build for the public demo, run from ui/: write the API's address into the proxy rule, then build the UI.
+# Netlify reads redirect rules after the build, so the address lives in the site's environment, not the repository.
 set -euo pipefail
 
 config="$(cd "$(dirname "$0")/.." && pwd)/netlify.toml"

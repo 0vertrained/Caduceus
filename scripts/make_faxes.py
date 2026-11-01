@@ -1,8 +1,5 @@
-"""Render the demo's faxed referral cover sheets: synthetic patients, three print qualities.
-
-Each fax is the cover sheet of a referral whose other pages are already in the dataset. Clean is a sharp scan,
-typical is a slightly skewed 200 dpi fax, and degraded is a skewed, speckled, low-resolution fax, the kind that makes
-OCR guess. The expected value of every field is written next to the images (faxes.json), for the evaluation.
+"""Render the demo's faxed referral cover sheets for synthetic patients, clean, typical and degraded, with the
+expected value of every field beside them (faxes.json) for the evaluation.
 
     python3 scripts/make_faxes.py data/faxes      # needs Pillow and the DejaVu fonts; output is committed
 """
