@@ -11,7 +11,7 @@ import re
 from collections.abc import Iterator
 
 # "No fever", "denies cancer": the negation governs what follows it, up to a word that ends its scope.
-NEGATIONS = frozenset("no not without never none nor neither denies denied lacks lacking".split())
+NEGATIONS = frozenset("no not without never none nor neither denies denied lacks lacking absence".split())
 SCOPE_ENDS = frozenset("but however although though yet except while whereas which who reports reported".split())
 # "Screen: negative", "pulses absent", "ruled out": a result that negates what it is about, on either side.
 RESULTS = frozenset({"negative", "absent"})
@@ -31,7 +31,7 @@ GENERIC = frozenset("""
     meet criterion criteria requirement satisfy consistent evidence present recent recently prior previous
     previously current currently ongoing total period duration history finding result
     undergo underwent undergone receive complete try tried perform conduct administer initiate continue attempt
-    make made experience last symptom imaging diagnose diagnosis
+    make made experience last start begin began symptom imaging diagnose diagnosis
 """.split())
 _SENTENCE = re.compile(r"[.;!?()\[\]\n]+")
 _TOKEN = re.compile(r"[a-z0-9]+")
