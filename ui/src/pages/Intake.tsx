@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useEffectEvent, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError, type FaxView, type FormField } from "../api";
-import { ErrorSummary, type FormError } from "../components/ErrorSummary";
+import { ErrorSummary, outstanding, type FormError } from "../components/ErrorSummary";
 import { FaxViewer, useAuthImage } from "../components/FaxImage";
 import { ChevronLeft, CheckCircle } from "../components/Icons";
 import { AskClinic } from "../components/intake/AskClinic";
@@ -99,9 +99,7 @@ export function IntakePage() {
     }
     return found;
   };
-  // What the last attempt found, less anything fixed since. A server's refusal stays until the next attempt.
-  const stillWrong = validate();
-  const errors = raised.filter((e) => e.server || stillWrong.some((w) => w.key === e.key));
+  const errors = outstanding(raised, validate());
   const errorFor = (key: string) => errors.find((e) => e.key === key);
 
   const create = async () => {

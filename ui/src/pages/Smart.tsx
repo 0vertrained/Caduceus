@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { api, ApiError, type EhrRecordView, type EhrService } from "../api";
-import { ErrorMessage, ErrorSummary, type FormError } from "../components/ErrorSummary";
+import { ErrorMessage, ErrorSummary, outstanding, type FormError } from "../components/ErrorSummary";
 import { CheckCircle, ChevronLeft, Clock, CrossCircle, Triangle } from "../components/Icons";
 import { StatusWord } from "../components/Status";
 import { glue, useResource, useTitle } from "../hooks";
@@ -158,9 +158,7 @@ export function EhrRecordPage() {
     if (!data.payers.includes(plan)) found.push({ key: "plan", message: "Choose the health plan", target: "ehr-plan" });
     return found;
   };
-  // What the last attempt found, less anything fixed since. A refusal from the server stays until the next attempt.
-  const stillWrong = validate();
-  const errors = raised.filter((e) => e.server || stillWrong.some((w) => w.key === e.key));
+  const errors = outstanding(raised, validate());
   const errorFor = (k: string) => errors.find((e) => e.key === k);
 
   const submit = async (e: FormEvent) => {

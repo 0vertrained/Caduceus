@@ -5,6 +5,11 @@ import { Link } from "react-router-dom";
  *  `server` marks a refusal from the server, which stays until the next attempt. */
 export interface FormError { key: string; message: string; target?: string; caseId?: string; server?: boolean }
 
+/** What the last attempt raised, less anything fixed since: `found` is what the form's checks find now. */
+export function outstanding(raised: FormError[], found: FormError[]): FormError[] {
+  return raised.filter((e) => e.server || found.some((w) => w.key === e.key));
+}
+
 function goTo(target: string) {
   const el = document.getElementById(target);
   if (!el) return;
