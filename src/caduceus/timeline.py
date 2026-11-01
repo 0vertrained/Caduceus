@@ -80,7 +80,7 @@ def sentence(e: AuditEvent, clinician: str) -> str:
         case "draft.generated":
             how = {"external": "with the model, from de-identified facts",
                    "deid_in_vpc": "with the model inside the network, from de-identified facts",
-                   "template": "from the template"}.get(d.get("route"), "")
+                   "template": "from the template"}.get(d.get("route", ""), "")
             why = " after the clinician signed" if d.get("reason") == "attestation signed" else ""
             return f"Wrote the draft {how}{why}.".replace("  ", " ")
         case "draft.out_of_date":
@@ -113,7 +113,7 @@ def sentence(e: AuditEvent, clinician: str) -> str:
         case "case.recalled":
             return {"reply": "Recalled the note before it was sent. It waits to be sent again.",
                     "appeal": "Recalled the appeal before it was sent. It waits to be sent again."}.get(
-                d.get("kind"), "Recalled the request before it was sent. It is back in review.")
+                d.get("kind", ""), "Recalled the request before it was sent. It is back in review.")
         case "action.undone":
             return f"Undid their last step ({d.get('undone', 'an action').replace('.', ' ')})."
         case "case.returned":

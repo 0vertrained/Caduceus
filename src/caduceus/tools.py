@@ -127,10 +127,12 @@ def build_gateway(audit: AuditStore, store: FhirStore, library: dict[str, Criter
         return [{"id": r["id"], "display": display(r), "date": str(observation_date(r))}
                 for r in rec.of_type("Observation") if any(c == code for _, c in codings(r))]
 
-    for fn, desc in [(get_patient_summary, "Age, sex and record size for the case's patient."),
-                     (list_active_conditions, "Active diagnoses as of the case date."),
-                     (list_procedures, "Procedures performed within a look-back window."),
-                     (search_observations, "Observations with a given code.")]:
+    ehr_tools: list[tuple[Callable[..., Any], str]] = [
+        (get_patient_summary, "Age, sex and record size for the case's patient."),
+        (list_active_conditions, "Active diagnoses as of the case date."),
+        (list_procedures, "Procedures performed within a look-back window."),
+        (search_observations, "Observations with a given code.")]
+    for fn, desc in ehr_tools:
         gw.register(ToolSpec(f"ehr.{fn.__name__}", "ehr", READ, fn, desc))
 
     # documents: the referral packet pages for a case.
