@@ -1,8 +1,5 @@
-"""What the workflow needs from its database, whichever database holds it.
-
-Two implementations satisfy these, with the same meaning: SQLite (caduceus.cases and caduceus.audit.log), which the
-public demo and the tests use, and Postgres (caduceus.postgres), for a deployment. app_factory chooses between them.
-"""
+"""What the workflow needs from its database: SQLite (caduceus.cases, caduceus.audit.log) or Postgres
+(caduceus.postgres), with the same meaning."""
 
 from __future__ import annotations
 
@@ -13,8 +10,8 @@ from caduceus.cases import Case, Fax
 
 
 class CaseStore(Protocol):
-    """Cases, saved with an optimistic version check: saving a case that someone else saved after it was read raises
-    StaleCase. A save returns the case with its new version."""
+    """Cases with an optimistic version check: saving a case someone else saved after it was read raises StaleCase.
+    A save returns the case with its new version."""
 
     def save(self, case: Case) -> Case: ...
     def get(self, case_id: str) -> Case | None: ...

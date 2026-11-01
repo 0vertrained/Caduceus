@@ -1,14 +1,8 @@
 """Versioned SQL migrations for the Postgres store.
 
-Each file here is named NNNN_what_it_does.sql and is applied once, in order of its number. schema_migrations records
-each one applied, with a hash of its text, so a migration edited after it ran is refused rather than skipped: a change
-goes in a new file. Pending migrations run in one transaction, under an advisory lock, so two instances starting at
-once cannot both apply one, and a migration that fails leaves the database as it was.
-
-The service applies what is pending when it starts. In a deployment it connects as a role that may not change the
-schema (infra/sql/audit.sql), so the owner applies them first and the service finds nothing to do:
-
-    python -m caduceus.postgres migrate
+Each NNNN_what_it_does.sql file is applied once, in order. schema_migrations keeps a hash of each one applied, so a
+migration edited after it ran is refused: a change goes in a new file. In a deployment the service may not change the
+schema, so the owner applies them first (python -m caduceus.postgres migrate).
 """
 
 from __future__ import annotations
@@ -33,8 +27,7 @@ CREATE TABLE schema_migrations (
 
 
 def advisory_key(name: str) -> int:
-    """A fixed 64-bit key for pg_advisory_xact_lock, the same in every instance. Postgres keeps one set of advisory
-    locks per database, so instances sharing a database share the lock."""
+    """A fixed 64-bit key for pg_advisory_xact_lock, the same in every instance that shares the database."""
     return int.from_bytes(hashlib.sha256(name.encode()).digest()[:8], "big", signed=True)
 
 
@@ -73,10 +66,11 @@ def available() -> list[Migration]:
 
 
 def migrate(conn: psycopg.Connection, migrations: list[Migration] | None = None) -> list[Migration]:
-    """Apply the migrations this database has not had yet, and return them (none when it is up to date).
+    """Apply the migrations this database has not had yet, and return them. They run in one transaction under an
+    advisory lock, so instances starting together apply each once, and a failure leaves the database as it was.
 
-    `conn` must not be inside a transaction. The run reads committed data statement by statement, so an instance that
-    waited on the lock sees what the instance before it applied."""
+    `conn` must not be inside a transaction. Reads are read committed, so an instance that waited for the lock sees
+    what the one before it applied."""
     todo = available() if migrations is None else sorted(migrations, key=lambda m: m.version)
     applied: list[Migration] = []
     step = "read schema_migrations"
@@ -87,7 +81,7 @@ def migrate(conn: psycopg.Connection, migrations: list[Migration] | None = None)
             if conn.execute("SELECT to_regclass('schema_migrations')").fetchone()[0] is None:  # type: ignore[index]
                 step = "create schema_migrations"
                 conn.execute(SCHEMA_MIGRATIONS)
-            done = dict(conn.execute("SELECT version, sha256 FROM schema_migrations").fetchall())
+            done: dict[int, str] = dict(conn.execute("SELECT version, sha256 FROM schema_migrations").fetchall())
             for m in todo:
                 if m.version in done:
                     if done[m.version] != m.sha256:
@@ -96,7 +90,7 @@ def migrate(conn: psycopg.Connection, migrations: list[Migration] | None = None)
                     continue
                 step = f"apply {m.file}"
                 try:
-                    conn.execute(m.sql)  # type: ignore[arg-type]  # the package's own file, not built from input
+                    conn.execute(m.sql)  # the package's own file, never built from input
                 except (psycopg.errors.InsufficientPrivilege, psycopg.OperationalError):
                     raise
                 except psycopg.Error as e:

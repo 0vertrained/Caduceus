@@ -1,16 +1,7 @@
-"""The Postgres store: cases, faxes, filed documents and the audit log, for a deployment.
+"""The Postgres store for a deployment: cases, faxes, filed documents and the audit log (docs/postgres.md).
 
-app_factory chooses it when CADUCEUS_DATABASE_URL is set; otherwise everything stays in SQLite, as in the public demo
-and the tests. The interfaces, and what they promise, are the same as SQLite's (caduceus.storage):
-
-* A case is saved only if nobody saved it after it was read. The check and the write are one statement, so of two
-  instances saving the same read, only one succeeds; the other raises StaleCase.
-* The audit log is append-only in the database. A trigger refuses UPDATE, DELETE and TRUNCATE, and the service's
-  role has no grant for them (infra/sql/audit.sql). Every append, from any connection or instance, takes one advisory
-  lock and then reads the head of the chain, so each event follows exactly the one before it. The hashes are SQLite's,
-  computed by the same function over the same text, and verify() re-walks the chain the same way.
-
-Running it, migrating it and verifying the chain: docs/postgres.md.
+It keeps the promises of the SQLite store (caduceus.storage), across connections and instances: a stale save raises
+StaleCase, and the audit log is append-only with the same hash chain.
 
     python -m caduceus.postgres migrate    apply pending migrations (in a deployment, as the owner)
     python -m caduceus.postgres verify     re-walk the audit chain
@@ -30,16 +21,15 @@ import psycopg
 from psycopg.conninfo import conninfo_to_dict
 from psycopg_pool import ConnectionPool, PoolTimeout
 
-from caduceus.audit.log import GENESIS, AuditEvent, AuditLog, TamperDetected
+from caduceus.audit.log import GENESIS, AuditEvent, TamperDetected, row_hash, verify_chain
 from caduceus.cases import Case, Fax, StaleCase
 from caduceus.migrations import MigrationError, advisory_key, migrate
 
 log = logging.getLogger(__name__)
 
-POOL_SIZE = 10        # connections per instance, shared by the API's worker threads and the outbox
-CONNECT_TIMEOUT = 10  # seconds to wait for the server, unless the URL sets connect_timeout
+POOL_SIZE = 10        # connections per instance
+CONNECT_TIMEOUT = 10  # seconds, unless the URL sets connect_timeout
 AUDIT_LOCK = advisory_key("caduceus: audit appends")
-row_hash = AuditLog._row_hash  # one definition of the hash for both databases, so their chains agree
 
 
 class DatabaseUnavailable(RuntimeError):
@@ -61,16 +51,15 @@ class PostgresStore:
 
 
 def connect(url: str, *, pool_size: int = POOL_SIZE, apply_migrations: bool = True) -> PostgresStore:
-    """Open the database, apply any pending migrations, and return the store. If the database cannot be reached this
-    fails at once, saying where it tried and why, and never with the password."""
+    """Open the database, apply any pending migrations, and return the store. A database that cannot be reached fails
+    at once, saying where and why, and never with the password."""
     params = _params(url)
-    with _connection(params) as conn:  # reached and signed in before anything else is set up
+    with _connection(params) as conn:
         applied = migrate(conn) if apply_migrations else []
     if applied:
         log.info("applied migrations %s", ", ".join(m.file for m in applied))
-    # Autocommit: a single statement is its own transaction, and work of several statements opens one explicitly.
-    # Each connection is checked as it is handed out, so one dropped by a restart or a failover is replaced rather
-    # than failing a request.
+    # Each connection is checked as it is handed out, so one dropped by a restart or failover is replaced instead of
+    # failing a request.
     pool = ConnectionPool(kwargs=params | {"autocommit": True}, min_size=1, max_size=pool_size, open=False,
                           configure=_configure, check=ConnectionPool.check_connection, name="caduceus")
     try:
@@ -112,19 +101,18 @@ def _where(params: dict[str, Any]) -> str:
 
 
 def _configure(conn: psycopg.Connection) -> None:
-    """Read committed, whatever the server's default: an append reads the head of the chain after it takes the lock,
-    and must see the event committed just before, not a snapshot from before it waited."""
+    """Read committed, whatever the server's default: an append that waited for the lock must read the head of the
+    chain as committed since, not a snapshot from before it waited."""
     conn.isolation_level = psycopg.IsolationLevel.READ_COMMITTED
 
 
 def _storable(key: str) -> bool:
-    """Postgres text cannot hold a NUL character, so no stored id contains one. Looking such an id up finds nothing,
-    as it does on SQLite, instead of failing."""
+    """Postgres text cannot hold a NUL character, so an id with one finds nothing, as on SQLite, instead of failing."""
     return "\x00" not in key
 
 
 def _iso(ts: datetime) -> str:
-    """A time as SQLite stores it and as it is hashed: ISO 8601 in UTC, to the microsecond, whatever the session's
+    """A time as SQLite stores it and as it is hashed: ISO 8601 in UTC to the microsecond, whatever the session's
     time zone."""
     return ts.astimezone(UTC).isoformat(timespec="microseconds")
 
@@ -136,8 +124,7 @@ class PostgresCaseRepository:
     def save(self, case: Case) -> Case:
         new = case.model_copy(update={"version": case.version + 1})
         with self._pool.connection() as conn:
-            # The version check and the write are one statement: of two saves made from the same read, the second
-            # waits for the first, then finds the version moved on and writes nothing.
+            # One statement checks the version and writes, so of two saves made from the same read only one lands.
             saved = conn.execute(
                 "INSERT INTO cases (id, state, data, version) VALUES (%(id)s, %(state)s, %(data)s, %(version)s) "
                 "ON CONFLICT (id) DO UPDATE SET state = EXCLUDED.state, data = EXCLUDED.data, "
@@ -185,8 +172,6 @@ class PostgresFaxRepository:
 
 
 class PostgresDocumentRepository:
-    """Documents Caduceus files itself (a faxed referral's cover sheet), kept with the cases."""
-
     def __init__(self, pool: ConnectionPool):
         self._pool = pool
 
@@ -204,8 +189,6 @@ class PostgresDocumentRepository:
 
 
 class PostgresAuditLog:
-    """The append-only, hash-chained audit log (caduceus.audit.log), in Postgres."""
-
     def __init__(self, pool: ConnectionPool):
         self._pool = pool
 
@@ -213,8 +196,8 @@ class PostgresAuditLog:
                detail: dict | None = None) -> AuditEvent:
         detail_json = json.dumps(detail or {}, sort_keys=True, default=str)
         with self._pool.connection() as conn, conn.transaction():
-            # Every append waits here for the one before it to commit, then reads the head it left, so two writers
-            # never chain onto the same event. The lock is released when this transaction ends.
+            # Appends from every connection and instance take turns, so no two events follow the same head. The lock
+            # is released when this transaction ends.
             conn.execute("SELECT pg_advisory_xact_lock(%s)", (AUDIT_LOCK,))
             head = conn.execute("SELECT hash FROM audit_events ORDER BY seq DESC LIMIT 1").fetchone()
             prev = head[0] if head else GENESIS
@@ -240,17 +223,7 @@ class PostgresAuditLog:
         return [AuditEvent(r[0], _iso(r[1]), r[2], r[3], r[4], r[5], json.loads(r[6]), r[7], r[8]) for r in rows]
 
     def verify(self) -> int:
-        """Re-walk the chain; returns the number of events verified or raises TamperDetected. The same walk as on
-        SQLite: each event must name the one before it, and its hash must be the hash of what it says."""
-        prev = GENESIS
-        events = self.events()
-        for e in events:
-            detail_json = json.dumps(e.detail, sort_keys=True, default=str)
-            if e.prev_hash != prev or e.hash != row_hash(prev, e.ts, e.actor, e.role, e.case_id, e.action,
-                                                         detail_json):
-                raise TamperDetected(f"audit chain broken at event {e.seq}")
-            prev = e.hash
-        return len(events)
+        return verify_chain(self.events())
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -279,7 +252,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     except TamperDetected as e:
         said = str(e)
-        print(f"{said[:1].upper()}{said[1:]}.", file=sys.stderr)  # "Audit chain broken at event 1042."
+        print(f"{said[:1].upper()}{said[1:]}.", file=sys.stderr)
         return 1
     print(f"The audit chain is intact: {events} event{'s' if events != 1 else ''} verified.")
     return 0

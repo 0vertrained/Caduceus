@@ -17,14 +17,14 @@ from pydantic import BaseModel, Field
 
 class State(StrEnum):
     NEW = "new"                        # received, not yet prepared by the agent
-    REVIEW = "review"                  # prepared; with the PA specialist
+    REVIEW = "review"                  # with the PA specialist
     AWAITING_ATTESTATION = "awaiting_attestation"
     RETURNED = "returned"              # sent back to the ordering clinic for a correction
-    SUBMITTED = "submitted"            # with the payer
-    PENDED = "pended"                  # payer asked for more information
-    AWAITING_NOTE = "awaiting_note"    # the payer asked for a note; with the ordering clinician to write it
-    APPROVED = "approved"              # payer approved
-    DENIED = "denied"                  # payer denied
+    SUBMITTED = "submitted"            # approved: in the outbox, then with the payer
+    PENDED = "pended"                  # the payer asked for more information
+    AWAITING_NOTE = "awaiting_note"    # with the ordering clinician, to write the note the payer asked for
+    APPROVED = "approved"
+    DENIED = "denied"
 
 
 class Attestation(BaseModel):
@@ -48,9 +48,8 @@ class Case(BaseModel):
     patient_id: str
     service: dict[str, str]
     criteria_set: str
-    side: Literal["right", "left"] | None = None  # the side the request is for, when the service has one
-    # Expedited when waiting the standard time could seriously jeopardize the patient's life, health or ability to
-    # regain maximum function (the CMS rule's test). Covered plans then owe a decision in 72 hours, not 7 days.
+    side: Literal["right", "left"] | None = None
+    # Expedited when the standard timeframe could seriously jeopardize the patient (CMS-0057-F): 72 hours, not 7 days.
     urgency: Literal["standard", "expedited"] = "standard"
     urgency_reason: str | None = None
     as_of: str
@@ -68,27 +67,20 @@ class Case(BaseModel):
     attestation_requested_by: str | None = None
     attestations: list[Attestation] = Field(default_factory=list)
     returned_reason: str | None = None
-    # Packet passages that may answer each criterion the record could not, found inside the boundary at
-    # enrichment. Candidates for a person to read, never evidence: the engine's answer does not change.
+    # Packet passages that may answer each criterion the record could not: for a person to read, never evidence.
     leads: dict[str, list[dict[str, Any]]] | None = None
-    # What the chart shows, for the clinician's request to sign: written by the model inside the network when there
-    # is one (in the background, since it takes seconds on a CPU), else from the record's facts. Its route and model
-    # are kept with it, so the screen can say how it was written.
+    # What the chart shows, for the clinician asked to attest, with the route and model that wrote it.
     chart_summary: dict[str, Any] | None = None
     submission: dict[str, Any] | None = None
     payer_response: dict[str, Any] | None = None
-    # The answer to a payer's request for more: who asked the clinician, and the note they signed (or that they
-    # could not document it). Sent to the payer only after a PA specialist approves it.
+    # The payer's question, and the note the clinician signed for it (or that they could not document it).
     reply: dict[str, Any] | None = None
-    # What the payer's coverage-requirements service said at intake (CRD-style): whether prior authorization is
-    # required, which policy version it publishes, and whether that matches the criteria approved here.
+    # The payer's coverage-requirements answer at intake (CRD-style), and whether its policy matches the approved one.
     requirements: dict[str, Any] | None = None
     sent_at: datetime | None = None       # when the request first reached the payer; starts the decision clock
-    decided_at: datetime | None = None    # when the payer first approved or denied it
-    # After a denial: the appeal the agent drafted, which a PA specialist reads (and may edit) before it is sent.
+    decided_at: datetime | None = None    # the payer's first approval or denial
     appeal: dict[str, Any] | None = None
     last_action: LastAction | None = None
-    # Reminders a PA specialist sent the ordering clinician while the case waited on them: who and when.
     reminders: list[dict[str, Any]] = Field(default_factory=list)
     version: int = 0
 
@@ -96,8 +88,9 @@ class Case(BaseModel):
         """When the ordering clinician was asked for what the case now waits on (a signature or a note), if it does."""
         if self.state == State.AWAITING_ATTESTATION:
             return self.attestation_requested_at
-        if self.state == State.AWAITING_NOTE and (self.reply or {}).get("requested_at"):
-            return datetime.fromisoformat(self.reply["requested_at"])  # type: ignore[index]
+        reply = self.reply or {}
+        if self.state == State.AWAITING_NOTE and reply.get("requested_at"):
+            return datetime.fromisoformat(reply["requested_at"])
         return None
 
     def reminders_since_asked(self) -> list[dict[str, Any]]:
@@ -131,8 +124,8 @@ class Case(BaseModel):
 
     @property
     def sent_since_last_action(self) -> bool:
-        """True once something the last action led to has reached the payer. That action can no longer be undone;
-        an action taken after the payer already had the request (asking for a note, say) still can."""
+        """True once something the last action led to has reached the payer, so it can no longer be undone. An action
+        taken after the payer already had the request, such as asking for a note, still can be."""
         sub = self.submission or {}
         return bool(sub.get("sent")) and (self.last_action is None
                                           or sub != self.last_action.prior.get("submission"))
@@ -156,10 +149,7 @@ class Fax(BaseModel):
     status: str = "received"               # received, read, waiting_on_clinic, confirmed
     reading: dict[str, Any] | None = None  # OCR fields with confidence, region and any reason to check
     case_id: str | None = None
-    # What a person asked the sending clinic for, when the fax lacked something or was too poor to read: the fields,
-    # the request in words (shown for a person to send; Caduceus sends nothing), who asked and when, and when the
-    # clinic answered.
-    request: dict[str, Any] | None = None
+    request: dict[str, Any] | None = None  # what a person asked the sending clinic for, and when it answered
 
 
 class FaxRepository:
@@ -188,9 +178,8 @@ class FaxRepository:
 
 
 class DocumentRepository:
-    """Documents Caduceus files itself, kept with the cases: a faxed referral's cover sheet, with the text read from it
-    and a pointer to the page image, becomes page 1 of the case's packet. Same shape as the record's DocumentReferences,
-    so the tools and screens read them alike (see caduceus.fhir.store.WithFiledDocuments)."""
+    """Documents Caduceus files itself, such as a faxed cover sheet, shaped like the record's DocumentReferences so the
+    tools and screens read them alike (caduceus.fhir.store.WithFiledDocuments)."""
 
     def __init__(self, conn: sqlite3.Connection):
         self._conn = conn
@@ -210,8 +199,8 @@ class DocumentRepository:
         return json.loads(row[0]) if row else None
 
 
-# A record from an EHR is named by a random key, never by anything the EHR calls the patient: the key appears in the
-# browser's address bar and so in access logs. Its notes are the pages "<key>-1", "<key>-2" and so on.
+# A record from an EHR is named by a random key, never by the EHR's id for the patient: the key appears in addresses
+# and so in access logs. Its notes are the pages "<key>-1", "<key>-2" and so on.
 EHR_RECORD = re.compile(r"ehr-[0-9a-f]{20}")
 
 
@@ -220,11 +209,8 @@ def new_ehr_key() -> str:
 
 
 class EhrRecordRepository:
-    """Patients' records read from an EHR by a SMART launch (caduceus.smart), kept with the cases so a case can be
-    prepared and read from them. In the public demo they live in the visitor's own copy and go when it starts over
-    or expires. `match` is a hash of the EHR and its id for the patient, so opening the same patient again replaces
-    their record, unless a case was made from it: then that record stays as the case read it, and the new one gets a
-    key of its own. Stored compressed: a record is a few hundred kilobytes of JSON."""
+    """Patients' records read from an EHR by a SMART launch, kept with the cases and stored compressed. `match` hashes
+    the EHR and its id for the patient, so a new read of the same patient finds the earlier one."""
 
     def __init__(self, conn: sqlite3.Connection):
         self._conn = conn
@@ -254,8 +240,8 @@ class EhrRecordRepository:
         return row[0] if row else None
 
     def retire(self, key: str) -> None:
-        """Keep a record for the cases made from it, but no longer find it as this patient's record: opening the
-        patient again files a new one, so a case never reads a record that changed under it."""
+        """Keep a record for the cases made from it, but stop finding it by `match`, so a new read of the patient is
+        filed apart and a case never reads a record that changed under it."""
         with self._lock:
             self._conn.execute("UPDATE ehr_records SET match = NULL WHERE key = ?", (key,))
             self._conn.commit()
@@ -272,7 +258,7 @@ class EhrRecordRepository:
 
 
 class StaleCase(Exception):
-    pass
+    """The case was saved by someone else after it was read."""
 
 
 class CaseRepository:
