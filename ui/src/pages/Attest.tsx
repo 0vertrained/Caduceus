@@ -107,7 +107,8 @@ export function AttestPage() {
         <h2 id="chart-title" className="attest__card-title">What the chart shows</h2>
         <p>{data.chart_summary}</p>
         <p className="support" aria-live="polite">{data.chart_summary_by.route === "phi"
-          ? <>Summarized by <span translate="no">{data.chart_summary_by.model}</span>, inside Mesa Verde’s network.</>
+          ? <>Summarized by <span translate="no">{data.chart_summary_by.model}</span>, inside Mesa Verde’s network.
+              What the chart does not say is from the record’s facts.</>
           : data.chart_summary_pending ? "From the record’s facts, for now. The model inside Mesa Verde’s network is "
             + "writing a summary, and it will appear here."
           : "From the record’s facts. No model was used."}</p>

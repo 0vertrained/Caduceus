@@ -21,7 +21,8 @@ from tests.conftest import DATA, TEST_KEY
 from tests.test_workflow_api import DOLORES, REYES, T0
 
 CASE = "2026-1043"  # red flags not in the record: Dr. Ana Reyes is asked
-SUMMARY = "Back pain for five months and a recent X-ray are charted. Red flags are not documented either way."
+SUMMARY = "Back pain for nine weeks, six weeks of physical therapy and a recent X-ray are charted."
+UNANSWERED = "The chart does not say whether this was done: red-flag symptoms ruled out by the clinician."
 
 
 class Model:
@@ -73,15 +74,30 @@ def test_the_clinician_sees_the_facts_at_once_then_the_in_network_models_summary
     assert asked["max_tokens"] == 300
     patient = svc.store.record(svc.cases.get(CASE).patient_id).patient
     name = " ".join(patient["name"][0]["given"][:1] + [patient["name"][0]["family"]])
-    assert name in asked["messages"][1]["content"]  # this route may see who the patient is; nothing else does
+    facts = asked["messages"][1]["content"]
+    assert name in facts  # this route may see who the patient is; nothing else does
+    # The model is given only what the chart documents; what it does not say is the engine's sentence, after it.
+    assert facts.count(": met.") == 3 and "awaiting" not in facts and "Red-flag" not in facts
     after = client.get(f"/api/attestations/{CASE}", headers=REYES).json()
-    assert after["chart_summary"] == SUMMARY
+    assert after["chart_summary"] == f"{SUMMARY} {UNANSWERED}"
     assert after["chart_summary_by"] == {"route": "phi", "model": "qwen2.5-1.5b-instruct"}
     assert after["chart_summary_pending"] is False
     (written,) = [e for e in svc.audit.events(CASE) if e.action == "summary.written"]
     assert written.detail["route"] == "phi" and SUMMARY not in json.dumps(written.detail)
     history = client.get(f"/api/cases/{CASE}/timeline", headers=DOLORES).json()["entries"]
     assert any("with the model inside the network" in e["what"] for e in history)
+
+
+def test_a_chart_that_documents_none_of_the_criteria_is_summarized_without_the_model(env):
+    """With nothing documented, there is nothing for the model to summarize: the engine says what is unanswered."""
+    svc, _, model, _ = env
+    case = svc.cases.get(CASE)
+    unknown = [r for r in case.effective_results() if r["status"] == "unknown"]
+    case = case.model_copy(update={"determination": {**case.determination, "results": unknown}})
+    model.sent.clear()
+    summary = svc.workflow.drafter.chart_summary(case, svc.store.record(case.patient_id, case.id).patient,
+                                                 [r["criterion_id"] for r in unknown])
+    assert model.sent == [] and summary == {"text": UNANSWERED, "route": "template", "model": None}
 
 
 def test_a_summary_that_comes_too_late_is_not_kept(env):

@@ -151,9 +151,9 @@ await page.getByRole("region", { name: "Guided tour" }).getByRole("button", { na
 await page.getByLabel("Yes, I confirm this").waitFor();
 await still(page, "attest");
 await say(page, "Dr. Reyes answers one question on one screen, usually from her phone, and signs with her own name.", 3800);
-if (await page.getByText(/inside Mesa Verde’s network\.$/).isVisible().catch(() => false)) {
-  await say(page, "The summary of her chart above it was written by the small model inside the network: the only model " +
-    "allowed to see who the patient is.", 4600);
+if (await page.getByText(/^Summarized by .+, inside Mesa Verde’s network\./).isVisible().catch(() => false)) {
+  await say(page, "What her chart shows was summarized by the small model inside the network: the only model allowed " +
+    "to see who the patient is.", 4600);
 }
 await page.getByLabel("Yes, I confirm this").check();
 await page.getByRole("button", { name: "Sign and return" }).click();
