@@ -246,8 +246,7 @@ class EhrRecordRepository:
             self._conn.execute("UPDATE ehr_records SET match = NULL WHERE key = ?", (key,))
             self._conn.commit()
 
-    def keys(self) -> list[str]:
-        """Every record's key, the one saved longest ago first."""
+    def keys_oldest_first(self) -> list[str]:
         with self._lock:
             return [r[0] for r in self._conn.execute("SELECT key FROM ehr_records ORDER BY saved_at, key").fetchall()]
 

@@ -36,7 +36,7 @@ def story(out: Path) -> tuple[list[str], list[str], dict[str, dict]]:
             svc.workflow.request_attestation(DEV_USERS["dolores"], case.id)
             asked = svc.cases.get(case.id)
             svc.workflow.sign_attestation(clinicians[asked.ordering_clinician["id"]], case.id,  # type: ignore[union-attr]
-                                          {c: "yes" for c in asked.attestation_requested})  # type: ignore[union-attr]
+                                          dict.fromkeys(asked.attestation_requested, "yes"))  # type: ignore[union-attr]
     for case in svc.cases.all():
         if case.ready_to_approve:
             svc.workflow.approve(DEV_USERS["dolores"], case.id)

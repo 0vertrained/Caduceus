@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import contextlib
 import hashlib
 import hmac
 import html
@@ -196,32 +197,41 @@ class MockIdP:
     def authorize(self, h: BaseHTTPRequestHandler, q: dict[str, str]) -> None:
         # A wrong client or redirect URI is told to the person and sent nowhere (RFC 6749 section 4.1.2.1).
         if q.get("client_id") != self.client.client_id:
-            return self._page(h, 400, "Unknown client", "This sign-in request names a client this provider does "
-                                                        "not know.")
+            self._page(h, 400, "Unknown client", "This sign-in request names a client this provider does "
+                                                 "not know.")
+            return
         redirect_uri = q.get("redirect_uri", "")
         if redirect_uri not in self.client.redirect_uris:
-            return self._page(h, 400, "Unregistered address", "This sign-in request asks to return to an address "
-                                                              "that is not registered for its client.")
+            self._page(h, 400, "Unregistered address", "This sign-in request asks to return to an address "
+                                                       "that is not registered for its client.")
+            return
         mode = q.get("response_mode", "query")
         if mode not in ("query", "fragment"):
-            return self._page(h, 400, "Unsupported response mode", "Ask for the query or the fragment.")
+            self._page(h, 400, "Unsupported response mode", "Ask for the query or the fragment.")
+            return
 
         def back(**params: str) -> None:
             self._redirect(h, redirect_uri, mode, params | ({"state": q["state"]} if q.get("state") else {}))
 
         if q.get("response_type") != "code":
-            return back(error="unsupported_response_type", error_description="Only the code flow is offered.")
+            back(error="unsupported_response_type", error_description="Only the code flow is offered.")
+            return
         if "openid" not in q.get("scope", "").split():
-            return back(error="invalid_scope", error_description="The openid scope is required.")
+            back(error="invalid_scope", error_description="The openid scope is required.")
+            return
         if q.get("code_challenge_method") != "S256" or not CHALLENGE.fullmatch(q.get("code_challenge", "")):
-            return back(error="invalid_request", error_description="PKCE with S256 is required.")
+            back(error="invalid_request", error_description="PKCE with S256 is required.")
+            return
         if not q.get("state") or not q.get("nonce"):
-            return back(error="invalid_request", error_description="state and nonce are required.")
+            back(error="invalid_request", error_description="state and nonce are required.")
+            return
         sid = self._live_session(h)
         if sid and q.get("prompt") != "login":
-            return back(code=self._code(q, sid))  # signed in here already: no need to choose again
+            back(code=self._code(q, sid))  # signed in here already: no need to choose again
+            return
         if q.get("prompt") == "none":
-            return back(error="login_required", error_description="No one is signed in.")
+            back(error="login_required", error_description="No one is signed in.")
+            return
         request_id = secrets.token_urlsafe(16)
         with self._lock:
             self._pending[request_id] = q | {"expires": str(time.time() + 600)}
@@ -236,9 +246,11 @@ class MockIdP:
         with self._lock:
             q = self._pending.pop(form.get("request", ""), None)
         if q is None or float(q["expires"]) < time.time():
-            return self._page(h, 400, "This sign-in has expired", "Go back to Caduceus and sign in again.")
+            self._page(h, 400, "This sign-in has expired", "Go back to Caduceus and sign in again.")
+            return
         if form.get("persona") not in DEV_USERS:
-            return self._page(h, 400, "No such person", "Go back to Caduceus and sign in again.")
+            self._page(h, 400, "No such person", "Go back to Caduceus and sign in again.")
+            return
         sid = secrets.token_urlsafe(16)
         with self._lock:
             self._sessions[sid] = {"persona": form["persona"], "auth_time": int(time.time())}
@@ -276,21 +288,25 @@ class MockIdP:
                 jwt.decode(hint, self.key.public_key(), algorithms=["RS256"], audience=self.client.client_id,
                            issuer=self.issuer, options={"verify_exp": False})
             except jwt.PyJWTError:
-                return self._page(h, 400, "Sign-out refused", "The ID token given is not one this provider issued.")
+                self._page(h, 400, "Sign-out refused", "The ID token given is not one this provider issued.")
+                return
         elif q.get("client_id") != self.client.client_id:
-            return self._page(h, 400, "Sign-out refused", "The request names no client this provider knows.")
+            self._page(h, 400, "Sign-out refused", "The request names no client this provider knows.")
+            return
         back = q.get("post_logout_redirect_uri")
         if back and back not in self.client.post_logout_redirect_uris:
-            return self._page(h, 400, "Sign-out refused", "It asks to return to an address that is not registered "
-                                                          "for its client.")
+            self._page(h, 400, "Sign-out refused", "It asks to return to an address that is not registered "
+                                                   "for its client.")
+            return
         if method == "GET" and not hint:
             # As Keycloak does without an ID token: ask first, so a link alone cannot sign someone out.
             fields = "".join(f'<input type="hidden" name="{k}" value="{html.escape(v)}">' for k, v in q.items()
                              if k in ("client_id", "post_logout_redirect_uri", "state"))
-            return self._page(h, 200, "Sign out of Mesa Verde?", "You will be signed out of everything that uses "
-                                                                 "your Mesa Verde account.",
-                              f'<form method="post" action="{self.path}{OIDC}/logout">{fields}'
-                              "<button type=\"submit\">Sign out</button></form>")
+            self._page(h, 200, "Sign out of Mesa Verde?", "You will be signed out of everything that uses "
+                                                          "your Mesa Verde account.",
+                       f'<form method="post" action="{self.path}{OIDC}/logout">{fields}'
+                       "<button type=\"submit\">Sign out</button></form>")
+            return
         sid = self._session_id(h)
         with self._lock:
             self._sessions.pop(sid or "", None)
@@ -298,7 +314,8 @@ class MockIdP:
                 del self._refresh[token]
         cookie = f"{COOKIE}=; Path={self.path}; HttpOnly; SameSite=Lax; Max-Age=0"
         if back:
-            return self._redirect(h, back, "query", {"state": q["state"]} if q.get("state") else {}, cookie=cookie)
+            self._redirect(h, back, "query", {"state": q["state"]} if q.get("state") else {}, cookie=cookie)
+            return
         self._page(h, 200, "You are signed out", "You are signed out of Mesa Verde.", cookie=cookie)
 
     # Codes, grants and tokens -----------------------------------------------------------------------------------------
@@ -468,10 +485,8 @@ def main(argv: list[str] | None = None) -> None:
     idp = MockIdP(Client(args.client_id, tuple(args.redirect_uri), tuple(args.post_logout_redirect_uri)),
                   args.audience, port=args.port, path=args.path, access_seconds=args.access_token_seconds, log=True)
     print(f"Test identity provider (tests only) at {idp.issuer}", file=sys.stderr, flush=True)
-    try:
+    with contextlib.suppress(KeyboardInterrupt):
         idp.server.serve_forever()
-    except KeyboardInterrupt:
-        pass
 
 
 if __name__ == "__main__":
