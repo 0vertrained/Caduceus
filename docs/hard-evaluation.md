@@ -53,13 +53,13 @@ bears on a criterion is recorded with its page and character offsets. Rebuilds a
 
 The order is in the commit history:
 
-1. Retrieval and its clinical vocabulary were committed (`1a97103`) before any packet text existed.
-2. The generator and both splits were committed (`5a129d5`) before either was evaluated. Held-out packets use
+1. Retrieval and its clinical vocabulary were committed (`423504e`) before any packet text existed.
+2. The generator and both splits were committed (`491c5e4`) before either was evaluated. Held-out packets use
    phrasings the dev split never has.
-3. Retrieval was tuned on the dev split only (`8eebe12`).
-4. The held-out split was run once and committed as it came out (`5c98649`). That commit names the engine fixes
+3. Retrieval was tuned on the dev split only (`91aaba4`).
+4. The held-out split was run once and committed as it came out (`2f43ed0`). That commit names the engine fixes
    planned from the dev run beforehand.
-5. The fixes were made (`19150f3`). One more was found on the held-out run and is labelled so. Held-out figures
+5. The fixes were made (`c2d3429`). One more was found on the held-out run and is labelled so. Held-out figures
    after this point are no longer held-out results.
 
 Retrieval was changed after the held-out run, for the "where to look" list. Those changes and what they cost on
@@ -139,10 +139,10 @@ the passage a clinician needs to attest is among the first five shown.
 Two changes to retrieval came after the held-out run, both for the list of passages the product shows under a
 criterion the record cannot answer ("where to look"):
 
-1. **Sentence splitting** (`107648c`). A full stop inside a code ("G47.33") no longer ends a sentence. On dev this
+1. **Sentence splitting** (`5705586`). A full stop inside a code ("G47.33") no longer ends a sentence. On dev this
    changed nothing measured. On held-out, the default's recall at 5 went from 0.899 to 0.868 and recall at 1 from
    0.496 to 0.504: four queries lost a passage from the top five.
-2. **A relevance floor**, in the list only, not in the ranking measured above (`107648c`, then `ccb2221`). Ranking
+2. **A relevance floor**, in the list only, not in the ranking measured above (`5705586`, then `2f2f136`). Ranking
    always fills a list, so the list shows a passage only when it shares a concept with the criterion, or two words,
    beyond what the service itself names on every page.
 

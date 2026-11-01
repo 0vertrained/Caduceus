@@ -26,7 +26,7 @@ The bake-off gives every candidate the same requests and checks the replies the 
 - **Settings.** Thinking turned off, a 300-second timeout, up to three tries per request.
 - **Checks.** Deterministic rules, then a judge model that is not a contestant (Mistral Large 3, 675B). The judge
   reads the facts and the reply, lists any claim the facts do not support, and rates clarity from 1 to 5.
-- **Run.** [`model-bakeoff`](../.github/workflows/model-bakeoff.yml), run 41163393616 on commit `c6d6791`, using
+- **Run.** [`model-bakeoff`](../.github/workflows/model-bakeoff.yml), run 41163393616 on commit `2870457`, using
   the demo's key from Secret Manager. A job that can only push wrote the results to the `bakeoff-results` branch.
 
 ## Results

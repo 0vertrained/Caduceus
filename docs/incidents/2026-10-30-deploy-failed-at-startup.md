@@ -17,11 +17,11 @@ not to reason when it writes a paragraph.
 | When | What happened |
 |---|---|
 | 2:59 pm | The Ollama key was stored in Secret Manager with `infra/demo/add-model-key.sh`. |
-| 3:07 to 3:36 pm | Deploy of `cdba42a` (run 41128653647). It chose `kimi-k2.6`, its recording step failed with a generic warning, and then the **Deploy** step failed. The previous revision kept serving. |
-| 3:36 to 3:39 pm | Investigation. The run logs could not be read from the environment the work was done in (their storage was blocked), so the cause was worked out from the run's annotations and the code: with no recordings, the startup seed called the model 11 times in a row, each with a 90-second timeout. Fix 1 committed as `8b2bff3`. |
-| 3:44 to 4:21 pm | Deploy of `8b2bff3` (run 41133247468) succeeded, but recording missed 3 of 17 replies. Now the reasons were visible: "returned no answer (after thinking, out of tokens)" twice, and one dropped connection. |
-| 4:22 pm | Fix 2 committed as `5a3fcf4`. |
-| 4:28 to 4:31 pm | Deploy of `5a3fcf4` (run 41138355961) recorded 17 of 17 replies in three minutes, with thinking turned off, and published them for review. |
+| 3:07 to 3:36 pm | Deploy of `afd7635` (run 41128653647). It chose `kimi-k2.6`, its recording step failed with a generic warning, and then the **Deploy** step failed. The previous revision kept serving. |
+| 3:36 to 3:39 pm | Investigation. The run logs could not be read from the environment the work was done in (their storage was blocked), so the cause was worked out from the run's annotations and the code: with no recordings, the startup seed called the model 11 times in a row, each with a 90-second timeout. Fix 1 committed as `fc72d49`. |
+| 3:44 to 4:21 pm | Deploy of `fc72d49` (run 41133247468) succeeded, but recording missed 3 of 17 replies. Now the reasons were visible: "returned no answer (after thinking, out of tokens)" twice, and one dropped connection. |
+| 4:22 pm | Fix 2 committed as `6891dd1`. |
+| 4:28 to 4:31 pm | Deploy of `6891dd1` (run 41138355961) recorded 17 of 17 replies in three minutes, with thinking turned off, and published them for review. |
 
 ## Causes
 

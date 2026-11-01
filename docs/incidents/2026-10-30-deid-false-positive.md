@@ -34,7 +34,7 @@ told, and here it reached a letter.
 
 ## What changed
 
-- **A record number must contain a digit** (`4d28ec5`). Medical record, member, policy and account numbers all do.
+- **A record number must contain a digit** (`fd64d70`). Medical record, member, policy and account numbers all do.
   The patient's own record numbers are still removed by the known-values pass, whatever their form. The leakage
   suite still finds 0 of 181 identifiers reaching the model.
 - **A test for over-removal.** `test_the_fixed_text_prompts_are_built_from_loses_nothing` runs every fixed piece
