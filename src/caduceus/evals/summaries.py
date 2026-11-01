@@ -74,6 +74,9 @@ def summarize(drafter: Drafter, cases: Iterator[tuple[str, Case, dict]]) -> list
                      "text": summary["text"]})
         print(f"{group:8} {case.id:24} {rows[-1]['seconds']:6.1f}s  {summary['route']:8} "
               f"{summary.get('fallback_reason') or ''}", flush=True)
+        for s in rows[-1]["sentences"]:
+            verdict = f"replaced ({s['reason']}: {s['found'][s['reason']]})" if s["reason"] else "kept"
+            print(f"    {s['criterion_id']}: {verdict}\n      {s['written']}", flush=True)
     return rows
 
 

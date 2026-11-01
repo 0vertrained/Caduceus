@@ -82,4 +82,30 @@ jobs:
         with:
           name: summaries
           path: ${{ runner.temp }}/summaries
-          if-no-files-found: warn
+          if-no-files-found: error
+
+  publish:
+    # A separate job, so the token that can write to the repository never runs beside installed packages or the
+    # model: it only downloads the report and pushes it to the summaries-results branch, where it can be read.
+    name: Publish the report to the summaries-results branch
+    needs: read
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: summaries
+          path: summaries
+      - name: Push to the summaries-results branch
+        env:
+          TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          git init -q -b summaries-results published && cd published || exit 1
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          cp -r ../summaries/. .
+          git add -A
+          git commit -qm "Summary eval from ${GITHUB_SHA:0:7}"
+          git push -qf "https://x-access-token:${TOKEN}@github.com/${REPOSITORY}.git" summaries-results

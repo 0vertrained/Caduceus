@@ -35,14 +35,17 @@ _NUMBER = re.compile(r"\d+(?:\.\d+)?")
 
 def unsupported(sentence: str, facts: str) -> str | None:
     """Why `sentence` says something `facts` do not ("number", "negation" or "term"), or None if it does not."""
-    if _numbers(sentence) - _numbers(facts):
-        return "number"
+    return next(iter(findings(sentence, facts)), None)
+
+
+def findings(sentence: str, facts: str) -> dict[str, list[str]]:
+    """What in `sentence` the facts do not support, by kind, most serious first; empty if nothing."""
     negated_in_facts = _negated(facts)
-    if any(not heads & negated_in_facts for heads in _negations(sentence)):
-        return "negation"
-    if _terms(sentence) - _terms(facts):
-        return "term"
-    return None
+    found = {"number": sorted(_numbers(sentence) - _numbers(facts)),
+             "negation": sorted(" ".join(sorted(heads)) for heads in _negations(sentence)
+                                if not heads & negated_in_facts),
+             "term": sorted(_terms(sentence) - _terms(facts))}
+    return {kind: items for kind, items in found.items() if items}
 
 
 def _tokens(text: str) -> list[str]:
