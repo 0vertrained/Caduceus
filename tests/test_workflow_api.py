@@ -419,3 +419,18 @@ def test_a_page_that_refreshes_itself_is_one_view(env):
     client.app.state.view_again = timedelta(0)
     client.get("/api/cases/2026-1043", headers=DOLORES)
     assert [(e.actor, e.action) for e in svc.audit.events("2026-1043")].count(("dolores", "case.viewed")) == 2
+
+
+def test_an_address_the_api_does_not_have_is_a_404_not_the_page(tmp_path, monkeypatch):
+    """Where the API also serves the UI, any other address is the page, for the browser's router. An address under
+    /api is never the page: a client asking for one the API does not have gets a 404, in JSON."""
+    (tmp_path / "assets").mkdir()
+    (tmp_path / "index.html").write_text("<!doctype html><title>Caduceus</title>")
+    monkeypatch.setenv("CADUCEUS_UI_DIST", str(tmp_path))
+    from caduceus.app_factory import build_services
+    svc = build_services(Settings(data_dir=DATA, db_path=":memory:", auth_mode="dev", deid_key=TEST_KEY.decode()))
+    client = TestClient(create_app(svc, dispatch_interval=None))
+    assert client.get("/cases/2026-1043").text.startswith("<!doctype html>")
+    for path in ("/api/cases", "/api", "/api/queue/x"):
+        missing = client.get(path, headers=DOLORES)
+        assert missing.status_code == 404 and missing.headers["content-type"].startswith("application/json"), path
