@@ -216,10 +216,10 @@ def test_a_later_visitor_sees_a_queue_that_just_arrived(demo):
 
 
 def test_copies_expire_and_their_number_is_capped(demo, monkeypatch):
-    from caduceus.api import app
+    from caduceus.api import sandboxes
     client, clock = demo
     live = client.app.state.live
-    monkeypatch.setattr(app, "MAX_SANDBOXES", 2)
+    monkeypatch.setattr(sandboxes, "MAX_SANDBOXES", 2)
     for sid in ("1" * 32, "2" * 32, "3" * 32):
         client.get("/api/me", headers=DOLORES | {"X-Caduceus-Sandbox": sid})
     assert len(live.all()) == 3  # the shared set and the two most recent copies

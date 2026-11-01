@@ -5,22 +5,34 @@ from __future__ import annotations
 import os
 import re
 import threading
-from collections import OrderedDict
 from collections.abc import Callable
 from contextlib import asynccontextmanager
-from contextvars import ContextVar, Token
-from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Annotated, Literal
 
 import httpx
 import jwt
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
 
+from caduceus.api.bodies import (
+    AppealBody,
+    AskClinicBody,
+    AttestBody,
+    CallbackBody,
+    ConfirmFaxBody,
+    DraftBody,
+    EhrCaseBody,
+    LaunchBody,
+    MatchBody,
+    NoteBody,
+    ReturnBody,
+    SwitchBody,
+    UrgencyBody,
+)
+from caduceus.api.headers import security_headers
+from caduceus.api.sandboxes import SANDBOX_ID, Live, TooManySandboxes
 from caduceus.app_factory import Services, Settings, build_services
 from caduceus.audit.log import TamperDetected
 from caduceus.auth import DEV_USERS, AuthError, Principal, Role
@@ -30,43 +42,18 @@ from caduceus.fhir.store import fax_image
 from caduceus.intake import FaxReadingUnavailable
 from caduceus.outcomes import outcomes
 from caduceus.policies import policies
-from caduceus.presenter import Presenter, clock, moment
+from caduceus.presenter import clock, moment
 from caduceus.ratelimit import DemoLimits
-from caduceus.seed import clone_demo_services, fresh_demo_services
+from caduceus.seed import fresh_demo_services
 from caduceus.smart import LaunchRefused, Limits, SmartLaunch, lookback
 from caduceus.timeline import timeline
 from caduceus.tools import ToolForbidden, ToolNotAllowed
 from caduceus.tour import tour
 from caduceus.workflow import ActionRefused
 
-SECURITY_HEADERS = {
-    "Content-Security-Policy": "default-src 'self'; img-src 'self' data: blob:; style-src 'self'; font-src 'self'; "
-                               "frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
-    "X-Content-Type-Options": "nosniff",
-    "Referrer-Policy": "no-referrer",
-    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
-    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
-    "Cross-Origin-Opener-Policy": "same-origin",
-}
-
-
-def security_headers(settings: Settings) -> dict[str, str]:
-    """The headers every response carries. With OIDC sign-in the page also fetches the identity provider's discovery
-    document and calls its token endpoint, so connect-src adds the issuer and the addresses under it, and nothing else:
-    sign-in and sign-out themselves are navigations, which the policy does not govern. The development and demo
-    headers stay as they are, the same as netlify.toml's."""
-    if settings.auth_mode != "oidc" or not settings.oidc_issuer:
-        return SECURITY_HEADERS
-    policy = f"{SECURITY_HEADERS['Content-Security-Policy']}; connect-src 'self' {settings.oidc_issuer.rstrip('/')}/"
-    return SECURITY_HEADERS | {"Content-Security-Policy": policy}
-
-
 DEMO_RESET_COOLDOWN = timedelta(minutes=1)
 
 
-SANDBOX_ID = re.compile(r"[0-9a-f]{32}")
-MAX_SANDBOXES = 60           # each is a few hundred kilobytes; the least recently used goes first
-TEMPLATE_MAX_AGE = timedelta(hours=6)
 DEMO_EHR_RECORDS = 3         # patients opened from an EHR that one visitor's copy holds at once
 # A view of a case is recorded once a minute per person: a page that refreshes itself while a payer or the model
 # works is one view, not one per refresh. Someone who comes back later is recorded again.
@@ -76,122 +63,6 @@ VIEW_AGAIN = timedelta(minutes=1)
 NOT_COUNTED = {"/api/health", "/api/auth-config"}
 
 
-class TooManySandboxes(Exception):
-    pass
-
-
-@dataclass
-class Sandbox:
-    svc: Services
-    presenter: Presenter
-    last_reset: datetime
-
-
-class Live:
-    """The services the API is serving right now.
-
-    Outside the demo there is one set. In the public demo each visitor's browser sends a random sandbox id and gets
-    its own copy of the seeded cases, so one visitor's clicks never change what another sees. Copies are cloned in
-    milliseconds from a seeded template that is never served, are capped in number, and start over after the reset
-    period. Requests without a sandbox id share one set. A request's sandbox is chosen once, in middleware, and
-    handlers read through this holder."""
-
-    def __init__(self, svc: Services, fresh: Callable[[], Services] | None):
-        self._lock, self._template_lock = threading.Lock(), threading.Lock()
-        self.fresh = fresh
-        self.demo = svc.settings.auth_mode == "demo"
-        self.reset_every = timedelta(hours=float(svc.settings.demo_reset_hours)) if self.demo else None
-        self.shared = self._wrap(svc)
-        self._template: tuple[Services, datetime] | None = None
-        if self.demo:  # a pristine copy, taken before anyone can change the shared set
-            now = svc.workflow.now()
-            self._template = (clone_demo_services(svc, now, now), now)
-        self._sandboxes: OrderedDict[str, Sandbox] = OrderedDict()
-        self._current: ContextVar[Sandbox | None] = ContextVar("sandbox", default=None)
-
-    @staticmethod
-    def _wrap(svc: Services) -> Sandbox:
-        return Sandbox(svc, Presenter(svc.store, svc.workflow.library, svc.tz), svc.workflow.now())
-
-    @property
-    def current(self) -> Sandbox:
-        return self._current.get() or self.shared
-
-    @property
-    def svc(self) -> Services:
-        return self.current.svc
-
-    @property
-    def presenter(self) -> Presenter:
-        return self.current.presenter
-
-    @property
-    def last_reset(self) -> datetime:
-        return self.current.last_reset
-
-    def enter(self, sandbox_id: str | None, may_create: Callable[[], bool]) -> Token:
-        sandbox = self._sandbox(sandbox_id, may_create) if self.demo and sandbox_id else self.shared
-        return self._current.set(sandbox)
-
-    def leave(self, token: Token) -> None:
-        self._current.reset(token)
-
-    def all(self) -> list[Sandbox]:
-        with self._lock:
-            return [self.shared, *self._sandboxes.values()]
-
-    def reset(self) -> None:
-        """Start the current visitor's queue over (or the shared one)."""
-        if self.fresh is None:
-            raise RuntimeError("only the demo can be reset")
-        current = self.current
-        fresh = self._wrap(self._clone(current.svc.workflow.now()))
-        with self._lock:
-            sid = next((k for k, v in self._sandboxes.items() if v is current), None)
-            if sid is None:
-                self.shared = fresh
-            else:
-                self._sandboxes[sid] = fresh
-        self._current.set(fresh)
-
-    def expire(self) -> None:
-        """Drop visitors' copies older than the reset period, and start the shared set over when it is."""
-        now = self.shared.svc.workflow.now()
-        with self._lock:
-            for sid in [k for k, v in self._sandboxes.items() if now - v.last_reset >= self.reset_every]:
-                del self._sandboxes[sid]
-            stale = now - self.shared.last_reset >= self.reset_every  # type: ignore[operator]
-        if stale:
-            fresh = self._wrap(self._clone(now))
-            with self._lock:
-                self.shared = fresh
-
-    def _sandbox(self, sandbox_id: str, may_create: Callable[[], bool]) -> Sandbox:
-        now = self.shared.svc.workflow.now()
-        with self._lock:
-            sandbox = self._sandboxes.get(sandbox_id)
-            if sandbox is not None and now - sandbox.last_reset < self.reset_every:  # type: ignore[operator]
-                self._sandboxes.move_to_end(sandbox_id)
-                return sandbox
-        if not may_create():
-            raise TooManySandboxes
-        sandbox = self._wrap(self._clone(now))
-        with self._lock:
-            sandbox = self._sandboxes.setdefault(sandbox_id, sandbox)  # two first requests at once share one copy
-            self._sandboxes.move_to_end(sandbox_id)
-            while len(self._sandboxes) > MAX_SANDBOXES:
-                self._sandboxes.popitem(last=False)
-        return sandbox
-
-    def _clone(self, now: datetime) -> Services:
-        with self._template_lock:
-            template, seeded_at = self._template  # type: ignore[misc]
-            if self.fresh is not None and now - seeded_at > TEMPLATE_MAX_AGE:
-                template, seeded_at = self.fresh(), now
-                self._template = (template, seeded_at)
-            return clone_demo_services(template, now, seeded_at)
-
-
 def visitor_of(request: Request) -> str:
     """Behind Netlify the visitor's address is in the forwarded headers, not the connection."""
     return (request.headers.get("x-nf-client-connection-ip")
@@ -199,75 +70,7 @@ def visitor_of(request: Request) -> str:
             or (request.client.host if request.client else "unknown"))
 
 
-# Free text is bounded here so a request cannot park megabytes in a case; the workflow gives the friendly limits.
 NO_SUMMARY = {"text": "", "route": None, "model": None}  # after signing, the summary is not shown again
-
-
-class SwitchBody(BaseModel):
-    on: bool
-
-
-class ReturnBody(BaseModel):
-    reason: str = Field(max_length=2_000)
-
-
-class AttestBody(BaseModel):
-    answers: dict[str, str]
-
-
-class DraftBody(BaseModel):
-    text: str = Field(max_length=20_000)
-
-
-class NoteBody(BaseModel):
-    text: str = Field(max_length=20_000)
-
-
-class AppealBody(BaseModel):
-    text: str = Field(max_length=20_000)
-
-
-class UrgencyBody(BaseModel):
-    expedited: bool
-    reason: str = Field(default="", max_length=500)
-
-
-class ConfirmFaxBody(BaseModel):
-    values: dict[str, Annotated[str, Field(max_length=300)]] = Field(max_length=20)
-    # The fields sent to a person that they ticked as matching the fax. The server refuses the case until each one
-    # is ticked or corrected.
-    checked: list[Annotated[str, Field(max_length=40)]] = Field(default_factory=list, max_length=20)
-
-
-class AskClinicBody(BaseModel):
-    missing: list[Annotated[str, Field(max_length=40)]] = Field(default_factory=list, max_length=10)
-    resend: bool = False
-    referral: str | None = Field(default=None, max_length=9)  # the number as the person has it, to name in the request
-
-
-class MatchBody(BaseModel):
-    """A patient lookup. The name travels in the body, never the URL, so it stays out of access logs."""
-    name: str = Field(max_length=120)
-    birth_date: str = Field(max_length=10)
-    ref: str | None = Field(default=None, max_length=32)
-
-
-class LaunchBody(BaseModel):
-    """What the EHR put on Caduceus's launch address, sent on in the body so it stays out of access logs."""
-    iss: str = Field(min_length=1, max_length=512)
-    launch: str = Field(min_length=1, max_length=2048)
-    redirect_uri: str = Field(min_length=1, max_length=512)
-
-
-class CallbackBody(BaseModel):
-    code: str = Field(min_length=1, max_length=2048)
-    state: str = Field(min_length=1, max_length=64)
-
-
-class EhrCaseBody(BaseModel):
-    service: str = Field(max_length=10)
-    side: Literal["left", "right"] | None = None
-    payer: str = Field(max_length=100)
 
 
 def create_app(services: Services | None = None, dispatch_interval: float | None = 5.0,
@@ -877,7 +680,3 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
             return FileResponse(ui / "index.html")
 
     return app
-
-
-def utcnow() -> datetime:
-    return datetime.now(UTC)

@@ -97,7 +97,7 @@ token, whose audience is the client, can never pass as an access token.
 
 The page connects only to the issuer and the addresses under it, so the discovery document and the token endpoint
 must be there. Keycloak's are. Where a provider's token endpoint is elsewhere (Microsoft Entra ID's is not under its
-`v2.0` issuer, for one), add its address to `security_headers` in `src/caduceus/api.py`.
+`v2.0` issuer, for one), add its address to `security_headers` in `src/caduceus/api/headers.py`.
 
 ### The claims in the access token
 
