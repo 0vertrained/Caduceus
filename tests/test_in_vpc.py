@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import threading
+from datetime import timedelta
 
 import httpx
 import pytest
@@ -137,3 +138,14 @@ def test_the_summary_landing_while_the_clinician_signs_never_refuses_her_signatu
     assert case.chart_summary["pending"] is False  # nothing is on its way any more
     actions = [e.action for e in svc.audit.events(CASE)]
     assert actions.count("attestation.signed") == 1 and "summary.written" not in actions
+
+
+def test_a_summary_that_was_lost_is_not_waited_for(env):
+    """A restart loses the background job. The clinician's screen stops saying a summary is coming after five
+    minutes, and stops refreshing itself."""
+    svc, client, _, jobs = env
+    client.post(f"/api/cases/{CASE}/request-attestation", headers=DOLORES)
+    jobs.clear()
+    assert client.get(f"/api/attestations/{CASE}", headers=REYES).json()["chart_summary_pending"] is True
+    svc.workflow.now = lambda: T0 + timedelta(minutes=6)
+    assert client.get(f"/api/attestations/{CASE}", headers=REYES).json()["chart_summary_pending"] is False
