@@ -14,7 +14,7 @@ from typing import Any
 
 from caduceus.cases import Case
 from caduceus.deid.safe_harbor import PatientContext, SafeHarborDeidentifier, reidentify
-from caduceus.grounding import unsupported
+from caduceus.grounding import findings
 from caduceus.router import InVpcUnavailable, Router, UnstampedPayload
 from caduceus.router.router import ProviderUnavailable
 
@@ -279,9 +279,10 @@ class Drafter:
         sentences, checked = [], []
         for r in documented:
             sentence = written.get(r["criterion_id"], "")
-            why = unsupported(sentence, f"{context}\n{criterion_facts(r)}") if sentence else "missing"
+            found = findings(sentence, f"{context}\n{criterion_facts(r)}") if sentence else {"missing": []}
+            why = next(iter(found), None)
             sentences.append(engine_sentence(r) if why else _as_sentence(sentence))
-            checked.append({"criterion_id": r["criterion_id"], "written": sentence, "reason": why})
+            checked.append({"criterion_id": r["criterion_id"], "written": sentence, "reason": why, "found": found})
         replaced = [{"criterion_id": c["criterion_id"], "reason": c["reason"]} for c in checked if c["reason"]]
         extra = {"sentences": checked} if keep_sentences else {}
         if len(replaced) == len(documented):
