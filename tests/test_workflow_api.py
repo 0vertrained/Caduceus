@@ -360,6 +360,7 @@ SAM = as_user("sam")
 def test_the_case_history_reads_in_plain_words_and_only_an_auditor_verifies_it(env):
     svc, client, _ = env
     _sign_harold(client)
+    client.app.state.view_again = timedelta(0)  # as if she came back later: each view is recorded
     client.get("/api/cases/2026-1043", headers=DOLORES)
     client.get("/api/cases/2026-1043", headers=DOLORES)
     with pytest.raises(ToolNotAllowed):
@@ -403,3 +404,18 @@ def test_packet_search_finds_the_unanswered_criterion_and_only_in_allowed_steps(
     with pytest.raises(ToolNotAllowed):
         svc.workflow.gateway.call(AGENT, case.id, "submission", "documents.search_packet", packet=case.packet,
                                   criteria_set=case.criteria_set, criterion_id="conservative_care")
+
+
+def test_a_page_that_refreshes_itself_is_one_view(env):
+    """The case page refreshes while the payer decides, and the clinician's while the model writes. Each person's
+    view of a case is recorded once a minute, not once a refresh; coming back later is recorded again."""
+    svc, client, _ = env
+    client.post("/api/cases/2026-1043/request-attestation", headers=DOLORES)
+    for _ in range(5):
+        client.get("/api/cases/2026-1043", headers=DOLORES)
+        client.get("/api/attestations/2026-1043", headers=REYES)
+    actions = [(e.actor, e.action) for e in svc.audit.events("2026-1043")]
+    assert actions.count(("dolores", "case.viewed")) == 1 and actions.count(("dr.reyes", "attestation.viewed")) == 1
+    client.app.state.view_again = timedelta(0)
+    client.get("/api/cases/2026-1043", headers=DOLORES)
+    assert [(e.actor, e.action) for e in svc.audit.events("2026-1043")].count(("dolores", "case.viewed")) == 2
