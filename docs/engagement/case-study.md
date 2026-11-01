@@ -2,7 +2,7 @@
 
 **Date:** October 31, 2026
 **Live demo:** [caduceusdemo.netlify.app](https://caduceusdemo.netlify.app/), with a
-[98-second walkthrough](https://caduceusdemo.netlify.app/demo.mp4)
+[2½-minute walkthrough](https://caduceusdemo.netlify.app/demo.mp4)
 **Customer:** Mesa Verde Health, a simulated six-clinic group. Everything about it is fictional, and every patient
 is synthetic. The [discovery memo](discovery-memo.md) sets out the engagement.
 
