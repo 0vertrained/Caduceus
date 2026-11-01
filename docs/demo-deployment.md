@@ -27,7 +27,7 @@ draft would take minutes, so with the outside model switched off, the template w
 API needs for Ollama Cloud, so the model's isolation rests on how it is built and run; in production it sits in a
 subnet with no route out. The [model-image](../.github/workflows/model-image.yml) workflow builds it (about half an hour, only when
 its folder changes), checks that it answers with no network at all, scans it, and publishes it; the deploy runs the
-published one, and runs the API alone if there is none, when the summary comes from the record's facts.
+published one, and runs the API alone if there is none or Cloud Run refuses the pair, saying so on the run's page; the summary then comes from the record's facts.
 
 A visitor can also open Caduceus from an EHR: the Help page links to the public SMART launcher, and the API reads the
 launched sandbox patient's chart into that visitor's copy ([docs/smart-launch.md](smart-launch.md)). The API accepts
