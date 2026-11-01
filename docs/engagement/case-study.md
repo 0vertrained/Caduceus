@@ -89,7 +89,7 @@ The decisions behind it:
 | [Model bake-off](../model-bakeoff.md): replies with a problem, read by hand | Kimi K2.6 2 of 17; gpt-oss 120B 6 of 17 (2 misstatements, 4 overstatements) |
 | Accessibility, axe-core WCAG 2.2 AA | 0 violations on 50 screens; no sideways scroll at 320 px |
 | Known vulnerabilities | 0 in Python and npm packages; 2 medium in CPython with no fix released |
-| Tests | 379, and 65 more runs of the store, audit and workflow tests on Postgres |
+| Tests | 380, and 65 more runs of the store, audit and workflow tests on Postgres |
 
 Every number here comes from synthetic data, and none is a claim of clinical or financial impact. Synthetic
 records cannot stand in for the distribution of real ones, as Synthea's own documentation warns. That is why the

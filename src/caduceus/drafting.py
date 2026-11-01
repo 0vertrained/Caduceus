@@ -32,9 +32,12 @@ APPEAL_SYSTEM = (
     "headings, no salutation, no signature."
 )
 SUMMARY_TOKENS = 300  # two sentences; on a CPU, every token is about a seventh of a second
+# The model is given only the criteria the chart documents, and asked to say only that. What the clinician is asked
+# about, which the chart does not answer, is stated by the engine word for word (unanswered()): a small model told to
+# say what a chart lacks was seen to deny an X-ray it had just named.
 SUMMARY_SYSTEM = (
-    "Summarize, for the ordering clinician, what this patient's chart shows about the listed criteria, in at most "
-    "two sentences. State plainly what the chart does not say. Use only the facts provided."
+    "Summarize, for the ordering clinician, what this patient's chart documents for the criteria listed, in one or "
+    "two sentences. Use only the facts provided. Say only what the chart shows, never what it lacks."
 )
 
 
@@ -76,18 +79,25 @@ def age_on(patient: dict, as_of: date) -> int:
     return as_of.year - born.year - ((as_of.month, as_of.day) < (born.month, born.day))
 
 
-def _facts(case: Case, patient: dict) -> str:
+def _facts(case: Case, patient: dict, results: list[dict] | None = None) -> str:
+    """The case's facts for a model: the patient, the service, and each criterion (or only `results`)."""
     age = age_on(patient, date.fromisoformat(case.as_of))
     lines = [f"Patient: {patient_name(patient)}, {age}-year-old {patient.get('gender', 'patient')}.",
              f"Requested service: {case.service['display']} ({case.service['system'].upper()} "
              f"{case.service['code']}).", "Criteria:"]
-    for r in case.effective_results():
+    for r in case.effective_results() if results is None else results:
         state = {"met": "met", "unmet": "not met", "unknown": "awaiting clinician attestation"}[r["status"]]
         lines.append(f"- {r['text']}: {state}. {r['explanation']}")
         for e in r.get("evidence", [])[:2]:
             if e.get("source_sentence"):
                 lines.append(f"  Source: \"{e['source_sentence']}\"")
     return "\n".join(lines)
+
+
+def unanswered(case: Case, criterion_ids: list[str]) -> list[str]:
+    """What the clinician is asked about, which the chart does not answer: a sentence each, in the engine's words."""
+    return [f"The chart does not say whether this was done: {mid_sentence(r['text'])}."
+            for r in case.effective_results() if r["criterion_id"] in criterion_ids]
 
 
 # A model's draft may not say every criterion is met when the facts say one is not, or is still with the clinician.
@@ -198,20 +208,23 @@ class Drafter:
     @staticmethod
     def template_summary(case: Case, criterion_ids: list[str]) -> dict[str, Any]:
         """What the chart shows, from the record's facts alone, without a model: at once, and always available."""
-        results = [r for r in case.effective_results() if r["criterion_id"] in criterion_ids]
         known = [r for r in case.effective_results() if r["status"] == "met"][:2]
-        sentences = [r["explanation"] for r in known]
-        sentences += [f"The chart does not say whether this was done: {mid_sentence(r['text'])}." for r in results]
+        sentences = [r["explanation"] for r in known] + unanswered(case, criterion_ids)
         return {"text": " ".join(sentences), "route": "template", "model": None}
 
     def chart_summary(self, case: Case, patient: dict, criterion_ids: list[str]) -> dict[str, Any]:
         """The summary by the model inside the network, which may take tens of seconds on a CPU; the template's
-        when there is no such model or it fails. The patient's details never leave the network on this route."""
-        if not self.phi_route:
+        when there is no such model or it fails. The patient's details never leave the network on this route.
+        The model sees and summarizes only the criteria the chart documents; what it does not answer follows, in
+        the engine's words."""
+        documented = [r for r in case.effective_results() if r["status"] == "met"]
+        if not self.phi_route or not documented:
             return self.template_summary(case, criterion_ids)
         try:
-            out = self._router.complete_phi("attestation_summary", SUMMARY_SYSTEM, _facts(case, patient),  # type: ignore[union-attr]
-                                            case.id, max_tokens=SUMMARY_TOKENS)
+            out = self._router.complete_phi(  # type: ignore[union-attr]
+                "attestation_summary", SUMMARY_SYSTEM, _facts(case, patient, documented), case.id,
+                max_tokens=SUMMARY_TOKENS)
         except (InVpcUnavailable, ProviderUnavailable):
             return self.template_summary(case, criterion_ids) | {"fallback_reason": "in_vpc_unavailable"}
-        return {"text": out.completion.text.strip(), "route": out.route, "model": out.completion.model}
+        text = " ".join([out.completion.text.strip(), *unanswered(case, criterion_ids)])
+        return {"text": text, "route": out.route, "model": out.completion.model}
