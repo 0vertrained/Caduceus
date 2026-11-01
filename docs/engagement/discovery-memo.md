@@ -89,7 +89,7 @@ go-live. The compliance officer reviews data handling and vendor agreements, and
 
 **Staff comfort and accessibility.** The daily users include older office staff, and comfort with new tools
 varies. Screens use 18 px text, a Larger setting, and status as an icon plus a word. Automated checks find 0 WCAG
-2.2 AA violations on 32 screens. Keyboard, screen-reader, 200% zoom and real-user tests are not done yet. Training
+2.2 AA violations on 50 screens. Keyboard, screen-reader, 200% zoom and real-user tests are not done yet. Training
 is a 30-minute session around the larger text, a one-page desk guide, and daily office hours for two weeks.
 Nothing is sent without a person, and every send can be undone for 30 seconds.
 
