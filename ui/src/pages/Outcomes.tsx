@@ -5,8 +5,7 @@ interface Outcomes {
   sections: { title: string; rows: { label: string; value: string; note: string }[] }[];
 }
 
-/** What the queue's work adds up to, read live from the audit log. A ledger, not a dashboard: each figure says what
- *  it counts. */
+/** What the queue's work adds up to, read live from the audit log: a ledger, each figure saying what it counts. */
 export function OutcomesPage() {
   const { data, error } = useResource<Outcomes>("/api/outcomes", 15000);
   useTitle("Outcomes");

@@ -1,4 +1,4 @@
-/* Component styles. Every color and size comes from tokens.css; one class per element, no nesting wars. */
+/* Component styles. Every color and size comes from tokens.css; one class per element keeps specificity flat. */
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -99,7 +99,7 @@ p .link-button { min-height: 24px; vertical-align: baseline; }
   .btn:active:not(:disabled) { transform: none; }
 }
 
-/* Header: the masthead (who you are), then the tools (find, go, text size) ---------------------- */
+/* Header: the masthead (who is signed in), then the tools (find, go, text size) ----------------- */
 
 .header { background: var(--paper); border-bottom: 1px solid var(--hairline); }
 .header__inner {
@@ -227,7 +227,6 @@ details[open] > .details__summary::before { transform: rotate(45deg); margin-bot
 @media (prefers-reduced-motion: reduce) { .seal--settle { animation: none; } }
 .seal-notes { display: flex; flex-direction: column; color: var(--ink-2); }
 
-/* The small seal: one mark, one meaning — a person attested */
 .seal-mark { flex: none; color: var(--seal); }
 .seal-mark :is(circle, path) { vector-effect: non-scaling-stroke; }
 .seal-mark--empty { color: var(--field-border); }
@@ -343,7 +342,7 @@ details[open] > .details__summary::before { transform: rotate(45deg); margin-bot
 .signature__name--awaiting { color: var(--ink-2); }
 .signature__meta { font-size: var(--text-small); color: var(--ink-2); }
 
-/* The referral packet: each page is a row you can open */
+/* The referral packet: each page a row that opens it */
 .packet { display: flex; flex-direction: column; }
 .packet__title { font-size: var(--text-body); font-weight: 600; line-height: 1.5; margin-bottom: var(--space-1); }
 .packet__item {

@@ -17,8 +17,7 @@ function goTo(target: string) {
   el.focus({ preventScroll: true });
 }
 
-/** The GOV.UK error summary: at the top of the page, announced, focused, each problem a link to its field. It takes
- *  focus on each new attempt (`attempt`); problems fixed since drop out quietly. */
+/** The GOV.UK error summary, each problem a link to its field. Focus moves to it on a new `attempt` only. */
 export function ErrorSummary({ errors, attempt }: { errors: FormError[]; attempt: number }) {
   const box = useRef<HTMLDivElement>(null);
   useEffect(() => {

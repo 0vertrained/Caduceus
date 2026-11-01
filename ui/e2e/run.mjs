@@ -15,7 +15,7 @@ mkdirSync(out, { recursive: true });
 
 const report = { screens: [], failures: [] };
 const shot = async (page, name) => page.screenshot({ path: path.join(out, `${name}.png`), fullPage: true });
-// What a person actually sees: the viewport, with the sticky decision bar where it really sits.
+// What a person sees: the viewport, with the sticky decision bar where it sits.
 const view = async (page, name) => page.screenshot({ path: path.join(out, `${name}-viewport.png`) });
 
 async function axe(page, name) {
@@ -102,7 +102,6 @@ await page.getByRole("heading", { name: "Waiting on Mesa Verde Orthopedics, Sant
 if (await page.locator(".asked .paper").getByText(/Shelba|Gulgowski/).count()) report.failures.push("clinic request names the patient");
 await shot(page, "02e-fax-asked");
 await axe(page, "02e-fax-asked");
-// The whole page, larger.
 await page.getByRole("button", { name: "View the whole fax" }).click();
 await page.getByRole("button", { name: "Zoom in" }).click();
 await page.getByRole("region", { name: "The fax page, at 150%" }).waitFor();
@@ -117,7 +116,6 @@ await axe(page, "02g-queue-fax-waiting");
 await page.locator('a[href="/intake/FAX-0003"]').click();
 await page.getByRole("button", { name: "The clinic sent it" }).click();
 await page.getByRole("button", { name: "Create the case" }).waitFor();
-// Text where the fax has text, lists for the plan, the clinician and the service, three boxes for the date.
 const want = faxes["FAX-0003"].expected;
 for (const [key, label] of Object.entries({ referral: "Referral number", patient_name: "Patient name",
   member_id: "Member ID", diagnosis: "Diagnosis" })) {
@@ -260,7 +258,6 @@ await doc.getByText("Where the referral packet may answer this").waitFor();
 await shot(doc, "07b-attest-where-to-look");
 await axe(doc, "07b-attest-where-to-look");
 
-// Back to the specialist: now approvable.
 await page.goto(caseUrl);
 await page.getByRole("button", { name: "Approve and send" }).waitFor();
 await shot(page, "08-case-ready");
@@ -313,9 +310,8 @@ await page.getByRole("heading", { name: "Where patient information went" }).wait
 await shot(page, "12b-outcomes");
 await axe(page, "12b-outcomes");
 
-// The request approved above leaves the outbox after its undo window, and this payer pends it: it wants the
-// note behind the attestation. The specialist asks for it, the clinician writes and signs it, the specialist sends
-// it, and the payer approves. The case page refreshes itself while something is waiting to be sent.
+// The payer pends the request approved above, wanting the note behind the attestation. No reload is needed: the
+// case page refreshes itself while something is waiting to be sent.
 await page.goto(caseUrl);
 await page.getByRole("heading", { name: /asked a question$/ }).waitFor({ timeout: 60_000 });
 await shot(page, "13-case-payer-question");
@@ -370,7 +366,7 @@ await page.getByRole("button", { name: "Check that nothing was changed" }).click
 await page.getByText(/^Intact\. All [\d,]+ events/).waitFor();
 await axe(page, "21-auditor-verifies");
 
-// The policies as anyone on the team reads them: each service's version, its source, its criteria in its words.
+// The policies, as anyone on the team reads them.
 await page.goto(base + "/policies");
 await page.getByRole("heading", { name: "Total knee arthroplasty" }).waitFor();
 await page.getByRole("link", { name: /^LCD L36007/ }).waitFor();

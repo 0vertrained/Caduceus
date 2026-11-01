@@ -48,8 +48,8 @@ export function IntakePage() {
     setTicked(new Set());
   }, [data]);
 
-  // Look the patient up once the fax can be checked (now, or when the clinic has answered), as the form has them,
-  // when there is both a name and a whole date.
+  // Once per fax, when it can be checked (now, or once the clinic has answered), with the name and date the form
+  // holds; on first load the form has not started yet, so they are the fax's own.
   const lookUpFromForm = useEffectEvent((fax: FaxView) => {
     if (fax.status !== "read" || lookedUp.current === fax.id) return;
     const start = Object.fromEntries(fax.form.map((f) => [f.key, f.initial]));
@@ -123,8 +123,7 @@ export function IntakePage() {
     }
   };
 
-  // Ask the clinic that sent the fax for what it does not give clearly, or to send it all again. Caduceus writes the
-  // request and holds the fax; a person sends the request.
+  // Caduceus writes the request to the clinic and holds the fax; a person sends the request.
   const askClinic = async (resend: boolean) => {
     setAskFailure(null);
     const referral = values.referral && /^\d{4}-\d{4}$/.test(values.referral) ? values.referral : undefined;

@@ -31,8 +31,7 @@ export function WholePage({ src, label }: { src: string | null; label: string })
 
 const ZOOM = [100, 150, 200, 300];
 
-/** The whole page, opened on request, with zoom. The buttons, and + and − on the page, change the size; the arrow keys
- *  move around it once it has focus. */
+/** The whole page on request: the buttons or + and − zoom it; once it has focus, the arrow keys move around it. */
 export function FaxViewer({ src, alt }: { src: string | null; alt: string }) {
   const [open, setOpen] = useState(false);
   const [zoom, setZoom] = useState(100);

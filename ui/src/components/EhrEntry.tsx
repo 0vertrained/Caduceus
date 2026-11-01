@@ -8,8 +8,7 @@ const LAUNCH_STEPS = [
   "Caduceus reads the chart and shows what it holds. Choose what is being requested, then start the case.",
 ];
 
-/** "Open from an EHR": what will happen, in a sentence, and the SMART launcher set up for Caduceus. On the queue it
- *  is one line; on the Help page it says how to go through the launcher. Shown only where the launch is set up. */
+/** The SMART launcher, set up for Caduceus: one line on the queue (`compact`), the steps through it on Help. */
 export function EhrEntry({ info, compact = false }: { info: SmartInfo; compact?: boolean }) {
   if (!info.enabled || !info.client_id) {
     return compact ? null : <p>Opening Caduceus from an EHR is not set up here.</p>;

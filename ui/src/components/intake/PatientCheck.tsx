@@ -4,8 +4,7 @@ import { CheckCircle } from "../Icons";
 import { Differs } from "./Differs";
 import { sameName } from "./fields";
 
-/** The patient in the chart: the one record with this name and date of birth, confirmed by a person, or the closest
- *  few to choose from. Only what the record holds is compared. */
+/** The fax's patient in the chart: the one record with this name and date of birth, or the closest few. */
 export function PatientCheck({ match, looking, failure, name, born, confirmed, onLook, onConfirm, onUseName, onUseBorn }: {
   match: PatientMatch | null; looking: boolean; failure: string | null; name: string; born: string; confirmed: boolean;
   onLook: (ref?: string) => void; onConfirm: (ref: string | null) => void; onUseName: (c: ChartCard) => void;

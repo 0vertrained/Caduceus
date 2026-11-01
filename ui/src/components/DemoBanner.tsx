@@ -17,8 +17,7 @@ function storedHidden(): boolean {
   }
 }
 
-/** Shown only on the public demo, so no one mistakes synthetic patients for real ones, with a guided tour that
- *  follows one case and says who to act as at each step. */
+/** Shown only on the public demo, so no one mistakes its synthetic patients for real ones; it carries the tour. */
 export function DemoBanner({ me, onSwitch }: { me: Me | null; onSwitch: (user: string, path: string | null) => void }) {
   const [info, setInfo] = useState<DemoInfo | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -28,6 +27,7 @@ export function DemoBanner({ me, onSwitch }: { me: Me | null; onSwitch: (user: s
   const load = useCallback(() => {
     api<DemoInfo>("/api/demo").then(setInfo).catch(() => setInfo(null));
   }, []);
+  // Asked again on each page and for each person, so the tour keeps up with them.
   useEffect(load, [load, location.pathname, me?.id]);
   useEffect(() => {
     window.addEventListener(CHANGED, load);
