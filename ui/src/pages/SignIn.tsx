@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { finishSignIn, SignInProblem, startSignIn, type SignInNotice } from "../auth";
 import { CheckCircle, Clock, Triangle } from "../components/Icons";
 import { useTitle } from "../hooks";
@@ -120,16 +120,16 @@ export type SignInOutcome = { returnTo: string } | { problem: SignInNotice };
 /** Where the identity provider sends the person back. It finishes sign-in once, then says where to go. */
 export function SignInCallbackPage({ onDone }: { onDone: (outcome: SignInOutcome) => void }) {
   useTitle("Signing in");
+  const done = useEffectEvent(onDone);
   useEffect(() => {
     let current = true;  // React can run this twice in development: finishSignIn works once, and the last one answers
     finishSignIn().then(
-      (returnTo) => current && onDone({ returnTo }),
-      (e: unknown) => current && onDone({ problem: e instanceof SignInProblem ? e.notice : "failed" }),
+      (returnTo) => current && done({ returnTo }),
+      (e: unknown) => current && done({ problem: e instanceof SignInProblem ? e.notice : "failed" }),
     );
     return () => {
       current = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return (
     <div className="signin">

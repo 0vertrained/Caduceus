@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useEffectEvent, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError, type FaxView, type FormField } from "../api";
 import { ErrorSummary, type FormError } from "../components/ErrorSummary";
@@ -48,17 +48,19 @@ export function IntakePage() {
     setTicked(new Set());
   }, [data]);
 
-  useEffect(() => {
-    // Look the patient up once the fax can be checked (now, or when the clinic has answered), as the form has them,
-    // when there is both a name and a whole date.
-    if (!data?.form || data.status !== "read" || lookedUp.current === data.id) return;
-    const start = Object.fromEntries(data.form.map((f) => [f.key, f.initial]));
+  // Look the patient up once the fax can be checked (now, or when the clinic has answered), as the form has them,
+  // when there is both a name and a whole date.
+  const lookUpFromForm = useEffectEvent((fax: FaxView) => {
+    if (fax.status !== "read" || lookedUp.current === fax.id) return;
+    const start = Object.fromEntries(fax.form.map((f) => [f.key, f.initial]));
     const name = values.patient_name ?? start.patient_name;
     const born = values.patient_name === undefined ? start.birth_date ?? "" : joinDate(dob);
     if (!name || !/^\d\d\/\d\d\/\d{4}$/.test(born)) return;
-    lookedUp.current = data.id;
+    lookedUp.current = fax.id;
     void lookUp(name, born);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  });
+  useEffect(() => {
+    if (data?.form) lookUpFromForm(data);
   }, [data]);
 
   if (error) return <div className="page"><p role="alert" className="alert">{error.message}</p><Link to="/">Back to your queue</Link></div>;
