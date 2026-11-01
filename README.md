@@ -136,6 +136,8 @@ checks. Fax intake needs Tesseract (`apt install tesseract-ocr` or `brew install
 ```
 src/caduceus/
   router/       the only code that calls a model (ADR 1)
+  drafting.py   drafts, appeals and the clinician's chart summary
+  grounding.py  the check that a summary sentence says nothing its facts do not
   deid/         Safe Harbor de-identification, stamping, re-identification
   criteria/     DSL, deterministic engine, approval lock (ADR 2)
   policies.py   the criteria sets as a reviewer reads them: version, source, approval, fingerprint
@@ -148,11 +150,12 @@ src/caduceus/
   mcp_servers.py  the same tools as MCP servers
   workflow.py   case state machine, outbox and undo (ADR 4)
   api/          HTTP API for the UI, a router for each area; security headers; no-store on PHI
-  evals/        criteria, leakage and red-team suites with gates
+  evals/        criteria, leakage and red-team suites with gates; the hard sets; the summary eval
 ui/             React review UI; e2e/ walks it in Chromium with axe-core
 data/           synthetic patients, case overlays, criteria sets
 infra/          Terraform skeleton, Postgres audit-log SQL, the in-network model's image (model/)
-docs/           ADRs, data handling, incidents, the model bake-off, the hard sets, engagement documents
+docs/           ADRs, data handling, incidents, the model bake-off, the hard sets, the summary check,
+                engagement documents
 ```
 
 ## Security posture, in brief
@@ -165,15 +168,17 @@ audit log is append-only at the database level and archived under S3 Object Lock
 
 ### Known vulnerabilities in dependencies
 
-CI checks on every push and fails on any finding with a released fix. As of October 31, 2026:
+CI checks on every push and fails on any finding with a released fix, and on any secret in any commit. As of
+November 1, 2026:
 
 | What | Scanner | Known vulnerabilities |
 |---|---|---|
-| Python packages (47, with dev tools) | pip-audit | 0 |
+| Python packages (57, with dev tools) | pip-audit | 0 |
 | UI packages (128, with build and test tools), Playwright | npm audit | 0 |
 | Container image (Wolfi base, Python 3.13.18) | Grype | 2 medium, no fix released for Python 3.13 |
 | The in-network model's image (Wolfi base; llama.cpp built from source) | Grype | 0; Grype cannot see a library compiled from source, so llama.cpp's advisories are watched by hand |
 | Synthea, the data generator (never shipped), built from source with patched libraries | Grype | 0 (upstream's jar: 106) |
+| Every commit in the history | gitleaks | 0 secrets |
 
 The two image findings are in CPython itself. CVE-2026-12345 (a `tempfile` cleanup race) is fixed upstream in
 3.13.18, the version shipped; the scanner's data has not caught up. CVE-2025-15367 is in `poplib`, which
