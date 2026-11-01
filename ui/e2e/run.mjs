@@ -19,6 +19,11 @@ const shot = async (page, name) => page.screenshot({ path: path.join(out, `${nam
 const view = async (page, name) => page.screenshot({ path: path.join(out, `${name}-viewport.png`) });
 
 async function axe(page, name) {
+  // A color mid-transition is not the page's color: let running transitions finish first (not the busy spinner,
+  // which never does).
+  await page.evaluate(() => Promise.all(document.getAnimations()
+    .filter((a) => a.effect?.getComputedTiming().iterations !== Infinity)
+    .map((a) => a.finished.catch(() => {}))));
   await page.evaluate(axeSource);
   const result = await page.evaluate(async () =>
     // eslint-disable-next-line no-undef
