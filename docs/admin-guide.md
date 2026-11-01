@@ -25,8 +25,8 @@ Signed in as an administrator, choose **Administration** in the header.
   patient's details, and the model outside it, which only ever receives de-identified text that is checked again
   for the patient's identifiers before each request leaves. Model names are shown; keys and addresses never are.
 - **The external model's switch.** "Turn off the external model" stops every call to it at once. De-identified
-  work then runs on the in-network model, or, if there is none, drafts come from the template, and each case says
-  so. Each switch is recorded in the audit log with who did it, and the last one holds after a restart. In the
+  work then runs on the in-network model. Where there is none, or drafts are kept off it
+  (`CADUCEUS_IN_VPC_DRAFTS=0`, as in the demo), drafts come from the template, and each case says so. Each switch is recorded in the audit log with who did it, and the last one holds after a restart. In the
   demo, it applies to your own copy only.
 - **Coverage policies.** Each service's running version, and whether it is unchanged since it was approved.
 - **The audit log.** How many events, the last one, and whether each is still sealed to the one before.
@@ -77,6 +77,7 @@ Set as environment variables. The API checks them at start and refuses to start 
 | `CADUCEUS_DATA_DIR` | `data` | Policies, scenario data, the fax folder and recorded replies |
 | `CADUCEUS_FHIR_BASE_URL` | none | A FHIR server for patient records; without it, the bundles in the data folder |
 | `CADUCEUS_IN_VPC_URL`, `CADUCEUS_IN_VPC_MODEL` | none, `llama3.1:8b` | The model inside the network, an OpenAI-compatible server. The demo and docker compose run [infra/model](../infra/model/Dockerfile) as `qwen2.5-1.5b-instruct` |
+| `CADUCEUS_IN_VPC_DRAFTS` | `1` | `0` keeps drafts off the in-network model, for one too slow to write them (the demo's runs on 2 vCPU): with the external model off, the template writes them. It still writes the chart summaries |
 | `CADUCEUS_EXTERNAL_PROVIDER` | `anthropic` | The external model's vendor: `anthropic`, `ollama`, or `stub` (development only) |
 | `CADUCEUS_EXTERNAL_API_KEY`, `CADUCEUS_EXTERNAL_MODEL`, `CADUCEUS_EXTERNAL_BASE_URL` | none | The external model. With `oidc`, a key without an in-network model is refused: work that needs the patient's details would have nowhere to run |
 | `CADUCEUS_EXTERNAL_TIMEOUT` | `60` | Seconds to wait for the external model before the template writes the draft |
