@@ -1,10 +1,5 @@
 import type { ClinicRequest } from "../../api";
-import { glue, midSentence } from "../../hooks";
-
-/** "a", "a and b", "a, b and c" */
-function andList(items: string[]): string {
-  return items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
-}
+import { andList, glue, midSentence } from "../../hooks";
 
 export function WaitingOnClinic({ request, copied, failure, onCopy, onAnswered }: {
   request: ClinicRequest; copied: string | null; failure: string | null; onCopy: () => void; onAnswered: () => void;

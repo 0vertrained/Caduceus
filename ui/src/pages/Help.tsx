@@ -3,8 +3,28 @@ import { useLocation } from "react-router-dom";
 import { EhrEntry } from "../components/EhrEntry";
 import { Clock, Triangle } from "../components/Icons";
 import { StatusWord } from "../components/Status";
+import { Steps } from "../components/Steps";
 import { useTitle } from "../hooks";
 import { useSmartInfo } from "../smart";
+
+const FLOW = [
+  "Caduceus reads the referral and checks the record against the payer’s coverage policy.",
+  "You review each criterion. Every “Met” shows the page and sentence it came from.",
+  "If the record does not answer a criterion, the ordering clinician confirms it from their phone.",
+  "You approve. For 30 seconds you can undo; then the request goes to the payer.",
+  "If the payer asks for a note, the ordering clinician writes and signs it, and you send it the same way.",
+];
+
+const STATUSES = [
+  ["ready", "Ready to approve", "Every criterion is met, or the clinician signed the note the payer asked for. You can approve and send."],
+  ["needs_clinician", "Needs a clinician", "The record does not answer one or more criteria. Ask the ordering clinician."],
+  ["not_met", "Criteria not met", "The record shows a criterion is not met. Return it to the clinic with a reason."],
+  ["waiting_clinician", "Waiting on a clinician", "You asked for a signature or a note. The case returns when they sign."],
+  ["returned", "Returned to a clinician", "You sent it back to the clinic to correct. When they resubmit, open the case and choose “The clinic resubmitted”; Caduceus prepares it again."],
+  ["sending", "Sending to the payer", "You approved it. For 30 seconds you can undo it. After that, until it is sent, any specialist can recall it from the case."],
+  ["payer_question", "The payer asked a question", "The payer needs more before deciding. Ask the ordering clinician for the note."],
+  ["denied", "Denied by the payer", "The payer said no and gave its reason. Caduceus drafts an appeal from the policy and the record; read it, then send it."],
+] as const;
 
 export function HelpPage() {
   useTitle("Help");
@@ -20,27 +40,12 @@ export function HelpPage() {
       <h1 className="page-title">Help</h1>
       <section className="help__section" aria-labelledby="flow">
         <h2 id="flow" className="section-title">How a case moves</h2>
-        <ol className="helper__steps help__steps">
-          {["Caduceus reads the referral and checks the record against the payer’s coverage policy.",
-            "You review each criterion. Every “Met” shows the page and sentence it came from.",
-            "If the record does not answer a criterion, the ordering clinician confirms it from their phone.",
-            "You approve. For 30 seconds you can undo; then the request goes to the payer.",
-            "If the payer asks for a note, the ordering clinician writes and signs it, and you send it the same way."].map((s, i) => (
-            <li key={s} className="helper__step"><span className="step-number" aria-hidden="true">{i + 1}</span>{s}</li>
-          ))}
-        </ol>
+        <Steps className="helper__steps help__steps" steps={FLOW} />
       </section>
       <section className="help__section" aria-labelledby="words">
         <h2 id="words" className="section-title">What the statuses mean</h2>
         <ul className="panel help__list">
-          {([["ready", "Ready to approve", "Every criterion is met, or the clinician signed the note the payer asked for. You can approve and send."],
-             ["needs_clinician", "Needs a clinician", "The record does not answer one or more criteria. Ask the ordering clinician."],
-             ["not_met", "Criteria not met", "The record shows a criterion is not met. Return it to the clinic with a reason."],
-             ["waiting_clinician", "Waiting on a clinician", "You asked for a signature or a note. The case returns when they sign."],
-             ["returned", "Returned to a clinician", "You sent it back to the clinic to correct. When they resubmit, open the case and choose “The clinic resubmitted”; Caduceus prepares it again."],
-             ["sending", "Sending to the payer", "You approved it. For 30 seconds you can undo it. After that, until it is sent, any specialist can recall it from the case."],
-             ["payer_question", "The payer asked a question", "The payer needs more before deciding. Ask the ordering clinician for the note."],
-             ["denied", "Denied by the payer", "The payer said no and gave its reason. Caduceus drafts an appeal from the policy and the record; read it, then send it."]] as const).map(([k, w, d]) => (
+          {STATUSES.map(([k, w, d]) => (
             <li key={k} className="waiting__item"><StatusWord statusKey={k} word={w} /><span className="muted">{d}</span></li>
           ))}
         </ul>

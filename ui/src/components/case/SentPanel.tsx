@@ -1,5 +1,6 @@
 import type { RefObject } from "react";
 import type { CaseView } from "../../api";
+import { andList } from "../../hooks";
 import { ChevronLeft } from "../Icons";
 
 const REMOVED: Record<string, [string, string]> = {
@@ -12,8 +13,7 @@ const REMOVED: Record<string, [string, string]> = {
 function removedWords(removed: Record<string, number> = {}): string {
   const parts = Object.entries(removed).filter(([, n]) => n > 0)
     .map(([k, n]) => `${n} ${(REMOVED[k] ?? [k.toLowerCase(), k.toLowerCase()])[n === 1 ? 0 : 1]}`);
-  if (!parts.length) return "Nothing identifying was found in the facts.";
-  return parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
+  return parts.length ? andList(parts) : "Nothing identifying was found in the facts.";
 }
 
 /** De-identified text with each placeholder marked, so a reader sees where a name or date was taken out. */
