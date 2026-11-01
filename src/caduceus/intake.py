@@ -1,9 +1,7 @@
-"""Reading faxed referrals, inside the boundary.
+"""Reading faxed referrals inside the boundary, with Tesseract OCR in this process and no network (ADR 6).
 
-A fax is identifiable, so it is read where PHI may go: by Tesseract OCR running in this process, with no network.
-Every field comes back with a confidence and the region of the page it came from. A field below its threshold, one
-that fails validation, or a patient who cannot be matched in the record goes to a person, who confirms it against
-the page before any case is created (ADR 6). Nothing downstream is built on an unconfirmed low-confidence field.
+Every field comes with a confidence and its region on the page. A field below the threshold or failing validation
+goes to a person, who confirms it against the page before any case is created.
 """
 
 from __future__ import annotations
@@ -21,13 +19,13 @@ from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any
 
-THRESHOLD = 0.90  # below this a field is checked by a person; set from the faxes' evaluation (evals: fax_*)
+THRESHOLD = 0.90  # below this a person checks the field; set from the fax evals
 LABELS = [("referral", "Referral number"), ("patient_name", "Patient name"), ("birth_date", "Date of birth"),
           ("member_id", "Member ID"), ("payer", "Health plan"), ("clinician", "Ordering clinician"),
           ("service_code", "CPT/HCPCS code"), ("service", "Requested service"), ("diagnosis", "Diagnosis")]
 JUNK = " .,:;|\"'`“”‘’_-—~*"
-# The form a person checks, in the order the cover sheet gives it. The service's code and its name are two lines on
-# the page but one choice on the form: a person picks the service, and its code and name come from the catalog.
+# The form a person checks, in the cover sheet's order. The service's code and name are two lines on the page but one
+# choice on the form.
 FORM = ["referral", "patient_name", "birth_date", "member_id", "payer", "clinician", "service_code", "diagnosis"]
 SUGGEST_FLOOR = 0.6  # how like what was read the closest option must be before the form starts on it
 
@@ -147,7 +145,7 @@ def read_fax(path: Path) -> dict[str, Any]:
         fields.setdefault(key, Field(key, label, "", 0.0, None, "This line could not be found on the page."))
     result = {"sha256": digest, "size": size, "fields": [asdict(f) for f in fields.values()],
               "sender": _sender(lines), "text": "\n".join(" ".join(w["text"] for w in words) for words in lines),
-              "read_at":datetime.now().astimezone().isoformat(timespec="seconds"), "engine": "Tesseract OCR"}
+              "read_at": datetime.now().astimezone().isoformat(timespec="seconds"), "engine": "Tesseract OCR"}
     with _lock:
         _cache[digest] = result
     return result
@@ -157,7 +155,7 @@ def check(fields: list[dict], known: dict[str, set[str]]) -> list[dict]:
     """Mark each field a person must confirm, and say why. `known` holds the valid payers, clinicians and codes."""
     rules = {
         "referral": (lambda v: re.fullmatch(r"\d{4}-\d{4}", v), "A referral number looks like 2026-1029."),
-        "birth_date": (lambda v: _date(v), "A date of birth is written MM/DD/YYYY."),
+        "birth_date": (iso_date, "A date of birth is written MM/DD/YYYY."),
         "member_id": (lambda v: re.fullmatch(r"[A-Z]{2}\d{9}", v), "A member ID is two letters and nine digits."),
         "payer": (lambda v: v in known["payers"], "This is not a health plan Mesa Verde works with."),
         "clinician": (lambda v: v in known["clinicians"], "This is not an ordering clinician on file."),
@@ -184,8 +182,8 @@ def _ratio(a: str, b: str) -> float:
 
 
 def closest(text: str, options: Iterable[str], floor: float = SUGGEST_FLOOR) -> str | None:
-    """The option most like what was read, if any is like it at all. Only ever where the form starts: a field that was
-    not read clearly still needs a person to tick it, whatever it starts on."""
+    """The option most like what was read, if any is like it at all. Only where the form starts: a field that was not
+    read clearly still needs a person to tick it."""
     options = list(options)
     if not _letters(text) or not options:
         return None
@@ -220,9 +218,8 @@ def service_label(service: dict) -> str:
 
 
 def side_field(diagnosis: dict[str, Any], for_services: list[str]) -> dict[str, Any]:
-    """Which side a sided request is for (a knee replacement is for one knee). The fax has no box for it, so it is
-    read from the diagnosis ("M17.11 Primary osteoarthritis, right knee"); when the diagnosis names no side, a person
-    must choose one. The field counts only when the chosen service needs a side."""
+    """Which side a sided request is for, read from the diagnosis ("M17.11 Primary osteoarthritis, right knee") since
+    the fax has no box for it. It counts only when the chosen service needs a side."""
     read = diagnosis.get("value", "")
     found = re.search(r"\b(right|left)\b", read, re.IGNORECASE)
     return {"key": "side", "label": "Side", "kind": "select", "read_as": read,
@@ -234,12 +231,9 @@ def side_field(diagnosis: dict[str, Any], for_services: list[str]) -> dict[str, 
 
 
 def form(reading: dict[str, Any], catalog: dict[str, Any]) -> dict[str, Any]:
-    """What a person checks, in the order the cover sheet gives it: each field with what was read, any reason to check
-    it, and the value the form starts with. The health plan, the clinician and the service are chosen from the ones on
-    file, starting on the one closest to what was read; clinicians are narrowed to the clinic the fax came from.
-
-    The starting values matter to the rule a person follows: a field sent to a person counts as checked only when they
-    tick it, or change it from where the form started (see `unchecked`)."""
+    """What a person checks, in the cover sheet's order: each field as read, any reason to check it, and the value the
+    form starts on. The plan, the clinician and the service are chosen from those on file, starting on the closest to
+    what was read; clinicians are narrowed to the clinic the fax came from."""
     by = {f["key"]: f for f in reading.get("fields", [])}
     sender = reading.get("sender") or {"value": "", "box": None}
     clinics: dict[str, str] = catalog.get("clinics", {})  # clinician's name -> their clinic
@@ -339,12 +333,9 @@ def unchecked(fields: list[dict], values: dict[str, str], ticked: Iterable[str])
     return [f for f in fields if f["problem"] and f["key"] not in ticked and values.get(f["key"], "") == f["initial"]]
 
 
-def _date(v: str) -> str | None:
+def iso_date(v: str) -> str | None:
+    """A date written MM/DD/YYYY, as ISO 8601; None if it is not one."""
     try:
         return datetime.strptime(v, "%m/%d/%Y").date().isoformat()
     except ValueError:
         return None
-
-
-def iso_date(v: str) -> str | None:
-    return _date(v)
