@@ -1,16 +1,8 @@
-"""Opening Caduceus from inside an EHR: a SMART App Launch (the EHR launch) against an allow-listed FHIR R4 server.
+"""Opening Caduceus from an EHR: a SMART App Launch against an allow-listed FHIR R4 server (docs/smart-launch.md).
 
-The browser only navigates, to the EHR's authorization page and back to Caduceus. Everything else runs here, on the
-server: discovery, the state and PKCE values, the code exchange, and one bounded read of the launched patient's
-record. The access token exists for that one request and is never written anywhere: not to the database, the audit
-log, a log line or the browser.
-
-What is read is the least the approved criteria can use, and the scopes ask for no more: the patient, every
-diagnosis (a criterion may ask how long one has lasted), procedures and observations from the longest look-back any
-criterion has, and the newest notes, which become the case's pages. Every read is capped in time, size and number,
-and stays on the FHIR server that was allow-listed.
-
-See docs/smart-launch.md.
+Discovery, PKCE, the code exchange and one bounded read of the launched patient's record run on the server; the
+browser only navigates. The access token lives for that one request and is never stored or logged, and the read takes
+no more than the approved criteria can use.
 """
 
 from __future__ import annotations
@@ -35,22 +27,23 @@ import jwt
 
 from caduceus.criteria.dsl import AgeRule, AllOf, AnyOf, ConditionRule, CriteriaSet, ObservationRule, ProcedureRule
 
-# The public SMART Health IT sandbox (launch.smarthealthit.org), FHIR R4: the demo's default allow-list.
+# The public SMART Health IT sandbox: the demo's default allow-list.
 SANDBOX_ISS = ("https://launch.smarthealthit.org/v/r4/fhir",)
 
 FHIR_ID = re.compile(r"[A-Za-z0-9\-.]{1,64}")
 STATE = re.compile(r"[A-Za-z0-9_-]{43}")       # secrets.token_urlsafe(32)
-OPAQUE = re.compile(r"[\x21-\x7e]{1,2048}")    # a launch or a code: printable ASCII, as the EHR made it
+OPAQUE = re.compile(r"[\x21-\x7e]{1,2048}")    # a launch or a code, as the EHR made it
 LOOPBACK = frozenset({"127.0.0.1", "localhost", "::1"})
 STATE_TTL = timedelta(minutes=10)               # from starting a launch to finishing it
 MAX_PENDING = 1_000                             # launches started and not yet finished, across every visitor
 SEARCHED = ("Condition", "Procedure", "Observation", "DocumentReference")
+READ_AS: dict[type, str] = {ConditionRule: "Condition", ProcedureRule: "Procedure", ObservationRule: "Observation"}
 FHIR_USER = re.compile(r"(?:Practitioner|PractitionerRole|Patient|RelatedPerson|Person)/[A-Za-z0-9\-.]{1,64}$")
 
 
 def scopes(v2: bool) -> str:
-    """The least this launch needs: the launch context, who the EHR user is, and reading this one patient's record.
-    SMART v2 permissions when the server offers them (read the patient; read and search the rest), v1 otherwise."""
+    """The least this launch needs: its context, who the EHR user is, and reading this one patient's record, in SMART
+    v2 permissions when the server offers them."""
     if v2:
         patient = ["patient/Patient.r"] + [f"patient/{t}.rs" for t in SEARCHED]
     else:
@@ -85,7 +78,7 @@ def lookback(library: dict[str, CriteriaSet]) -> dict[str, int | None]:
             return  # the age comes from the Patient resource, which is always read
         if getattr(rule, "before_procedure", None):
             longest["Procedure"] = None  # "before the test": the test is looked for whenever it was done
-        kind = {ConditionRule: "Condition", ProcedureRule: "Procedure", ObservationRule: "Observation"}[type(rule)]
+        kind = READ_AS[type(rule)]
         days = getattr(rule, "within_days", None)
         if kind in longest and longest[kind] is None:
             return
@@ -132,9 +125,8 @@ def same_origin(url: str, base: str) -> bool:
 
 
 def inside(url: str, base: str) -> bool:
-    """Whether a URL is on the FHIR server itself, at or below its base: the only place the token is ever sent. A dot
-    segment is refused, however it is encoded: the client resolves "/fhir/../other" to "/other" before sending, so a
-    path that starts with the base may still leave it."""
+    """Whether a URL is on the FHIR server, at or below its base: the only place the token is ever sent. A dot segment
+    is refused however it is encoded, since the client resolves "/fhir/../other" to "/other" before sending."""
     if not same_origin(url, base):
         return False
     path, root = urlsplit(url).path, urlsplit(base).path.rstrip("/")
@@ -151,8 +143,7 @@ def with_query(url: str, params: dict[str, str]) -> str:
     return urlunsplit((u.scheme, u.netloc, u.path, urlencode(parse_qsl(u.query) + list(params.items())), ""))
 
 
-# What went wrong, in words a person can act on. The reason code goes to the audit log; the EHR's own error text
-# never reaches the screen.
+# What went wrong, in words a person can act on. The EHR's own error text never reaches the screen.
 AGAIN = "Open Caduceus from the EHR again."
 WORDS = {
     "iss_not_allowed": "Caduceus is not set up to open from that EHR, so it did not connect. Open it from the SMART "
@@ -182,8 +173,8 @@ STATUS = {"iss_not_allowed": 400, "redirect_not_allowed": 400, "bad_launch": 400
 
 
 class LaunchRefused(Exception):
-    """A launch that cannot go on. `reason` is a fixed code for the audit log and tests; the message is plain words;
-    `detail` is what the audit log may keep about it, which is never a token, a code or anything from the record."""
+    """A launch that cannot go on. `reason` is a fixed code for the audit log; `detail` is what the audit log may keep
+    about it, which is never a token, a code or anything from the record."""
 
     def __init__(self, reason: str, **detail: Any):
         super().__init__(WORDS[reason])
@@ -222,8 +213,8 @@ class Server:
 
 @dataclass
 class Pending:
-    """A launch started and not finished: what the callback needs to finish it, bound to who started it and where.
-    Kept in memory only, for at most ten minutes, and used once."""
+    """A launch started and not yet finished, bound to who started it and where. Kept in memory only, and used
+    once."""
     state: str
     server: Server
     verifier: str = field(repr=False)
@@ -247,7 +238,7 @@ class Grant:
 class Read:
     """One patient's record, as read: what is filed with the cases, and what the audit log keeps about the read."""
     iss: str
-    match: str                  # who this patient is on that server, hashed: opening them again finds this record
+    match: str                  # the server and its id for the patient, hashed
     patient: dict[str, Any]
     resources: list[dict[str, Any]]
     notes: list[dict[str, Any]]
@@ -279,14 +270,25 @@ class Budget:
             raise LaunchRefused("too_large", limit="resources")
 
 
+def _dict(value: Any) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
+def _list(value: Any) -> list[Any]:
+    return value if isinstance(value, list) else []
+
+
+def _string(value: Any) -> str | None:
+    return value if isinstance(value, str) else None
+
+
 def _strings(value: Any) -> list[str]:
-    return [v for v in value if isinstance(v, str)] if isinstance(value, list) else []
+    return [v for v in _list(value) if isinstance(v, str)]
 
 
 def _clean_patient(p: dict[str, Any]) -> dict[str, Any] | None:
-    """The patient, with only the fields Caduceus reads, each only where it has FHIR's shape: names, birth date and
-    sex, and the contact details and identifiers that de-identification removes before any model sees the facts.
-    Nothing else is kept. None when there is no usable name or no full date of birth."""
+    """The patient with only the fields Caduceus reads, each only where it has FHIR's shape, among them the contact
+    details and identifiers that de-identification removes. None without a usable name and a full date of birth."""
     def entries(key: str, fields: dict[str, Callable[[Any], Any]]) -> list[dict[str, Any]]:
         out = []
         for item in p.get(key) or []:
@@ -296,8 +298,7 @@ def _clean_patient(p: dict[str, Any]) -> dict[str, Any] | None:
                     out.append(kept)
         return out
 
-    text = lambda v: v if isinstance(v, str) else None  # noqa: E731
-    names = [n for n in entries("name", {"use": text, "family": text, "given": _strings, "text": text})
+    names = [n for n in entries("name", {"use": _string, "family": _string, "given": _strings, "text": _string})
              if n.get("family") or n.get("given")]
     born = p.get("birthDate")
     if not names or not isinstance(born, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", born):
@@ -308,9 +309,10 @@ def _clean_patient(p: dict[str, Any]) -> dict[str, Any] | None:
     except ValueError:
         return None
     out = {"resourceType": "Patient", "id": p["id"], "name": names, "birthDate": born,
-            "telecom": entries("telecom", {"system": text, "value": text, "use": text}),
-            "address": entries("address", {"line": _strings, "city": text, "state": text, "postalCode": text}),
-            "identifier": entries("identifier", {"system": text, "value": text})}
+            "telecom": entries("telecom", {"system": _string, "value": _string, "use": _string}),
+            "address": entries("address", {"line": _strings, "city": _string, "state": _string,
+                                           "postalCode": _string}),
+            "identifier": entries("identifier", {"system": _string, "value": _string})}
     if p.get("gender") in ("male", "female", "other", "unknown"):
         out["gender"] = p["gender"]
     return out
@@ -323,20 +325,19 @@ def _about(resource: dict[str, Any], patient: str) -> bool:
 
 
 def _kept(resource: dict[str, Any]) -> dict[str, Any]:
-    """The resource without its narrative and server metadata: neither is used, so neither is kept."""
+    """The resource without its narrative and server metadata, which are never used."""
     return {k: v for k, v in resource.items() if k not in ("text", "meta")}
 
 
 def _when(doc: dict[str, Any]) -> str:
-    context = doc.get("context") if isinstance(doc.get("context"), dict) else {}
-    period = context.get("period") if isinstance(context.get("period"), dict) else {}
+    period = _dict(_dict(doc.get("context")).get("period"))
     when = doc.get("date") or period.get("start") or ""
     return when if isinstance(when, str) else ""
 
 
 def note_title(doc: dict[str, Any]) -> str:
-    kind = doc.get("type") if isinstance(doc.get("type"), dict) else {}
-    codings = kind.get("coding") if isinstance(kind.get("coding"), list) else []
+    kind = _dict(doc.get("type"))
+    codings = _list(kind.get("coding"))
     title = doc.get("description") or kind.get("text") or next(
         (c.get("display") for c in codings if isinstance(c, dict) and c.get("display")), None)
     return str(title)[:120] if isinstance(title, str) and title.strip() else "Note from the EHR"
@@ -344,11 +345,13 @@ def note_title(doc: dict[str, Any]) -> str:
 
 def note_text(doc: dict[str, Any], limit: int) -> str | None:
     """A note's text, when the EHR sent it inline as plain text; None when there is none Caduceus can show."""
-    for c in doc.get("content") if isinstance(doc.get("content"), list) else []:
-        att = c.get("attachment") if isinstance(c, dict) else None
+    for c in _list(doc.get("content")):
+        att = _dict(c).get("attachment")
         if not isinstance(att, dict) or not isinstance(att.get("data"), str):
             continue
-        kind = att.get("contentType") if isinstance(att.get("contentType"), str) else "text/plain"
+        kind = att.get("contentType")
+        if not isinstance(kind, str):
+            kind = "text/plain"
         if kind.split(";")[0].strip().lower() != "text/plain":
             continue
         try:
@@ -362,7 +365,7 @@ def note_text(doc: dict[str, Any], limit: int) -> str | None:
 
 def page_of(doc: dict[str, Any], text: str) -> dict[str, Any]:
     """A note as a page of the case: built from scratch, with only what the page shows."""
-    authors = doc.get("author") if isinstance(doc.get("author"), list) else []
+    authors = _list(doc.get("author"))
     author = next((a["display"] for a in authors if isinstance(a, dict) and isinstance(a.get("display"), str)), None)
     return {"resourceType": "DocumentReference", "id": doc["id"], "description": note_title(doc),
             **({"date": _when(doc)} if _when(doc) else {}), **({"author": [{"display": author}]} if author else {}),
@@ -487,13 +490,15 @@ class SmartLaunch:
             raise LaunchRefused("bad_response", step="token")
         if not isinstance(patient, str) or not FHIR_ID.fullmatch(patient):
             raise LaunchRefused("not_shared", why="no patient in the launch context")
-        scope = body.get("scope") if isinstance(body.get("scope"), str) else pending.scope
+        scope = body.get("scope")
+        if not isinstance(scope, str):
+            scope = pending.scope
         return Grant(token=token, patient=patient, scope=scope[:2000], ehr_user=self._ehr_user(body.get("id_token")))
 
     def _ehr_user(self, id_token: Any) -> str | None:
         """Who the EHR says launched Caduceus (its fhirUser), for the audit log only: it grants nothing. The ID token
-        came straight from the token endpoint over TLS, which OpenID Connect accepts in place of checking its
-        signature (Core 3.1.3.7); its audience and expiry are still checked, and anything amiss is ignored."""
+        came straight from the token endpoint over TLS, which OpenID Connect accepts in place of a signature check
+        (Core 3.1.3.7); its audience and expiry are still checked, and anything amiss is ignored."""
         if not isinstance(id_token, str) or len(id_token) > 16_384:
             return None
         try:
@@ -531,16 +536,17 @@ class SmartLaunch:
                 not_shared.append(kind)
                 continue
             params = {"patient": pid, "_count": str(self.limits.page_size)}
+            window = windows.get(kind)
             if kind == "DocumentReference":  # one page, newest first: the notes a case shows, not the whole history
                 params |= {"_count": str(self.limits.notes * 2), "_sort": "-date"}
-            elif windows.get(kind) is not None:
-                params["date"] = f"ge{(as_of - timedelta(days=windows[kind])).isoformat()}"  # type: ignore[operator]
+            elif window is not None:
+                params["date"] = f"ge{(as_of - timedelta(days=window)).isoformat()}"
             kept, gone = self._search(client, with_query(f"{iss}/{kind}", params), kind, pid, auth, budget, iss,
                                       follow=kind != "DocumentReference")
             dropped += gone
             counts[kind] = len(kept)
             (docs if kind == "DocumentReference" else resources).extend(kept)
-        notes = []
+        notes: list[dict[str, Any]] = []
         for doc in sorted(docs, key=_when, reverse=True):
             text = note_text(doc, self.limits.note_bytes)
             if text is not None and len(notes) < self.limits.notes:
@@ -566,16 +572,14 @@ class SmartLaunch:
             budget.entries(len(entries))
             for e in entries:
                 r = e.get("resource")
-                search = e.get("search") if isinstance(e.get("search"), dict) else {}
                 if not isinstance(r, dict) or r.get("resourceType") == "OperationOutcome" \
-                        or search.get("mode") == "outcome":
+                        or _dict(e.get("search")).get("mode") == "outcome":
                     continue
                 if r.get("resourceType") != kind or not FHIR_ID.fullmatch(str(r.get("id", ""))) or not _about(r, pid):
                     dropped += 1
                     continue
                 found.append(_kept(r))
-            links = bundle.get("link") if isinstance(bundle.get("link"), list) else []
-            nxt = next((link.get("url") for link in links
+            nxt = next((link.get("url") for link in _list(bundle.get("link"))
                         if isinstance(link, dict) and link.get("relation") == "next"), None)
             if not follow or not nxt:
                 return found, dropped
