@@ -40,7 +40,7 @@ write their own); bulk approval; free-form chat.
 | Models | A recorded or fixed-quota external model for de-identified drafting; an administrator's off switch; a small in-network model on a CPU that writes the clinician's chart summary | An in-network model for work that needs the patient's details, and a vendor agreement with zero retention for the external route |
 | Payer | A simulated payer with review times, questions, denials, appeals and expedited handling | The clearinghouse (X12 278) and each payer's FHIR prior authorization API as it goes live |
 | Cases and audit log | SQLite, or Postgres with an append-only audit table | Postgres on RDS, encrypted, the audit log archived under object lock |
-| Sign-in | Development and demo sign-in; OIDC sign-in through an identity provider, tested against a mock one, with a Keycloak for compose written but not yet run | Mesa Verde's identity provider, roles from its groups |
+| Sign-in | Development and demo sign-in; OIDC sign-in through an identity provider, walked in CI against a mock one and against Keycloak | Mesa Verde's identity provider, roles from its groups |
 
 ## Deliverables and how each is accepted
 

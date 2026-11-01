@@ -75,7 +75,7 @@ administration page. It was recorded with the in-network model running, as the d
 | **Hard sets and packet retrieval** | 54 messy synthetic cases (a dev split and a held-out split) with long, shuffled, OCR-damaged packets and record problems from real charts. Retrieval finds the sentences that bear on a criterion inside the boundary: word BM25 after clinical normalization, fused with character trigrams; the agent calls it as `documents.search_packet`. | Held-out, first run: engine agreement 0.885 with 4 unsafe errors; 0.942 with 2 after fixes. Evidence in the top 5 passages: 0.899 (plain BM25: 0.512). Reported in CI, not yet a gate |
 | **Where to look** | Under each criterion the record cannot answer, the packet passages that may answer it, quoted, each opening its page on the passage; the clinician's request to sign shows them too. Never evidence: only the clinician's answer marks the criterion met. | The passage is among those shown for 0.953 of dev criteria and 0.721 of held-out ones (measured after the held-out run, so not a held-out result); 1.14 false leads per criterion with nothing to find ([hard evaluation](docs/hard-evaluation.md#changes-since-the-held-out-run)) |
 | **SMART on FHIR launch** | Caduceus opens from an EHR: discovery, PKCE, an allow-list of FHIR servers, the chart read over FHIR as far back as the criteria look and no further, and a case started from it in the visitor's own copy ([docs/smart-launch.md](docs/smart-launch.md)). | Tests against a fake SMART server; the walk launches it with the site's Content Security Policy enforced |
-| **Sign-in** | OIDC in the browser: the authorization code flow with PKCE, the code back after `#` so no log sees it, tokens in the tab's session storage, renewal by refresh token, sign-out at the provider. The API checks every token against the provider's keys and refuses one with no expiry; the page may connect only to its own site and the issuer ([docs/sign-in.md](docs/sign-in.md)). Keycloak for compose is written, not yet run. | Tests against a mock provider; a walk signs in from a link to a case, renews, has a spoiled token refused and signs out, with the page's Content Security Policy enforced |
+| **Sign-in** | OIDC in the browser: the authorization code flow with PKCE, the code back after `#` so no log sees it, tokens in the tab's session storage, renewal by refresh token, sign-out at the provider. The API checks every token against the provider's keys and refuses one with no expiry; the page may connect only to its own site and the issuer ([docs/sign-in.md](docs/sign-in.md)). Keycloak for compose, with the roster as its users. | Tests against a mock provider; a walk, against the mock and against Keycloak itself, signs in from a link to a case, renews, has a spoiled token refused and signs out, with the page's Content Security Policy enforced |
 | **Administration and policies** | An administration page: which model each route uses, the external model's switch, whether the policies and the audit log are intact, who can sign in in which role, what holds the cases and records. A policies page for the whole team. | API tests for each and for who may see them; the walk checks both with axe |
 | **Reproducible data** | 11 scenarios built from Synthea with labels known by construction, and three showcase cases from fixed clinical stories (`make fixtures`). | `make data` regenerates the dataset byte for byte; CI checks with `git diff --exit-code`; a test checks the hard sets and showcase are what their builders make |
 | **Deployment** | Dockerfile, docker-compose (Postgres and the in-network model image, each on an internal-only network), a Terraform skeleton for AWS. Cases and the audit log move from SQLite to Postgres when `CADUCEUS_DATABASE_URL` is set ([docs/postgres.md](docs/postgres.md)). | Compose validated; the repository, audit and workflow tests also run on Postgres 17 in CI; Checkov 292 passed, 0 failed; Terraform not yet applied |
@@ -119,8 +119,9 @@ make dev           # API on :8000, UI on http://localhost:5173
 ```
 
 Sign in as **Dolores Montoya** (prior-authorization specialist), **Dr. Ana Reyes** (ordering clinician; try
-it at phone width), **Sam Whitlock** (auditor) or **Avery Chen** (administrator). Development sign-in is on only when `CADUCEUS_AUTH_MODE=dev`; by default the service expects
-OIDC sign-in ([docs/sign-in.md](docs/sign-in.md)) and refuses to start without a de-identification key.
+it at phone width), **Sam Whitlock** (auditor) or **Avery Chen** (administrator). Development sign-in is on only
+when `CADUCEUS_AUTH_MODE=dev`; by default the service expects OIDC sign-in ([docs/sign-in.md](docs/sign-in.md)) and
+refuses to start without a de-identification key.
 
 With Docker: `cp .env.example .env`, set `CADUCEUS_DEID_KEY`, then `docker compose up --build`. To run the model
 inside the network as the demo does (llama.cpp and Qwen2.5-1.5B on a CPU, [infra/model](infra/model/Dockerfile)), set
@@ -129,7 +130,8 @@ build compiles llama.cpp and takes a while. Without a model configured, drafts c
 the clinician's chart summary from the record's facts, and everything else works the same.
 
 `make check` runs what CI runs: lint, the tests, the eval gate, and the end-to-end walk with accessibility
-checks. Fax intake needs Tesseract (`apt install tesseract-ocr` or `brew install tesseract`).
+checks. Fax intake needs Tesseract (`apt install tesseract-ocr` or `brew install tesseract`). `make e2e-keycloak`
+signs in through Keycloak itself, as CI does when sign-in changes; it needs Docker.
 
 ## Layout
 
@@ -199,8 +201,8 @@ simulation. Synthea also runs with the network switched off (`scripts/offline.sh
   (ADR 6).
 - **Scale.** The outbox's send-once lock in the database, so API instances can share one
   ([docs/postgres.md](docs/postgres.md)), then Temporal (ADR 4).
-- **Sign-in.** A first run of the compose Keycloak for OIDC sign-in, which is written and checked but has not been
-  started ([docs/sign-in.md](docs/sign-in.md)).
+- **Sign-in.** Names recorded with each event, so the case history names people from any identity provider, not
+  only those whose `sub` is a roster id ([docs/sign-in.md](docs/sign-in.md)).
 - **Production.** An AWS apply; HAPI FHIR in compose; the full red-team corpus; the in-network model's summaries read
   against their facts, as the bake-off did for drafts.
 - **People.** The [usability study](docs/research/usability-test-kit.md), with real PA staff and clinicians.

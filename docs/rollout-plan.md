@@ -11,7 +11,7 @@ figure below is one we would measure ourselves; none is assumed.
 | Synthetic Synthea records in files | The EHR's FHIR R4 API (Epic or Oracle Health), read through SMART Backend Services with a scope limited to the resources the criteria need |
 | A mock payer | A clearinghouse for X12 278 today. Each payer's FHIR prior authorization API as it goes live, which CMS-0057-F requires of Medicare Advantage, Medicaid and marketplace plans by January 1, 2027 |
 | Faxes in a folder | The fax server's drop folder (RightFax, eFax Corporate or similar), still read by OCR inside the boundary |
-| Development sign-in | The health system's identity provider over OIDC (built, and tested against a mock provider), with roles from its groups |
+| Development sign-in | The health system's identity provider over OIDC (built, and walked against a mock provider and Keycloak), with roles from its groups |
 | A small in-VPC model on a CPU for the chart summary; drafts from a recorded or fixed-quota model | An in-VPC model for PHI work, and an external model for de-identified drafting, under a vendor agreement with zero data retention |
 | SQLite in memory | Postgres on RDS, encrypted with KMS; the audit log archived under S3 Object Lock |
 
