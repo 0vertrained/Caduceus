@@ -1,12 +1,8 @@
 """A SMART on FHIR R4 server in miniature, standing in for the public SMART launcher so no test calls it.
 
-It does what the launcher does for an EHR launch: publishes its SMART configuration, authorizes (checking the
-client, the redirect URI, the audience, the launch and the PKCE challenge, then redirecting back with a code), and
-exchanges the code for a token only with the matching PKCE verifier, once. Its FHIR API answers only with a valid
-token, only for the launched patient, pages its searches the way HAPI does, and honors `date=ge` and `_sort=-date`.
-
-The API tests use it through httpx.MockTransport (`FakeSmart(...).transport()`); the end-to-end walk runs it over
-HTTP on a loopback port:
+It checks what the launcher checks in an EHR launch (client, redirect URI, audience, launch, PKCE, a code used once),
+and its FHIR API answers only with a valid token, for the launched patient, paging as HAPI does. The API tests use it
+through httpx.MockTransport (`FakeSmart(...).transport()`); the end-to-end walk runs it on a loopback port:
 
     python -m tests.fake_smart --port 8766      # FHIR base http://127.0.0.1:8766/v/r4/fhir
 """

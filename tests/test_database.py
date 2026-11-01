@@ -112,7 +112,7 @@ def closed_port() -> int:
 
 def test_postgres_is_chosen_by_a_postgres_url_and_never_for_the_public_demo(monkeypatch):
     monkeypatch.setenv("CADUCEUS_DATABASE_URL", "")
-    assert Settings().database_url is None  # set but empty: SQLite, as before
+    assert Settings().database_url is None  # set but empty: SQLite
     monkeypatch.setenv("CADUCEUS_DATABASE_URL", "postgresql://caduceus_app:a-password@db:5432/caduceus")
     assert Settings().database_url.startswith("postgresql://")
     assert "a-password" not in repr(Settings())

@@ -1,24 +1,12 @@
 """A mock OpenID Connect provider. FOR TESTS ONLY: it signs in anyone who clicks a name, with no password.
 
-It must never run anywhere but a test. It listens on 127.0.0.1 only; it lives outside the caduceus package and the
-container image; and it refuses to be imported except by pytest or run as a script, so the running app cannot load it.
-
-What it checks is what a real provider checks of a public client, so the tests that use it show something: the client
-id, and the redirect URI exactly as registered; PKCE with S256 only, the verifier against the challenge; state and a
-nonce on every request; codes that work once, within a minute, for the redirect URI they were issued to; refresh tokens
-that rotate, where reusing an old one ends the whole grant; and an end-session endpoint that ends the session and its
-refresh tokens, returns only to a registered address, and asks the person to confirm when it is given no ID token.
-
-Tokens are RS256 JWTs, signed with a key made when it starts. An access token carries what the API reads: iss, aud (the
-API), exp, sub, name, caduceus_role, and clinician_id for a clinician. An ID token is for the UI: its audience is the
-client, and it carries the nonce it was asked for. The people are the development roster (caduceus.auth.DEV_USERS),
-each with its roster id as its subject. The endpoints sit under the issuer at Keycloak's paths, as the compose
-Keycloak's do.
+It listens on 127.0.0.1 only, lives outside the caduceus package and the image, and refuses to be imported except by
+pytest or run as a script. It checks what a real provider checks of a public client (the exact redirect URI, PKCE S256,
+state and nonce, one-time codes, rotating refresh tokens, a confirmed sign-out), so the tests that use it show
+something. Tokens are RS256 JWTs for the development roster, and the endpoints sit at Keycloak's paths.
 
     python -m tests.mock_idp --port 8771 --redirect-uri http://127.0.0.1:8766/auth/callback \\
         --post-logout-redirect-uri http://127.0.0.1:8766/signed-out
-
-scripts/e2e-oidc.sh runs it so; tests/test_oidc.py runs it in a thread.
 """
 
 from __future__ import annotations

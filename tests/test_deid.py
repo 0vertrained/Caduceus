@@ -116,9 +116,8 @@ def test_a_labelled_record_number_needs_a_digit_so_prose_after_a_label_survives(
 
 
 def test_the_fixed_text_prompts_are_built_from_loses_nothing():
-    """Over-removal: words that carry no PHI (the facts' labels, every criterion and policy sentence) must reach the
-    model as written. The leakage suite checks the opposite direction; this is the one a regex false positive fails
-    (docs/incidents/2026-10-30-deid-false-positive.md)."""
+    """Words that carry no PHI (the facts' labels, every criterion and policy sentence) reach the model as written:
+    the leakage suite checks under-removal, and this checks over-removal by a pattern's false positive."""
     from caduceus.criteria.loader import load_library
     from caduceus.deid.safe_harbor import PatientContext, SafeHarborDeidentifier
     from tests.conftest import DATA
