@@ -7,6 +7,7 @@
 # Needs what scripts/e2e.sh needs.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+export PYTHONPATH="$PWD/src${PYTHONPATH:+:$PYTHONPATH}"  # this checkout's code, as scripts/e2e.sh runs it
 
 out="${1:-ui/test-results/oidc}"
 port="${E2E_OIDC_PORT:-8767}"   # scripts/e2e.sh uses 8765 and scripts/demo_video.sh 8766, so all three can run
