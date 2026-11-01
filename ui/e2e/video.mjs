@@ -184,7 +184,10 @@ await page.locator("mark").filter({ hasText: "10 weeks of physical therapy" }).w
 await still(page, "where-to-look");
 await say(page, "It opens the outside therapy summary on the passage. That's where to look, not evidence: only Dr. Reyes can confirm it.", 4800);
 await page.goto(base + "/cases/2026-1051");
-await page.getByText(/left knee is charted, but the request is for the right side/).waitFor();
+const why = page.getByText(/left knee is charted, but the request is for the right side/);
+await why.waitFor();
+await why.evaluate((el) => el.scrollIntoView({ block: "center" }));  // the reason on screen, not just the case
+await pause(300);
 await still(page, "other-knee");
 await say(page, "Gilbert Romero's referral asks for the right knee. His chart documents the left. Caduceus stops it and says why.", 4600);
 await page.goto(base + "/policies");
@@ -243,7 +246,12 @@ await status(page, "Sending the appeal").waitFor();
 await page.goto(base + "/cases/2026-1043");
 await page.getByRole("button", { name: "Show the history" }).click();
 await page.getByText("Asked Dr. Ana Reyes for the note the payer wants.").waitFor();
-await page.getByRole("heading", { name: "Case history" }).scrollIntoViewIfNeeded();
+// The history's heading at the top of the screen, so the steps under it fill the rest.
+await page.getByRole("heading", { name: "Case history" }).evaluate((el) => {
+  el.scrollIntoView({ block: "start" });
+  window.scrollBy(0, -24);
+});
+await pause(300);
 await still(page, "history");
 await say(page, "Every step, who took it and when, sealed to the one before. An auditor can check that none of it was changed.", 4400);
 await as(page, "Avery Chen");
