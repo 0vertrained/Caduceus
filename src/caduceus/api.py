@@ -710,7 +710,9 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
     def ehr_step(request: Request) -> str | None:
         """Checks before a step of a launch talks to the EHR: the launch is set up here, the request names the
         visitor's own copy of the demo (a shared record never lands in the shared set), and the launch limits."""
-        if not smart.enabled:
+        # Not set up, or nowhere to keep what a launch reads (the Postgres store keeps no EHR records yet): refused
+        # before anything is fetched, rather than after reading a whole record only to drop it.
+        if not smart.enabled or live.svc.workflow.launched is None:
             raise HTTPException(404, "Opening Caduceus from an EHR is not set up here.")
         sandbox = request.headers.get("x-caduceus-sandbox") if live.demo else None
         if live.demo and not sandbox:
