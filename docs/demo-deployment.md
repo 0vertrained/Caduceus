@@ -85,6 +85,15 @@ with the list of offered models if none matches. Run the deploy-demo workflow af
 - On a phone, sign in as Dr. Ana Reyes while the case waits for her signature.
 - Help, then *Open the SMART launcher*: choose a patient and *Launch*, and Caduceus opens on that patient's record.
 
+## Recording the walkthrough
+
+The walkthrough at `/demo.mp4` and the README's stills are recorded by the
+[walkthrough](../.github/workflows/walkthrough.yml) workflow, run by hand on main. It runs the API as the demo
+does, with the published model image beside it on the runner's own loopback address, walks the demo in Chromium
+with captions ([ui/e2e/video.mjs](../ui/e2e/video.mjs)), and pushes the video and stills to the `walkthrough`
+branch. Watch them there before copying them to `ui/public/demo.mp4` and `docs/screenshots`. Without the model's
+image, `scripts/demo_video.sh` records the same walk on any machine, with the summary from the record's facts.
+
 ## Cost and limits
 
 - Cloud Run scales to zero when idle and is capped at one instance. Without the model, it bills only while a
