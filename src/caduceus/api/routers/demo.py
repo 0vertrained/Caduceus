@@ -19,9 +19,9 @@ def demo_info(live: LiveDep) -> dict:
     """Tells the UI whether to show the demo banner. Says nothing in a real deployment."""
     if not live.demo:
         return {"demo": False}
-    return {"demo": True, "reset_every_hours": live.reset_every.total_seconds() / 3600,  # type: ignore[union-attr]
+    return {"demo": True, "reset_every_hours": live.reset_every.total_seconds() / 3600,
             "last_reset_at": live.last_reset.isoformat(),
-            "next_reset_at": (live.last_reset + live.reset_every).isoformat(),  # type: ignore[operator]
+            "next_reset_at": (live.last_reset + live.reset_every).isoformat(),
             "tour": tour(live.svc, live.presenter)}
 
 

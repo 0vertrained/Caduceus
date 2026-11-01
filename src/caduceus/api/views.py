@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, Request
@@ -22,11 +23,9 @@ def dispatch_due(svc: Services) -> None:
     try:
         svc.workflow.dispatch_due()
     except Exception as e:  # noqa: BLE001
-        try:
+        with contextlib.suppress(Exception):  # the audit store itself is down: nothing safer to do
             svc.audit.append("caduceus-agent", "agent_runtime", "dispatch.error", None,
                              {"error": type(e).__name__})
-        except Exception:  # noqa: BLE001, S110 - the audit store itself is unavailable; nothing safer to do
-            pass
 
 
 def load_case(live: Live, case_id: str) -> Case:

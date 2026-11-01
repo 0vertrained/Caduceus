@@ -71,7 +71,7 @@ def _plain(pages: list[str], query: str, k: int) -> list:
     toks = [[w for w in re.findall(r"[a-z0-9]+", p.text.lower()) if w not in STOP] for p in ps]
     q = [w for w in re.findall(r"[a-z0-9]+", query.lower()) if w not in STOP]
     ranks = _ranks(_bm25(toks, q))
-    order = sorted((i for i, r in enumerate(ranks) if r), key=lambda i: ranks[i])
+    order = sorted((i for i, r in enumerate(ranks) if r), key=lambda i: ranks[i] or 0)
     return [ps[i] for i in order[:k]]
 
 

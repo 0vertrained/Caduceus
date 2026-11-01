@@ -66,5 +66,7 @@ ignore = ["S101"]
 "src/caduceus/postgres.py" = ["T20"]
 "src/caduceus/evals/run.py" = ["T20"]
 "src/caduceus/evals/hard.py" = ["T20"]
+"src/caduceus/evals/summaries.py" = ["T20"]
+"src/caduceus/grounding.py" = ["SIM905"]  # its word lists read better as text than as quoted literals
 "tests/fake_smart.py" = ["T20"]
 "tests/mock_idp.py" = ["T20"]
