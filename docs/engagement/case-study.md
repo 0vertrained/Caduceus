@@ -89,7 +89,7 @@ The decisions behind it:
 | [Model bake-off](../model-bakeoff.md): replies with a problem, read by hand | Kimi K2.6 2 of 17; gpt-oss 120B 6 of 17 (2 misstatements, 4 overstatements) |
 | Accessibility, axe-core WCAG 2.2 AA | 0 violations on 50 screens; no sideways scroll at 320 px |
 | Known vulnerabilities | 0 in Python and npm packages; 2 medium in CPython with no fix released |
-| Tests | 298, and 63 more runs of the store, audit and workflow tests on Postgres |
+| Tests | 379, and 65 more runs of the store, audit and workflow tests on Postgres |
 
 Every number here comes from synthetic data, and none is a claim of clinical or financial impact. Synthetic
 records cannot stand in for the distribution of real ones, as Synthea's own documentation warns. That is why the
@@ -147,7 +147,7 @@ Also not built:
 
 - Dense retrieval, which needs an in-VPC embedding model.
 - Temporal, after the outbox's send-once lock moves into Postgres.
-- OIDC sign-in in the interface; the API side is done.
+- A first run of the compose Keycloak. OIDC sign-in is built, and tested against a mock identity provider.
 - The AWS deployment: the Terraform passes Checkov but has not been applied.
 - Model-drafted criteria versions, for a reviewer to check rather than write.
 - Usability testing with real PA staff; the [test kit](../research/usability-test-kit.md) is ready.
@@ -161,5 +161,5 @@ The README's [Not built yet](../../README.md#not-built-yet) section tracks the f
 3. **Real data under a BAA.** De-identified real packets and a UM nurse's review of the criteria. This is the
    shadow-mode phase of the [rollout plan](../rollout-plan.md), where the synthetic numbers are tested against
    real ones.
-4. **Production shape.** A CI gate of no unsafe errors, sign-in in the interface, the outbox lock in Postgres, and
+4. **Production shape.** A CI gate of no unsafe errors, sign-in against the health system's identity provider, the outbox lock in Postgres, and
    the AWS apply.
