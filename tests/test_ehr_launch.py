@@ -349,3 +349,12 @@ def test_the_outcomes_count_records_read_from_an_ehr(ehr):
     sections = ehr.client.get("/api/outcomes", headers=DOLORES | A).json()["sections"]
     row = next(r for s in sections for r in s["rows"] if r["label"] == "Records read from an EHR")
     assert row["value"] == "1"
+
+
+def test_a_launch_is_refused_before_anything_is_fetched_where_no_record_can_be_kept(ehr):
+    """The Postgres store keeps no records from an EHR yet. A launch there must stop before it asks the EHR for
+    anything, not after reading a whole record only to drop it."""
+    assert ehr.client.get("/api/queue", headers=DOLORES | A).status_code == 200  # the visitor's copy exists
+    copy(ehr).workflow.launched = None
+    refused = start(ehr)
+    assert refused.status_code == 404 and ehr.fake.requests == []
