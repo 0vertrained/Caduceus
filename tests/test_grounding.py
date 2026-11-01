@@ -46,6 +46,8 @@ Source: "Patient reports low back pain radiating to the left buttock, ongoing fo
     ("Fever was ruled out.", RED_FLAGS),
     # The wording of saying what a chart shows is not a claim.
     ("A sleep test was conducted on June 15, 2026, 4 months ago, as evidenced by the chart.", SLEEP_TEST),
+    ("Low back pain for at least six weeks, starting from August 26, 2026.", PAIN),
+    ("There is no fever, as confirmed by the absence of fever in the screen.", RED_FLAGS),
 ])
 def test_a_faithful_sentence_passes(sentence, facts):
     assert unsupported(sentence, facts) is None
