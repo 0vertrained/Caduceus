@@ -28,8 +28,10 @@ def codes(rule: Any) -> list[Code]:
                     found.append(item)
                 elif isinstance(item, BaseModel):
                     found.extend(codes(item))
-    seen: set[tuple[str, str]] = set()
-    return [c for c in found if (c.system, c.code) not in seen and not seen.add((c.system, c.code))]
+    unique: dict[tuple[str, str], Code] = {}
+    for c in found:
+        unique.setdefault((c.system, c.code), c)
+    return list(unique.values())
 
 
 def describe(s: CriteriaSet, lock: dict[str, str], with_criteria: bool) -> dict[str, Any]:
