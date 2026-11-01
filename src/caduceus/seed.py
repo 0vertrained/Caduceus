@@ -28,15 +28,15 @@ def seed(services: Services, now: datetime | None = None, by_fax: bool = False) 
     data = services.settings.data_dir
     cases = scenarios(*services.settings.scenario_dirs())
     manifest = data / "faxes" / "faxes.json"
+    inbox = services.workflow.faxes if by_fax and manifest.exists() else None
     faxed = ({m["expected"]["referral"]: (fax_id, m["file"]) for fax_id, m in json.loads(manifest.read_text()).items()}
-             if by_fax and manifest.exists() and services.workflow.faxes else {})
-    ids = []
+             if inbox else {})
+    ids: list[str] = []
     for c in cases:
-        if c["id"] in faxed:
+        if inbox is not None and c["id"] in faxed:
             fax_id, file = faxed[c["id"]]
-            services.workflow.faxes.save(Fax(id=fax_id, file=file, pages=c["packet"], as_of=c["as_of"],  # type: ignore[union-attr]
-                                             received_at=now - timedelta(minutes=20 * len(ids) + 5),
-                                             due_in_hours=c["due_in_hours"] + 24))
+            inbox.save(Fax(id=fax_id, file=file, pages=c["packet"], as_of=c["as_of"],
+                           received_at=now - timedelta(minutes=20 * len(ids) + 5), due_in_hours=c["due_in_hours"] + 24))
             services.audit.append("intake", "agent_runtime", "fax.received", fax_id, {"pages": len(c["packet"]) + 1})
             continue
         # The criteria set the service runs under now; the scenario names the one its labels were written for.

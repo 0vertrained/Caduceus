@@ -23,7 +23,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=9.2", "ruff>=0.17.2"]
+dev = ["pytest>=9.2", "ruff>=0.17.2", "mypy==2.4.1", "types-PyYAML==6.0.12.20260906"]
 
 [project.scripts]
 caduceus-seed = "caduceus.seed:main"
@@ -43,6 +43,11 @@ where = ["src"]
 testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = "-q"
+
+[tool.mypy]
+python_version = "3.13"
+check_untyped_defs = true
+warn_unused_ignores = true
 
 [tool.ruff]
 line-length = 120

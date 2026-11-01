@@ -128,7 +128,11 @@ class SafeHarborDeidentifier:
         out = text
         for category, value in ctx.known_values():
             pattern = re.compile(rf"(?<![\w\[]){re.escape(value)}(?![\w\]])", re.I)
-            out, n = pattern.subn(lambda m, c=category: token_for(c, m.group(0)), out)
+
+            def known(m: re.Match[str], c: str = category) -> str:
+                return token_for(c, m.group(0))
+
+            out, n = pattern.subn(known, out)
             removed[category] += n
 
         for category, pattern in PATTERNS:

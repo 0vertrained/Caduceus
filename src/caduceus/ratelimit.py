@@ -56,8 +56,8 @@ class DemoLimits:
 
     def check(self, visitor: str, write: bool) -> int:
         """0 if the request may proceed, otherwise seconds to wait. Checked narrowest first."""
-        for window, key in ((self.writes_per_visitor, visitor) if write else (None, None),
-                            (self.per_visitor, visitor), (self.everyone, "*")):
-            if window is not None and (wait := window.hit(key)):
+        windows = [(self.writes_per_visitor, visitor)] if write else []
+        for window, key in [*windows, (self.per_visitor, visitor), (self.everyone, "*")]:
+            if wait := window.hit(key):
                 return wait
         return 0

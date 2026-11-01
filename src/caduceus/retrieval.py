@@ -200,7 +200,7 @@ def search(pages: Sequence[str], query: str, k: int = 5, channels: Sequence[str]
         ranked["dense"] = _ranks([_cosine(qv, v) for v in pvs])
     fused = []
     for i, p in enumerate(ps):
-        mine = {name: r[i] for name, r in ranked.items() if r[i] is not None}
+        mine = {name: rank for name, ranks in ranked.items() if (rank := ranks[i]) is not None}
         if mine:
             fused.append(Hit(p, sum(1 / (rrf_k + r) for r in mine.values()), mine))
     fused.sort(key=lambda h: (-h.score, h.passage.page, h.passage.start))

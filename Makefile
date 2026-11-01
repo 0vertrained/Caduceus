@@ -17,7 +17,8 @@ JAVA_PINS  = -Duser.timezone=$(DATA_TZ) -Duser.language=en -Duser.country=US -Df
 # Synthea runs with the network switched off: it needs none, and a library flaw found later cannot be reached.
 OFFLINE    = $(abspath scripts/offline.sh)
 
-.PHONY: help setup data fixtures synthea seed dev test lint evals evals-hard e2e e2e-oidc check approve-policy image up clean
+.PHONY: help setup data fixtures synthea seed dev test lint typecheck evals evals-hard e2e e2e-oidc check approve-policy \
+  image up clean
 
 help: ## List the commands
 	@grep -hE '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  make %-15s %s\n", $$1, $$2}'
@@ -52,9 +53,12 @@ dev: ## Run the API on :8000 and the UI dev server on :5173 (development sign-in
 	CADUCEUS_AUTH_MODE=dev .venv/bin/uvicorn caduceus.api:create_app --factory --port 8000 --reload & \
 	cd ui && npm run dev
 
-lint: ## Ruff for Python, the TypeScript compiler for the UI
+lint: typecheck ## Ruff and mypy for Python, the TypeScript compiler for the UI
 	$(PY) -m ruff check src tests scripts
 	cd ui && npx tsc --noEmit
+
+typecheck: ## mypy over the caduceus package
+	$(PY) -m mypy src/caduceus
 
 test: ## Unit and API tests
 	$(PY) -m pytest

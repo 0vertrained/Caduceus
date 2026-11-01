@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from datetime import datetime
 from statistics import median
 from typing import Any
@@ -47,10 +48,7 @@ def outcomes(cases: list[Case], events: list[AuditEvent], faxes: list[Fax]) -> l
     pended = {e.case_id for e in events if e.action == "tool.call" and e.detail.get("tool") == "payer.respond"}
     appealed = {e.case_id for e in events if e.action == "appeal.approved"}
     first_time = [c for c in sent if c.state == State.APPROVED and c.id not in pended | appealed]
-    touches = {}
-    for e in events:
-        if e.action in HUMAN_ACTIONS and e.case_id:
-            touches[e.case_id] = touches.get(e.case_id, 0) + 1
+    touches = Counter(e.case_id for e in events if e.action in HUMAN_ACTIONS and e.case_id)
     sent_touches = [touches.get(c.id, 0) for c in sent]
     read = [f for f in faxes if f.reading]
     fields = [x for f in read for x in f.reading["fields"]]  # type: ignore[index]

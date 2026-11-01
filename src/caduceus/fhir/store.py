@@ -176,7 +176,8 @@ class HapiFhirStore:
         self._client = client or httpx.Client(timeout=30)
 
     def record(self, patient_id: str, overlay_case: str | None = None) -> PatientRecord:
-        entries, url = [], f"{self._base}/Patient/{patient_id}/$everything?_count=500"
+        entries: list[dict] = []
+        url: str | None = f"{self._base}/Patient/{patient_id}/$everything?_count=500"
         while url:
             page = self._client.get(url).raise_for_status().json()
             entries += page.get("entry", [])
