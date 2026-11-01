@@ -106,12 +106,9 @@ export function AttestPage() {
       <section className="panel attest__card" aria-labelledby="chart-title">
         <h2 id="chart-title" className="attest__card-title">What the chart shows</h2>
         <p>{data.chart_summary}</p>
-        <p className="support" aria-live="polite">{data.chart_summary_by.route === "phi"
-          ? <>Summarized by <span translate="no">{data.chart_summary_by.model}</span>, inside Mesa Verde’s network.
-              What the chart does not say is from the record’s facts.</>
-          : data.chart_summary_pending ? "From the record’s facts, for now. The model inside Mesa Verde’s network is "
-            + "writing a summary, and it will appear here."
-          : "From the record’s facts. No model was used."}</p>
+        <p className="support" aria-live="polite">
+          <SummarySource by={data.chart_summary_by} pending={data.chart_summary_pending} />
+        </p>
       </section>
       {data.questions.map((q) => (
         <fieldset key={q.criterion_id} className="fieldset">
@@ -151,6 +148,26 @@ export function AttestPage() {
 
 // The payer pended the request and asked for the note behind what this clinician confirmed. They write it in their
 // own words (nothing is drafted for them) and it joins the chart as an addendum dated today, or they say they cannot.
+/** Why the facts stand in for the in-network model's summary. */
+const FALLBACK: Record<string, string> = {
+  unsupported: "The summary from the model inside Mesa Verde’s network said more than the record, so it is not shown.",
+  unreadable: "The reply from the model inside Mesa Verde’s network could not be read.",
+  in_vpc_unavailable: "The model inside Mesa Verde’s network could not be reached.",
+};
+
+/** Who wrote the chart summary, said under it. */
+function SummarySource({ by, pending }: { by: AttestationView["chart_summary_by"]; pending?: boolean }) {
+  if (by.route === "phi") {
+    return <>Summarized by <span translate="no">{by.model}</span>, inside Mesa Verde’s network, and checked against
+      the record. What the chart does not say is from the record’s facts.</>;
+  }
+  if (pending) {
+    return <>From the record’s facts, for now. The model inside Mesa Verde’s network is writing a summary, and it will
+      appear here.</>;
+  }
+  return <>From the record’s facts. {FALLBACK[by.fallback_reason ?? ""] ?? "No model was used."}</>;
+}
+
 function NoteForm({ data, setData }: { data: AttestationView; setData: (v: AttestationView) => void }) {
   const ask = data.note_request!;
   const [text, setText] = useState("");

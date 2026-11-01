@@ -271,8 +271,9 @@ export interface AttestationView {
   service: string;
   ordered: string;
   chart_summary: string;
-  /** How the summary was written: by the model inside the network ("phi"), or from the record's facts. */
-  chart_summary_by: { route: string | null; model: string | null };
+  /** Who wrote the summary: the model inside the network ("phi") or the record's facts, and if the facts stand
+   * in for the model, why ("unsupported", "unreadable", "in_vpc_unavailable"). */
+  chart_summary_by: { route: string | null; model: string | null; fallback_reason: string | null };
   /** True while the in-network model writes its summary; the page refreshes until it arrives. */
   chart_summary_pending?: boolean;
   questions: { criterion_id: string; question: string; help: string | null;
