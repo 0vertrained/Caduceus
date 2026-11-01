@@ -171,6 +171,15 @@ def test_health_is_never_limited(demo):
     assert all(client.get("/api/health").status_code == 200 for _ in range(20))
 
 
+def test_only_the_apis_requests_count_not_the_pages_and_their_files(demo):
+    """Netlify serves the demo's pages; the API serves them only on one machine, as in the walk. They never count."""
+    client, _ = demo
+    client.app.state.demo_limits = tight_limits(lambda: 0.0)
+    pages = [client.get(path).status_code for path in ["/", "/cases/2026-1041", "/assets/index.js"] * 4]
+    assert 429 not in pages
+    assert [client.get("/api/me", headers=DOLORES).status_code for _ in range(6)] == [200] * 5 + [429]
+
+
 # Each visitor's own copy --------------------------------------------------------------------------------------
 
 A, B = {"X-Caduceus-Sandbox": "a" * 32}, {"X-Caduceus-Sandbox": "b" * 32}
