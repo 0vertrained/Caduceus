@@ -28,7 +28,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from typing import Any
-from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, unquote, urlencode, urlsplit, urlunsplit
 
 import httpx
 import jwt
@@ -132,10 +132,17 @@ def same_origin(url: str, base: str) -> bool:
 
 
 def inside(url: str, base: str) -> bool:
-    """Whether a URL is on the FHIR server itself, at or below its base: the only place the token is ever sent."""
+    """Whether a URL is on the FHIR server itself, at or below its base: the only place the token is ever sent. A dot
+    segment is refused, however it is encoded: the client resolves "/fhir/../other" to "/other" before sending, so a
+    path that starts with the base may still leave it."""
     if not same_origin(url, base):
         return False
     path, root = urlsplit(url).path, urlsplit(base).path.rstrip("/")
+    decoded = path
+    for _ in range(3):  # "%252e" is "%2e" once decoded, and "." twice
+        decoded = unquote(decoded)
+    if any(seg in (".", "..") for seg in decoded.replace("\\", "/").split("/")):
+        return False
     return path == root or path.startswith(root + "/")
 
 

@@ -209,6 +209,16 @@ def test_a_next_link_off_the_fhir_server_is_never_followed(fake):
     assert not [r for r in fake.requests if r.url.host == "evil.example"]  # the token went nowhere else
 
 
+@pytest.mark.parametrize("url", ["/../../r3/fhir/Patient", "/%2e%2e/%2E%2E/r3/fhir/Patient", "/..%2F..%2Fr3",
+                                 "/%252e%252e/r3", "/Patient/./x", "/Patient/.."])
+def test_a_link_that_climbs_out_of_the_fhir_base_never_gets_the_token(url):
+    """httpx resolves dot segments before it sends, so "/v/r4/fhir/../../r3" goes to "/v/r3": on the same server,
+    outside the base. However the dots are encoded, the address is refused."""
+    base = "https://ehr.example/v/r4/fhir"
+    assert inside(base + "/Condition?patient=1&_page=2", base) and inside(base, base)
+    assert not inside(base + url, base)
+
+
 @pytest.mark.parametrize("limits, reached", [({"resources": 20}, "resources"), ({"bytes": 6_000}, "bytes"),
                                              ({"pages": 2}, "pages")])
 def test_a_record_over_a_limit_is_refused_whole(fake, limits, reached):
