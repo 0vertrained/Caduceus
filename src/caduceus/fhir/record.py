@@ -1,7 +1,6 @@
 """A read-only view of one patient's FHIR R4 record, with the date and code helpers the engine needs.
 
-The engine never sees a FHIR server or an HTTP client: it receives a PatientRecord built from whatever
-store is configured (local bundle files in development, HAPI FHIR in the deployed environment).
+The engine never sees a FHIR server or an HTTP client, only a PatientRecord the configured store built.
 """
 
 from __future__ import annotations

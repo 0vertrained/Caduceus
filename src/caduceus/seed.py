@@ -1,17 +1,10 @@
-"""Create the demo database: one case per scenario in data/cases/cases.json (and data/showcase with
-CADUCEUS_SHOWCASE=1), prepared by the agent.
+"""Create the demo database: a case per scenario, prepared by the agent, with received and due times relative to now.
 
-Clinical dates are fixed by the dataset (as of October 28, 2026). Received and due times are set relative to the
-moment you seed, so there is always a mix of urgent, due-today and later work.
+Stop the API server first: seeding replaces the SQLite file, and SQLite refuses writes from a connection whose file
+was replaced. Postgres is seeded only while it holds no cases, since its audit log cannot be cleared.
 
     python -m caduceus.seed                 # replaces var/caduceus.sqlite3
     python -m caduceus.seed --if-missing    # seeds only when there is no database yet (container start)
-
-Stop the API server before seeding: seeding replaces the database file, and SQLite refuses writes from a
-connection whose file has been replaced underneath it.
-
-With CADUCEUS_DATABASE_URL set, the cases go into Postgres instead, and only while it holds none: its audit log is
-append-only, so a Postgres database cannot be started over in place. To start over, seed a new database.
 """
 
 from __future__ import annotations
@@ -46,11 +39,9 @@ def seed(services: Services, now: datetime | None = None, by_fax: bool = False) 
                                              due_in_hours=c["due_in_hours"] + 24))
             services.audit.append("intake", "agent_runtime", "fax.received", fax_id, {"pages": len(c["packet"]) + 1})
             continue
-        # A new case runs under the criteria set its service uses now; the scenario names the one its labels were
-        # written for, which the eval gate checks separately.
+        # The criteria set the service runs under now; the scenario names the one its labels were written for.
         criteria_set = services.workflow.catalog.get("services", {}).get(c["service"]["code"], {}).get(
             "criteria_set", c["criteria_set"])
-        # A referral can arrive marked expedited by its clinic, with the clinic's reason.
         case = Case(id=c["id"], patient_id=c["patient_id"], service=c["service"], criteria_set=criteria_set,
                     side=c.get("side"), urgency=c.get("urgency", "standard"), urgency_reason=c.get("urgency_reason"),
                     as_of=c["as_of"], payer=c["payer"], ordering_clinician=c["ordering_clinician"],

@@ -1,13 +1,8 @@
-"""Customer-system tools behind one gateway, grouped into the five MCP servers (ehr, documents, policies, tickets,
-payer).
+"""Customer-system tools behind one gateway, grouped into the five MCP servers (ADR 3).
 
-Two checks run on every call before any code touches a system:
-
-1. Role: the caller's role must be allowed for the tool (server-side, never in a prompt).
-2. State: the tool must be on the allow-list for the workflow state the case is in, so an instruction injected
-   into a clinical note cannot make the agent submit, write or browse outside the current step.
-
-Every call, allowed or refused, is written to the audit log with hashes of its input and output.
+Before a tool runs, the gateway checks the caller's role and that the tool is on the allow-list for the workflow
+step, so an instruction injected into a clinical note cannot make the agent act outside the current step. Every
+call, allowed or refused, is audited with hashes of its input and output.
 """
 
 from __future__ import annotations
@@ -154,8 +149,7 @@ def build_gateway(audit: AuditStore, store: FhirStore, library: dict[str, Criter
                 "author": (doc.get("author") or [{}])[0].get("display"), "text": document_text(doc)}
 
     def search_packet(packet: list[str], criteria_set: str, criterion_id: str, k: int = 5) -> list[dict]:
-        """The packet passages most likely to bear on one criterion. The query comes only from the approved
-        criteria set, so text in the packet cannot steer what is searched for."""
+        """The packet passages most likely to bear on one criterion, searched for with the criteria set's words."""
         criteria = library[criteria_set]
         criterion = next(c for c in criteria.criteria if c.id == criterion_id)
         pages = [document_text(store.document(d) or {}) for d in packet]
