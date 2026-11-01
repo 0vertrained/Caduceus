@@ -39,7 +39,7 @@ class Live:
         self._lock, self._template_lock = threading.Lock(), threading.Lock()
         self.fresh = fresh
         self.demo = svc.settings.auth_mode == "demo"
-        self.reset_every = timedelta(hours=float(svc.settings.demo_reset_hours)) if self.demo else None
+        self.reset_every = timedelta(hours=float(svc.settings.demo_reset_hours))
         self.shared = self._wrap(svc)
         self._template: tuple[Services, datetime] | None = None
         if self.demo:  # a pristine copy, taken before anyone can change the shared set
@@ -103,7 +103,7 @@ class Live:
         with self._lock:
             for sid in [k for k, v in self._sandboxes.items() if now - v.last_reset >= self.reset_every]:
                 del self._sandboxes[sid]
-            stale = now - self.shared.last_reset >= self.reset_every  # type: ignore[operator]
+            stale = now - self.shared.last_reset >= self.reset_every
         if stale:
             fresh = self._wrap(self._clone(now))
             with self._lock:
@@ -113,7 +113,7 @@ class Live:
         now = self.shared.svc.workflow.now()
         with self._lock:
             sandbox = self._sandboxes.get(sandbox_id)
-            if sandbox is not None and now - sandbox.last_reset < self.reset_every:  # type: ignore[operator]
+            if sandbox is not None and now - sandbox.last_reset < self.reset_every:
                 self._sandboxes.move_to_end(sandbox_id)
                 return sandbox
         if not may_create():

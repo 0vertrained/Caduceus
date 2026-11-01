@@ -35,7 +35,9 @@ SUMMARY_PATIENCE = timedelta(minutes=5)
 def summary_coming(summary: dict[str, Any], now: datetime) -> bool:
     """Whether the in-network model's summary is still on its way."""
     written = summary.get("generated_at")
-    return bool(summary.get("pending")) and bool(written) and now - datetime.fromisoformat(written) < SUMMARY_PATIENCE
+    if not summary.get("pending") or not written:
+        return False
+    return now - datetime.fromisoformat(written) < SUMMARY_PATIENCE
 
 
 def due(due_at: datetime, now: datetime, tz: ZoneInfo) -> dict[str, Any]:
@@ -196,7 +198,7 @@ class Presenter:
 
     def queue(self, cases: list[Case], now: datetime, approved_today: int) -> dict[str, Any]:
         active = sorted((c for c in cases if c.state in ACTIVE), key=lambda c: c.due_at)
-        groups = {"today": [], "tomorrow": [], "later": []}
+        groups: dict[str, list[dict[str, Any]]] = {"today": [], "tomorrow": [], "later": []}
         for c in active:
             r = self.row(c, now)
             groups[r["due"]["group"]].append(r)
