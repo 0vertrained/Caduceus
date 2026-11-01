@@ -55,7 +55,7 @@ def test_with_oidc_the_page_may_connect_to_the_issuer_and_nowhere_wider():
     headers = client(**OIDC).get("/api/health").headers
     sent, base = directives(headers["Content-Security-Policy"]), directives(SECURITY_HEADERS["Content-Security-Policy"])
     assert sent.pop("connect-src") == f"'self' {ISSUER}/"  # the issuer and the addresses under it: not its whole host
-    assert sent == base  # scripts, styles, frames and forms exactly as before
+    assert sent == base  # every other directive is the base policy's
     assert {k: headers[k] for k in SECURITY_HEADERS if k != "Content-Security-Policy"} == {
         k: v for k, v in SECURITY_HEADERS.items() if k != "Content-Security-Policy"}
 

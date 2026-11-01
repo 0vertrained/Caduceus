@@ -27,18 +27,15 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
 TEST_KEY = b"test-signing-key-that-is-at-least-32-bytes-long"
 
-# The tests choose their database themselves (the backend fixture below). A database named in the environment for
-# running the service is never used, so the suite cannot write into it.
+# The suite chooses its own databases, so it can never write into one the environment names for the service.
 os.environ.pop("CADUCEUS_DATABASE_URL", None)
 
-# A Postgres server to run the database tests on as well, as postgresql://user:password@host:port/database. Its user
-# must be able to create a database: the run makes one of its own, which each test starts empty, and drops it at the
-# end. The database in the URL is only used to make and drop that one.
+# A Postgres server for the database tests as well. Its user must be able to create a database: the run makes one of
+# its own, which each test starts empty, and drops it at the end.
 PG_URL = os.environ.get("CADUCEUS_TEST_DATABASE_URL") or None
 BACKENDS = ["sqlite", pytest.param("postgres", marks=pytest.mark.postgres)] if PG_URL else ["sqlite"]
 
-# Every Postgres test runs in a session whose time zone is far from UTC, so what is read back, and with it every hash,
-# is shown not to depend on the session. Commits do not wait for the disk, which no test needs.
+# A session time zone far from UTC shows that what is read back, and so every hash, does not depend on the session.
 SESSION = "-c TimeZone=Asia/Kathmandu -c synchronous_commit=off"
 
 
