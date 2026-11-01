@@ -4,6 +4,7 @@ clinician in the background, since it takes tens of seconds on a CPU, and the sc
 from __future__ import annotations
 
 import json
+import threading
 
 import httpx
 import pytest
@@ -89,7 +90,8 @@ def test_a_summary_that_comes_too_late_is_not_kept(env):
     client.post(f"/api/attestations/{CASE}", headers=REYES, json={"answers": {q["criterion_id"]: "yes" for q in asked}})
     model.sent.clear()
     run(jobs)
-    assert model.sent == [] and svc.cases.get(CASE).chart_summary["route"] == "template"
+    summary = svc.cases.get(CASE).chart_summary
+    assert model.sent == [] and summary["route"] == "template" and summary["pending"] is False
 
 
 def test_when_the_model_is_down_the_summary_from_the_facts_stays(env):
@@ -108,3 +110,30 @@ def test_with_no_external_model_drafts_are_written_inside_the_network_from_de_id
     assert draft["route"] == "deid_in_vpc" and draft["sent"]["vendor"] == "Mesa Verde's own server"
     drafted = [m for m in model.sent if "Patient:" in m["messages"][1]["content"]]
     assert drafted and all("[NAME_" in m["messages"][1]["content"] for m in drafted)  # de-identified, even here
+
+
+def test_the_summary_landing_while_the_clinician_signs_never_refuses_her_signature(env):
+    """The model finishes while her signing request is still writing the draft. Her action holds the case from its
+    read to its save, so the summary waits, finds she has answered, and is not kept; her signature stands."""
+    svc, client, model, jobs = env
+    client.post(f"/api/cases/{CASE}/request-attestation", headers=DOLORES)
+    (job, args), = jobs
+    summary = threading.Thread(target=job, args=args)
+    real = svc.workflow.drafter.draft
+
+    def draft_while_the_summary_lands(case, patient):
+        summary.start()
+        summary.join(timeout=1)  # it cannot save while she holds the case
+        return real(case, patient)
+
+    svc.workflow.drafter.draft = draft_while_the_summary_lands
+    asked = client.get(f"/api/attestations/{CASE}", headers=REYES).json()["questions"]
+    signed = client.post(f"/api/attestations/{CASE}", headers=REYES,
+                         json={"answers": {q["criterion_id"]: "yes" for q in asked}})
+    summary.join(timeout=10)
+    assert signed.status_code == 200 and not summary.is_alive()
+    case = svc.cases.get(CASE)
+    assert case.state == "review" and case.chart_summary["route"] == "template"
+    assert case.chart_summary["pending"] is False  # nothing is on its way any more
+    actions = [e.action for e in svc.audit.events(CASE)]
+    assert actions.count("attestation.signed") == 1 and "summary.written" not in actions
