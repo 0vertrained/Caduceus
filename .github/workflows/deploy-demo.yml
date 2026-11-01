@@ -134,15 +134,20 @@ jobs:
           env="CADUCEUS_AUTH_MODE=demo,CADUCEUS_DEMO_RESET_HOURS=6,CADUCEUS_SHOWCASE=1,CADUCEUS_PAYER_REVIEW_SECONDS=30,CADUCEUS_EXTERNAL_PROVIDER=ollama,CADUCEUS_EXTERNAL_MODEL=$EXTERNAL_MODEL,CADUCEUS_EXTERNAL_TIMEOUT=20,CADUCEUS_SMART_REDIRECT_URIS=$SITE/smart/callback"
           common=(--project "$PROJECT" --region "$REGION" --service-account "$RUNTIME_SA" --concurrency 40
                   --min-instances 0 --max-instances 1 --allow-unauthenticated --quiet)
+          containers() {
+            gcloud run services describe "$SERVICE" --project "$PROJECT" --region "$REGION" \
+              --format 'value(spec.template.spec.containers[].name)' 2>/dev/null | tr ';,' '\n\n' || true
+          }
+          # The API alone. Flags without --container apply to the container that takes traffic, so a model container
+          # from an earlier revision would stay unless it is removed; CPU goes back to being billed per request.
           alone() {
-            gcloud run deploy "$SERVICE" "${common[@]}" --image "$IMAGE" --port 8000 --cpu 1 --memory 1Gi \
-              --set-env-vars "$env" --set-secrets "$secrets"
+            model="$(containers | grep -x model || true)"
+            gcloud run deploy "$SERVICE" "${common[@]}" ${model:+--remove-containers model} --cpu-throttling \
+              --image "$IMAGE" --port 8000 --cpu 1 --memory 1Gi --set-env-vars "$env" --set-secrets "$secrets"
           }
           if [ -z "${MODEL_IMAGE:-}" ]; then alone; exit 0; fi
           # A container from an earlier, single-container revision goes, so only "api" takes traffic.
-          others="$(gcloud run services describe "$SERVICE" --project "$PROJECT" --region "$REGION" \
-                      --format 'value(spec.template.spec.containers[].name)' 2>/dev/null | tr ';,' '\n\n' \
-                      | grep -vxE 'api|model|' | paste -sd, - || true)"
+          others="$(containers | grep -vxE 'api|model|' | paste -sd, - || true)"
           if gcloud run deploy "$SERVICE" "${common[@]}" ${others:+--remove-containers "$others"} \
               --execution-environment gen2 --no-cpu-throttling --cpu-boost \
               --container api --image "$IMAGE" --port 8000 --cpu 1 --memory 1Gi \
