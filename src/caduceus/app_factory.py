@@ -50,9 +50,8 @@ class InsecureConfiguration(ValueError):
 DEFAULT_MODELS = {"anthropic": "claude-sonnet-5-5", "ollama": "gpt-oss:120b", "stub": "stub-1"}
 FIXED_QUOTA = {"ollama"}  # providers whose keys cannot run up a bill: the only kind the public demo may hold
 
-# OIDC sign-in. The issuer goes into the page's Content Security Policy and the client id to the browser, so both are
-# held to a plain form: no spaces, quotes, semicolons or commas, nothing that could end a header value or a directive,
-# and no user name or password in the address.
+# The OIDC issuer goes into the page's Content Security Policy and the client id to the browser, so both are held to
+# characters that cannot end a header value or a directive.
 ISSUER_CHARACTERS = re.compile(r"[A-Za-z0-9._~:/%\[\]-]+")
 CLIENT_ID = re.compile(r"[A-Za-z0-9._:-]{1,128}")
 SCOPE_TOKEN = re.compile(r"[!#-\[\]-~]+")  # RFC 6749 section 3.3
@@ -79,8 +78,8 @@ class Settings:
 
     data_dir: Path = field(default_factory=lambda: Path(os.environ.get("CADUCEUS_DATA_DIR", "data")))
     db_path: str = _env("CADUCEUS_DB", "var/caduceus.sqlite3")
-    # postgresql://user:password@host:port/database. When set, cases and the audit log live in Postgres and db_path
-    # is not used (docs/postgres.md). Left out of the settings' repr, since it can hold a password.
+    # Postgres for cases and the audit log, in place of db_path (docs/postgres.md). Kept out of repr: it can hold a
+    # password.
     database_url: str | None = field(default_factory=lambda: os.environ.get("CADUCEUS_DATABASE_URL") or None,
                                      repr=False)
     clinic_tz: str = _env("CADUCEUS_CLINIC_TZ", "America/Denver")
@@ -88,50 +87,43 @@ class Settings:
     oidc_jwks_url: str | None = _env("CADUCEUS_OIDC_JWKS_URL")
     oidc_issuer: str | None = _env("CADUCEUS_OIDC_ISSUER")
     oidc_audience: str | None = _env("CADUCEUS_OIDC_AUDIENCE")
-    # The review UI's own client at the identity provider: public (it holds no secret), Authorization Code with PKCE.
-    # The browser learns it, the issuer and the scope from /api/auth-config (docs/sign-in.md).
+    # The review UI's public client at the identity provider, for Authorization Code with PKCE (docs/sign-in.md).
     oidc_client_id: str | None = _env("CADUCEUS_OIDC_CLIENT_ID")
-    # What the UI asks the provider for. Some providers issue a refresh token only with offline_access added; Keycloak
-    # issues one without it, and with it would issue one that outlives the session.
+    # No offline_access: Keycloak issues a refresh token without it, and with it one that outlives the session.
     oidc_scope: str = _env("CADUCEUS_OIDC_SCOPE", "openid profile")
     deid_key: str | None = _env("CADUCEUS_DEID_KEY")
     fhir_base_url: str | None = _env("CADUCEUS_FHIR_BASE_URL")
     in_vpc_url: str | None = _env("CADUCEUS_IN_VPC_URL")
     in_vpc_model: str = _env("CADUCEUS_IN_VPC_MODEL", "llama3.1:8b")
-    # Whether the in-VPC model also writes de-identified drafts when the external model is off or absent. "0" keeps
-    # it for PHI work alone, as the demo does: a small model on a CPU would hold a request past its time limit.
+    # "0" keeps the in-VPC model to PHI work, as in the demo: a small CPU model would hold a draft past its time limit.
     in_vpc_drafts: str = _env("CADUCEUS_IN_VPC_DRAFTS", "1")
-    # The external model only ever sees de-identified, stamped text (the router enforces it). anthropic is billed
-    # per token; ollama (Ollama Cloud) is a subscription with fixed limits; stub is for development and tests.
+    # anthropic (billed per token), ollama (Ollama Cloud, a subscription with fixed limits) or stub (tests only).
     external_provider: str = _env("CADUCEUS_EXTERNAL_PROVIDER", "anthropic")
     external_base_url: str | None = _env("CADUCEUS_EXTERNAL_BASE_URL")
     external_api_key: str | None = _env("CADUCEUS_EXTERNAL_API_KEY")
     external_model: str | None = _env("CADUCEUS_EXTERNAL_MODEL")
-    # Seconds to wait for the external model. The demo keeps it under Netlify's 26-second proxy limit, so a slow
-    # model makes a draft fall back to the template instead of making a person wait; recording allows longer.
+    # Seconds. The demo stays under Netlify's 26-second proxy limit, so a slow model's draft falls back to the template.
     external_timeout: str = _env("CADUCEUS_EXTERNAL_TIMEOUT", "60")
-    # Seconds the mock payer takes to decide (half when expedited). 0 decides at once, for tests and local work.
+    # Seconds the mock payer takes to decide, half when expedited.
     payer_review_seconds: str = _env("CADUCEUS_PAYER_REVIEW_SECONDS", "0")
-    # Recorded external replies (scripts/record_completions.py). The demo uses data/recorded/completions.json.
+    # Recorded external replies (scripts/record_completions.py); the demo uses data/recorded/completions.json.
     model_recordings: str | None = _env("CADUCEUS_MODEL_RECORDINGS")
-    # demo: the public demo. Development sign-in, synthetic data seeded in memory, reset on a schedule.
+    # How often the public demo's in-memory data starts over.
     demo_reset_hours: str = _env("CADUCEUS_DEMO_RESET_HOURS", "6")
     # Shared with Netlify: when set, only requests Netlify proxied and signed (x-nf-sign) are answered.
     proxy_signing_key: str | None = _env("CADUCEUS_PROXY_SIGNING_KEY")
-    # 1 adds the showcase cases (data/showcase, scripts/build_showcase.py) after the dataset's own: the public demo
-    # turns it on. Off by default, so the tests and the eval gate see the dataset alone. Local bundles only.
+    # "1" adds the showcase cases (data/showcase) after the dataset's own, as the public demo does. Local bundles only.
     showcase: str = _env("CADUCEUS_SHOWCASE", "0")
+    # SMART launch (docs/smart-launch.md): the FHIR base URLs it may come from, separated by spaces or commas (in the
+    # demo, the public sandbox unless set), and this site's /smart/callback, without which the launch is off.
+    smart_iss: str | None = _env("CADUCEUS_SMART_ISS")
+    smart_redirect_uris: str | None = _env("CADUCEUS_SMART_REDIRECT_URIS")
+    smart_client_id: str = _env("CADUCEUS_SMART_CLIENT_ID", "caduceus-demo")
 
     def scenario_dirs(self) -> list[Path]:
         """Where the scenarios and their records are: the data directory, then the showcase when it is on."""
         on = self.showcase.strip().lower() in ("1", "true", "yes")
         return [self.data_dir, *([self.data_dir / "showcase"] if on else [])]
-    # Opening Caduceus from an EHR by SMART launch (docs/smart-launch.md). The FHIR servers it may be launched from,
-    # as base URLs separated by spaces or commas: in the demo the public SMART sandbox unless set, and nowhere
-    # outside it unless set. The launch is off until a redirect URI is set too: this site's /smart/callback.
-    smart_iss: str | None = _env("CADUCEUS_SMART_ISS")
-    smart_redirect_uris: str | None = _env("CADUCEUS_SMART_REDIRECT_URIS")
-    smart_client_id: str = _env("CADUCEUS_SMART_CLIENT_ID", "caduceus-demo")
 
     @property
     def smart_allowed(self) -> tuple[str, ...]:
@@ -213,7 +205,7 @@ class Services:
     database: PostgresStore | None = None  # its connection pool, when the settings chose Postgres
 
     def close(self) -> None:
-        """Give back the Postgres connections. A SQLite connection stays open for whoever holds it, as before."""
+        """Give back the Postgres connections. A SQLite connection stays open for whoever holds it."""
         if self.database is not None:
             self.database.close()
 
@@ -228,7 +220,7 @@ def build_services(settings: Settings | None = None, conn: sqlite3.Connection | 
     cases: CaseStore
     filed: DocumentStore
     faxes: FaxStore
-    launched: EhrRecordRepository | None = None  # records shared by an EHR launch; SQLite only for now
+    launched: EhrRecordRepository | None = None  # SQLite only
     if conn is None and s.database_url:
         from caduceus.postgres import connect  # the driver loads only when a deployment asks for Postgres
         database = connect(s.database_url)
@@ -248,7 +240,7 @@ def build_services(settings: Settings | None = None, conn: sqlite3.Connection | 
     policies = s.data_dir / "policies"
     lock = load_lock(policies)
     library, engine = load_library(policies), Engine(lock)
-    current = active(library, lock)  # the set each service runs under now
+    current = active(library, lock)
 
     key = s.deid_key.encode() if s.deid_key else secrets.token_bytes(32)  # dev: a fresh key per process
     deid = SafeHarborDeidentifier(key)
@@ -274,8 +266,8 @@ def build_services(settings: Settings | None = None, conn: sqlite3.Connection | 
     return Services(s, tz, audit, cases, store, workflow, auth, router, conn, database)
 
 
-# Where each ordering clinician works: the clinic a faxed referral names on its "From:" line. The fax cover sheets
-# (scripts/make_faxes.py) are drawn with the same names; a test keeps the two lists alike.
+# Each ordering clinician's clinic, as a faxed referral's "From:" line names it. scripts/make_faxes.py draws the
+# cover sheets with the same names, and a test keeps the two alike.
 CLINICS = {"pract-patel": "Mesa Verde Sleep Center", "pract-lee": "Mesa Verde Orthopedics, Rio Rancho",
            "pract-reyes": "Mesa Verde Orthopedics, Santa Fe"}
 
@@ -291,18 +283,18 @@ def _catalog(*dirs: Path, current: dict | None = None) -> dict[str, Any]:
     clinician works at."""
     cases = scenarios(*dirs)
     clinicians = {c["ordering_clinician"]["name"]: c["ordering_clinician"] for c in cases}
-    # The health plan on file for each patient. The synthetic records hold no Coverage resource, so it comes from the
-    # scenario data, and only where that data names one plan for the patient.
+    # The plan on file for each patient comes from the scenario data, since the records hold no Coverage, and only
+    # where the data names just one.
     plans: dict[str, set[tuple[str, str]]] = {}
     for c in cases:
         plans.setdefault(c["patient_id"], set()).add((c["payer"]["name"], c["payer"]["member_id_last4"]))
+
     def service(c: dict) -> dict:
         now = (current or {}).get(c["service"]["code"])
         return c["service"] | {"criteria_set": now.key if now else c["criteria_set"],
                                "needs_side": bool(now and needs_side(now))}
 
-    # Who orders each service on this team: the clinician a case opened from an EHR goes to for anything the record
-    # does not answer.
+    # The clinician who orders each service: a case opened from an EHR asks them what the record does not answer.
     ordering: dict[str, dict[str, str]] = {}
     for c in sorted(cases, key=lambda c: c["id"]):
         ordering.setdefault(c["service"]["code"], c["ordering_clinician"])
