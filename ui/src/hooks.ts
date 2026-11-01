@@ -45,6 +45,11 @@ export function countWords(n: number): string {
   return n === 0 ? "No" : n === 1 ? "One" : String(n);
 }
 
+/** "a", "a and b", "a, b and c" */
+export function andList(items: string[]): string {
+  return items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+}
+
 /** Keep pieces that belong together on one line: "4:01 pm", "Dr. Reyes", "page 2". */
 export function glue(text: string): string {
   return text.replace(/(\d) (am|pm)\b/g, "$1 $2").replace(/\bDr\. /g, "Dr. ").replace(/\bpage (\d)/g, "page $1");

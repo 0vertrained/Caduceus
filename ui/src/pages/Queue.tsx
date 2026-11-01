@@ -6,8 +6,16 @@ import { CheckCircle, Clock, Triangle } from "../components/Icons";
 import { Seal } from "../components/Seal";
 import { searchTerm } from "../components/Header";
 import { StatusWord } from "../components/Status";
+import { Steps } from "../components/Steps";
 import { countWords, glue, useResource, useTitle } from "../hooks";
 import { useSmartInfo } from "../smart";
+
+const STEPS = [
+  "Caduceus reads the referral and checks the record.",
+  "You review each coverage criterion and its evidence.",
+  "If something is missing, a clinician signs for it.",
+  "You approve, and the request goes to the payer.",
+];
 
 function helperKey(me: Me) {
   return `caduceus.helperHidden.${me.id}`;
@@ -30,23 +38,13 @@ function Helper({ me }: { me: Me }) {
       /* hidden for this visit */
     }
   };
-  const steps = [
-    "Caduceus reads the referral and checks the record.",
-    "You review each coverage criterion and its evidence.",
-    "If something is missing, a clinician signs for it.",
-    "You approve, and the request goes to the payer.",
-  ];
   return (
     <section className="panel helper" aria-labelledby="helper-title">
       <div className="helper__head">
         <h2 id="helper-title" className="helper__title">How a case moves through Caduceus</h2>
         <button type="button" className="link-button" onClick={hide}>Got it, hide this</button>
       </div>
-      <ol className="helper__steps">
-        {steps.map((s, i) => (
-          <li key={s} className="helper__step"><span className="step-number" aria-hidden="true">{i + 1}</span>{s}</li>
-        ))}
-      </ol>
+      <Steps steps={STEPS} />
     </section>
   );
 }
