@@ -1,6 +1,6 @@
 # Case study: a prior-authorization agent that keeps patient data inside
 
-**Date:** October 31, 2026
+**Date:** November 1, 2026
 **Live demo:** [caduceusdemo.netlify.app](https://caduceusdemo.netlify.app/), with a
 [2½-minute walkthrough](https://caduceusdemo.netlify.app/demo.mp4)
 **Customer:** Mesa Verde Health, a simulated six-clinic group. Everything about it is fictional, and every patient
@@ -89,6 +89,7 @@ The decisions behind it:
 | Where to look, as shown: the evidence among the passages offered | 0.953 on dev; 0.721 on held-out, measured after the held-out run |
 | [Model bake-off](../model-bakeoff.md): replies with a problem, read by hand | Kimi K2.6 2 of 17; gpt-oss 120B 6 of 17 (2 misstatements, 4 overstatements) |
 | Accessibility, axe-core WCAG 2.2 AA | 0 violations on 50 screens; no sideways scroll at 320 px |
+| OIDC sign-in, walked in Chromium against a test provider and against Keycloak | 27 of 27 checks pass on each, with the page's Content Security Policy enforced |
 | Known vulnerabilities | 0 in Python and npm packages; 2 medium in CPython with no fix released |
 | Tests | 389, and 82 runs of the store, audit and workflow tests on Postgres |
 
@@ -148,7 +149,6 @@ Also not built:
 
 - Dense retrieval, which needs an in-VPC embedding model.
 - Temporal, after the outbox's send-once lock moves into Postgres.
-- A first run of the compose Keycloak. OIDC sign-in is built, and tested against a mock identity provider.
 - The AWS deployment: the Terraform passes Checkov but has not been applied.
 - Model-drafted criteria versions, for a reviewer to check rather than write.
 - Usability testing with real PA staff; the [test kit](../research/usability-test-kit.md) is ready.

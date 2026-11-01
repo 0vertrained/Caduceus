@@ -30,6 +30,7 @@ which one (`GET /api/auth-config`).
 
 `make e2e-oidc` (or `scripts/e2e-oidc.sh`) walks all of this in Chromium, with the policy enforced, against the test
 identity provider in `tests/mock_idp.py`. That provider is for tests only: it signs in anyone who picks a name.
+`make e2e-keycloak` walks the same steps against Keycloak itself (below).
 
 ## Keycloak on your machine
 
@@ -64,8 +65,11 @@ both. Keycloak keeps its database inside the container, so to change a password,
 The API reaches Keycloak for its signing keys on an internal network. Only the port the browser needs is published,
 and only on 127.0.0.1.
 
-This setup has not been run yet. The image could not be pulled where it was written, so it was checked with
-`docker compose config` and `tests/test_keycloak_realm.py`, not by starting Keycloak.
+`make e2e-keycloak` (or `scripts/e2e-keycloak.sh`) starts this profile with passwords made for the run, shortens
+the access token to 70 seconds through Keycloak's admin API so a renewal happens, and walks sign-in at Keycloak's
+own pages: in from a link to a case, renewed, a spoiled token refused, signed out at both ends, then in again as a
+clinician. It removes the containers and their volumes when it ends. The keycloak workflow runs it in CI whenever
+sign-in, the API or the compose file changes. `tests/test_keycloak_realm.py` checks the realm file on every push.
 
 ## Connecting the health system's identity provider
 
