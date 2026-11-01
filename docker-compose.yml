@@ -1,30 +1,12 @@
-# Local parity for the deployment in infra/terraform, on one machine.
+# Local parity for the deployment in infra/terraform, on one machine. Every secret comes from .env (see
+# .env.example), never from this file.
 #
-#   cp .env.example .env                    # then set CADUCEUS_DEID_KEY and CADUCEUS_DB_PASSWORD
-#   docker compose up --build               # review UI and API on http://127.0.0.1:8000
+#   docker compose up --build                  # the UI and API on http://127.0.0.1:8000
+#   docker compose --profile llm up --build    # with the in-network model; the first build compiles llama.cpp
+#   docker compose --profile oidc up --build   # with Keycloak for sign-in (docs/sign-in.md)
 #
-# With the in-network model the demo runs (infra/model), after setting CADUCEUS_IN_VPC_URL=http://model:8081/v1 in .env:
-#   docker compose --profile llm up --build   # the first build compiles llama.cpp, which takes a while
-#
-# The model server sits on an internal network with no route to the internet, as the GPU instance sits in an
-# isolated subnet in AWS. Only the API can reach it, and nothing publishes its port.
-#
-# Postgres holds the cases and the audit log, as RDS does in AWS (docs/postgres.md), on an internal network of its
-# own: only the API reaches it, nothing publishes its port, and its data lives in the pgdata volume. The API applies
-# the migrations and seeds the demo cases when it starts, if the database holds none yet.
-#
-# The database password is read from .env (CADUCEUS_DB_PASSWORD), never written here. Compose hands it to Postgres,
-# and to the API inside CADUCEUS_DATABASE_URL, so make one that needs no escaping in a URL:
-#   python -c "import secrets; print(secrets.token_urlsafe(32))"
-# Postgres takes the password only when it first creates the volume. To change it later, change it in the database
-# (ALTER ROLE caduceus PASSWORD ...) and then in .env; or start over with `docker compose down -v`, which deletes
-# the volume and every case in it.
-#
-# Sign-in with OpenID Connect against a local Keycloak, as the health system's identity provider (docs/sign-in.md):
-# set CADUCEUS_AUTH_MODE=oidc, CADUCEUS_KEYCLOAK_ADMIN_PASSWORD and CADUCEUS_KEYCLOAK_USER_PASSWORD in .env, then
-#   docker compose --profile oidc up --build
-# Keycloak imports infra/keycloak/mesaverde-realm.json when it starts. The browser reaches it on 127.0.0.1:8080, and
-# the API reaches it on an internal network for its signing keys.
+# Postgres and the model each sit on an internal network with no route out and no published port, as their
+# counterparts sit in isolated subnets in AWS. Only the API reaches them.
 
 name: caduceus
 
@@ -60,8 +42,9 @@ services:
     networks: [edge, model, data, auth]
 
   db:
-    # TODO: pin by digest (postgres:17@sha256:...), as the Dockerfile's base images are; the registry could not be
-    # reached when this was written. CI's Postgres job uses the same image.
+    # The cases and the audit log, as RDS holds them in AWS (docs/postgres.md). Postgres takes the password only when
+    # it creates the pgdata volume: to change it, ALTER ROLE caduceus and then .env, or start over with
+    # `docker compose down -v`, which deletes every case.
     image: postgres:17
     environment:
       POSTGRES_USER: caduceus
@@ -81,10 +64,8 @@ services:
 
   keycloak:
     # The identity provider for OIDC sign-in on this machine: the mesaverde realm, its caduceus-ui client and the six
-    # people of the development roster. Passwords come from .env into the realm file's placeholders; none is written
-    # down here or there. Its database lives in the container, so `docker compose down` starts it over from the file.
-    # TODO: pin by digest (quay.io/keycloak/keycloak:26.8.1@sha256:...), as the Dockerfile's base images are; the
-    # registry could not be reached when this was written.
+    # people of the development roster. Passwords come from .env into the realm file's placeholders. Its database
+    # lives in the container, so `docker compose down` starts it over from the file.
     profiles: [oidc]
     image: quay.io/keycloak/keycloak:26.8.1
     entrypoint: ["/bin/bash", "-c"]
@@ -123,9 +104,9 @@ services:
       retries: 30
       start_period: 30s
 
-  # The same image the demo runs beside the API (infra/model): llama.cpp and Qwen2.5-1.5B, weights baked in at build
-  # time, served offline. The build downloads the source and weights; the running container has no route out.
   model:
+    # The image the demo runs beside the API (infra/model): llama.cpp and Qwen2.5-1.5B, with the weights baked in
+    # at build time. The build downloads them; the running container has no route out.
     profiles: [llm]
     build: infra/model
     image: caduceus-model:local
