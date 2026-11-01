@@ -2,8 +2,7 @@
 # Record the captioned demo walkthrough and join it into one MP4 for the site (ui/public/demo.mp4).
 #   scripts/demo_video.sh [out.mp4]
 # Needs: the Python package installed, ui/dist built, Node with Playwright and Chromium, ffmpeg, Tesseract.
-# Drafts come from whatever the demo would use here: recorded model replies if data/recorded/completions.json
-# exists, otherwise the template.
+# Drafts come from data/recorded/completions.json when it exists, otherwise from the template.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -13,7 +12,7 @@ work="$(mktemp -d)"
 trap 'kill "${server:-0}" 2>/dev/null || true; rm -rf "$work"' EXIT
 
 export CADUCEUS_AUTH_MODE=demo CADUCEUS_DB="$work/video.sqlite3"
-# As deployed: the showcase cases, and a payer that takes a minute to decide (half when expedited).
+# The showcase cases, and a payer that takes a minute to decide (half when expedited).
 export CADUCEUS_SHOWCASE=1 CADUCEUS_PAYER_REVIEW_SECONDS="${CADUCEUS_PAYER_REVIEW_SECONDS:-60}"
 uvicorn caduceus.api:create_app --factory --host 127.0.0.1 --port "$port" --log-level warning &
 server=$!

@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
-# Sign in through OpenID Connect, end to end: the test identity provider (tests/mock_idp.py, for tests only), the API
-# in oidc mode on a throwaway database, and the built UI in Chromium with its Content Security Policy enforced. The
-# walk signs in as Dolores Montoya from a link to a case, sees the queue, opens a case, renews the session, has it
-# refused, signs out at the provider and signs in again, with axe-core on the sign-in and callback screens.
+# Sign in through OpenID Connect end to end: the test identity provider (tests/mock_idp.py), the API in oidc mode on
+# a throwaway database, and the built UI in Chromium with its Content Security Policy enforced and axe-core checks.
 #   scripts/e2e-oidc.sh [screenshot-dir]
 # Needs what scripts/e2e.sh needs.
 set -euo pipefail

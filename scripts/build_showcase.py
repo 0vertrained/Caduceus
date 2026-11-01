@@ -2,15 +2,12 @@
 
     python scripts/build_showcase.py --out data/showcase
 
-- 2026-1051, a knee replacement requested for the right knee when the chart documents the left: the criteria catch
-  it.
-- 2026-1052, a lumbar MRI whose physical therapy is only in an outside summary scanned into the packet: the record
-  cannot answer, and "where to look" points at the page.
-- 2026-1053, a CPAP request for severe sleep apnea with oxygen at 71% at night and atrial fibrillation: expedited.
+- 2026-1051: a right knee replacement when the chart documents the left knee.
+- 2026-1052: a lumbar MRI whose physical therapy is only in an outside summary in the packet.
+- 2026-1053: a CPAP request for severe sleep apnea that needs an expedited decision.
 
-Built with the hard-set generator's record and packet machinery (scripts/build_hard_set.py), from fixed clinical
-stories, not Synthea. Only the demo seeds them, after the 11 Synthea cases; the eval gate and the tests do not. Every
-name, date and number is synthetic. Rebuilds are byte-identical.
+Built from fixed clinical stories with the hard-set generator's machinery, byte-identically on every run. Only the
+demo seeds them.
 """
 
 from __future__ import annotations
