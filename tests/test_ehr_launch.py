@@ -142,7 +142,7 @@ def test_the_ehr_refusing_the_code_is_said_in_plain_words(ehr):
     r = callback(ehr, code, state)
     assert r.status_code == 502 and r.json() == {"message": "The EHR did not accept the sign-in. Open Caduceus "
                                                             "from the EHR again."}
-    assert copy(ehr).workflow.launched.keys() == [] and refusals(ehr) == ["token_refused"]
+    assert copy(ehr).workflow.launched.keys_oldest_first() == [] and refusals(ehr) == ["token_refused"]
 
 
 def test_the_record_lives_only_in_the_visitors_copy_and_goes_when_it_starts_over(ehr):
@@ -239,13 +239,13 @@ def test_a_copy_holds_three_patients_from_the_ehr(ehr):
     third = another("patient-3")
     another("patient-4")  # no case uses the first, so it goes to make room
     assert ehr.client.get(f"/api/smart/records/{first}", headers=DOLORES | A).status_code == 404
-    for key in copy(ehr).workflow.launched.keys():
+    for key in copy(ehr).workflow.launched.keys_oldest_first():
         assert new_case(ehr, key).status_code == 200
     code, state = ehr.fake.authorize(start(ehr).json()["authorize_url"])
     ehr.fake.patient_resource, ehr.fake.resources = patient("patient-5"), record(T0.date(), "patient-5")
     full = callback(ehr, code, state)
     assert full.status_code == 409 and "already holds 3 patients opened from an EHR" in full.json()["message"]
-    assert third in copy(ehr).workflow.launched.keys()
+    assert third in copy(ehr).workflow.launched.keys_oldest_first()
     let_go = [e.detail for e in copy(ehr).audit.events() if e.action == "ehr.launch_refused"][-1]
     assert let_go == {"reason": "not_filed", "iss": ehr.fake.base,
                       "discarded": {"Condition": 6, "Procedure": 5, "Observation": 28, "DocumentReference": 8}}
@@ -258,7 +258,7 @@ def test_a_record_the_engine_cannot_read_is_not_filed(ehr):
     code, state = ehr.fake.authorize(start(ehr).json()["authorize_url"])
     r = callback(ehr, code, state)
     assert r.status_code == 502 and "could not read" in r.json()["message"]
-    assert copy(ehr).workflow.launched.keys() == []
+    assert copy(ehr).workflow.launched.keys_oldest_first() == []
     let_go = [e.detail for e in copy(ehr).audit.events() if e.action == "ehr.launch_refused"][-1]
     assert (let_go["reason"], let_go["step"], let_go["discarded"]["Condition"]) == ("bad_response", "record", 7)
 

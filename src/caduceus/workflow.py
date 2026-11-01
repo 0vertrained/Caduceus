@@ -706,7 +706,7 @@ class Workflow:
             self.launched.retire(key)
             key = None
         if key is None:
-            kept = self.launched.keys()
+            kept = self.launched.keys_oldest_first()
             if keep is not None and len(kept) >= keep:
                 spare = [k for k in kept if k not in used]
                 if not spare:

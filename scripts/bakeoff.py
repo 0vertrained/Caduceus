@@ -23,9 +23,9 @@ NUMBER = re.compile(r"(?<![\w\[])\d+(?:\.\d+)?(?![\w\]])")
 WORDS = {"draft_request": (90, 140), "draft_appeal": (120, 180)}
 # Models write typographic hyphens, dashes and quotes. Comparing plain forms keeps a faithful quote from scoring as
 # missing.
-PLAIN = str.maketrans({c: "-" for c in "\u2010\u2011\u2012\u2013\u2014\u2015\u2212"}
-                      | {c: '"' for c in "\u201c\u201d\u201e"} | {c: "'" for c in "\u2018\u2019"}
-                      | {c: " " for c in "\u00a0\u202f\u2009"})
+PLAIN = str.maketrans(dict.fromkeys("\u2010\u2011\u2012\u2013\u2014\u2015\u2212", "-")
+                      | dict.fromkeys("\u201c\u201d\u201e", '"') | dict.fromkeys("\u2018\u2019", "'")
+                      | dict.fromkeys("\u00a0\u202f\u2009", " "))
 
 
 def plain(text: str) -> str:

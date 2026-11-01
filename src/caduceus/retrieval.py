@@ -63,12 +63,15 @@ CONCEPTS: list[tuple[str, str]] = [
     (r"\byrs?\b|\byears?\b", "year"),
 ]
 
-STOP = set("""a an and are as at be been but by for from has have had he her his in into is it its of on or our
-she that the their them they this to was were which while who will with within before after than then there these
-those patient patients pt per also any all not no yes""".split())
+STOP = {
+    "a", "an", "and", "are", "as", "at", "be", "been", "but", "by", "for", "from", "has", "have", "had", "he", "her",
+    "his", "in", "into", "is", "it", "its", "of", "on", "or", "our", "she", "that", "the", "their", "them", "they",
+    "this", "to", "was", "were", "which", "while", "who", "will", "with", "within", "before", "after", "than", "then",
+    "there", "these", "those", "patient", "patients", "pt", "per", "also", "any", "all", "not", "no", "yes",
+}
 # Words about documenting, not about the patient: criteria are full of them, and so is every signature line.
-STOP |= set("""clinician clinicians physician provider documents documented documentation record records chart
-request requested policy example""".split())
+STOP |= {"clinician", "clinicians", "physician", "provider", "documents", "documented", "documentation", "record",
+         "records", "chart", "request", "requested", "policy", "example"}
 
 _CASED = [(re.compile(p), f" {t} ") for p, t in CASED]
 _CONCEPTS = [(re.compile(p), f" {t} ") for p, t in CONCEPTS]

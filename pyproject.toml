@@ -49,9 +49,18 @@ line-length = 120
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "B", "UP", "S"]
+select = ["E", "F", "I", "B", "UP", "S", "SIM", "C4", "RET", "PIE", "PERF", "T20"]
 ignore = ["S101"]
 
 [tool.ruff.lint.per-file-ignores]
 "src/caduceus/api.py" = ["B008"]  # FastAPI's Depends() in defaults is the framework's intended pattern
 "tests/**" = ["S105", "S106"]     # test-only fake credentials
+# Command-line entry points, which report to the person running them. Not mcp_servers: over stdio, a stray print
+# would corrupt the protocol stream.
+"scripts/**" = ["T20"]
+"src/caduceus/seed.py" = ["T20"]
+"src/caduceus/postgres.py" = ["T20"]
+"src/caduceus/evals/run.py" = ["T20"]
+"src/caduceus/evals/hard.py" = ["T20"]
+"tests/fake_smart.py" = ["T20"]
+"tests/mock_idp.py" = ["T20"]
