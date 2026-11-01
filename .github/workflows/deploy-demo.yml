@@ -116,7 +116,6 @@ jobs:
           digest="$(gcloud artifacts docker images describe "$image:current" --format 'value(image_summary.digest)' 2>/dev/null || true)"
           if [ -n "$digest" ]; then
             echo "MODEL_IMAGE=$image@$digest" >> "$GITHUB_ENV"
-            echo "::notice title=In-network model::Running $image@$digest beside the API"
           else
             echo "::notice title=In-network model::No model image is published yet (model-image.yml); the API runs alone."
           fi
@@ -125,9 +124,11 @@ jobs:
         # instances: idle costs nothing, and a cold start reseeds.
         # The demo adds the three showcase cases, and its payer takes 30 seconds to decide (15 when expedited), so a
         # visitor sees a request under review before the decision comes back.
-        # With the model: two containers in one instance. Only the API takes traffic; the model listens on
-        # 127.0.0.1, which nothing outside the instance can reach. CPU stays on between requests (instance billing),
-        # so the model can finish a summary after the request that asked for it has returned.
+        # With the model: two containers in one instance. Only the API's has a port and takes traffic; the model
+        # listens on 127.0.0.1, which nothing outside the instance can reach. CPU stays on between requests
+        # (instance billing), so the model can finish a summary after the request that asked for it has returned.
+        # That revision is written out whole and replaces the service's: gcloud's per-container flags merge with the
+        # containers already there, and Cloud Run refused the result ("exactly one container with an exposed port").
         run: |
           secrets="CADUCEUS_PROXY_SIGNING_KEY=caduceus-proxy-signing-key:latest"
           if [ "${MODEL_KEY:-}" = 1 ]; then secrets="$secrets,CADUCEUS_EXTERNAL_API_KEY=$MODEL_SECRET:latest"; fi
@@ -146,14 +147,29 @@ jobs:
               --image "$IMAGE" --port 8000 --cpu 1 --memory 1Gi --set-env-vars "$env" --set-secrets "$secrets"
           }
           if [ -z "${MODEL_IMAGE:-}" ]; then alone; exit 0; fi
-          # A container from an earlier, single-container revision goes, so only "api" takes traffic.
-          others="$(containers | grep -vxE 'api|model|' | paste -sd, - || true)"
-          if gcloud run deploy "$SERVICE" "${common[@]}" ${others:+--remove-containers "$others"} \
-              --execution-environment gen2 --no-cpu-throttling --cpu-boost \
-              --container api --image "$IMAGE" --port 8000 --cpu 1 --memory 1Gi \
-                --set-env-vars "$env,CADUCEUS_IN_VPC_URL=http://127.0.0.1:8081/v1,CADUCEUS_IN_VPC_MODEL=qwen2.5-1.5b-instruct,CADUCEUS_IN_VPC_DRAFTS=0" \
-                --set-secrets "$secrets" \
-              --container model --image "$MODEL_IMAGE" --cpu 2 --memory 3Gi; then
+          # What runs now, for the record if this fails.
+          echo "Containers now: $(gcloud run services describe "$SERVICE" --project "$PROJECT" --region "$REGION" \
+            --format json 2>/dev/null | jq -c '[.spec.template.spec.containers[] | {name, ports}]' || true)"
+          # Settings as NAME=value lists, as the flags take them; a secret's value is SECRET:VERSION.
+          jq -n --arg service "$SERVICE" --arg account "$RUNTIME_SA" --arg api "$IMAGE" --arg model "$MODEL_IMAGE" \
+                --arg env "$env,CADUCEUS_IN_VPC_URL=http://127.0.0.1:8081/v1,CADUCEUS_IN_VPC_MODEL=qwen2.5-1.5b-instruct,CADUCEUS_IN_VPC_DRAFTS=0" \
+                --arg secrets "$secrets" '
+            def pairs: split(",") | map(split("=") | {name: .[0], value: (.[1:] | join("="))});
+            def secret: {name, valueFrom: {secretKeyRef: {name: (.value | split(":")[0]), key: (.value | split(":")[1])}}};
+            {apiVersion: "serving.knative.dev/v1", kind: "Service", metadata: {name: $service},
+             spec: {template: {
+               metadata: {annotations: {
+                 "autoscaling.knative.dev/minScale": "0", "autoscaling.knative.dev/maxScale": "1",
+                 "run.googleapis.com/execution-environment": "gen2", "run.googleapis.com/cpu-throttling": "false",
+                 "run.googleapis.com/startup-cpu-boost": "true"}},
+               spec: {containerConcurrency: 40, serviceAccountName: $account, containers: [
+                 {name: "api", image: $api, ports: [{name: "http1", containerPort: 8000}],
+                  env: (($env | pairs) + ($secrets | pairs | map(secret))),
+                  resources: {limits: {cpu: "1", memory: "1Gi"}}},
+                 {name: "model", image: $model, resources: {limits: {cpu: "2", memory: "3Gi"}}}]}}}}' \
+            > "$RUNNER_TEMP/service.yaml"
+          if gcloud run services replace "$RUNNER_TEMP/service.yaml" --project "$PROJECT" --region "$REGION" --quiet; then
+            echo "::notice title=In-network model::Running $MODEL_IMAGE beside the API"
             exit 0
           fi
           echo "::warning title=In-network model::Deploying with the model failed; deploying the API alone instead."
