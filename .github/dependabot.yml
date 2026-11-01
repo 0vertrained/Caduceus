@@ -40,6 +40,13 @@ updates:
       - dependency-name: node
         update-types: ["version-update:semver-major"]
 
+  - package-ecosystem: docker-compose
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+
   - package-ecosystem: terraform
     directory: "/infra/terraform"
     schedule:

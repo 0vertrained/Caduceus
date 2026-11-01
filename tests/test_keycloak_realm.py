@@ -117,6 +117,6 @@ def test_compose_points_the_api_at_keycloak_and_keeps_the_way_between_them_insid
     assert shared and all(COMPOSE["networks"][n].get("internal") is True for n in shared)
     assert KEYCLOAK["ports"] == ["127.0.0.1:8080:8080"]  # the browser's way in, from this machine only
     assert KEYCLOAK["profiles"] == ["oidc"]
-    assert re.fullmatch(r"quay\.io/keycloak/keycloak:\d+\.\d+\.\d+", KEYCLOAK["image"])  # an exact version
+    assert re.fullmatch(r"quay\.io/keycloak/keycloak:\d+\.\d+\.\d+@sha256:[0-9a-f]{64}", KEYCLOAK["image"])
     assert KEYCLOAK["volumes"] == [
         "./infra/keycloak/mesaverde-realm.json:/opt/keycloak/data/import/mesaverde-realm.json:ro"]

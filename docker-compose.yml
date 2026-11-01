@@ -45,7 +45,7 @@ services:
     # The cases and the audit log, as RDS holds them in AWS (docs/postgres.md). Postgres takes the password only when
     # it creates the pgdata volume: to change it, ALTER ROLE caduceus and then .env, or start over with
     # `docker compose down -v`, which deletes every case.
-    image: postgres:17
+    image: postgres:17@sha256:3b0cda93be7c8dba2ed484d19393d93845dc3dafb88973e248ba8e6d99d784e1
     environment:
       POSTGRES_USER: caduceus
       POSTGRES_DB: caduceus
@@ -67,7 +67,7 @@ services:
     # people of the development roster. Passwords come from .env into the realm file's placeholders. Its database
     # lives in the container, so `docker compose down` starts it over from the file.
     profiles: [oidc]
-    image: quay.io/keycloak/keycloak:26.8.1
+    image: quay.io/keycloak/keycloak:26.8.1@sha256:3f3c5f8e03c614774b4bd9173b88391fefa4153bfc010d8012d59ad825377332
     entrypoint: ["/bin/bash", "-c"]
     # Refuses to start without both passwords, rather than make accounts with empty ones.
     command:
