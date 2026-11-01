@@ -27,6 +27,15 @@ from caduceus.workflow import NOTE_LIMIT, REMIND_EVERY, UNDO_SECONDS, approve_bl
 __all__ = ["Presenter", "clock", "due", "long_date", "moment", "status", "summary_sentence", "took"]
 
 URGENT = timedelta(hours=2)
+# How long a clinician's screen waits for the in-network model's summary. It takes about half a minute; a job lost to
+# a restart never comes, and the screen must not say one is coming forever.
+SUMMARY_PATIENCE = timedelta(minutes=5)
+
+
+def summary_coming(summary: dict[str, Any], now: datetime) -> bool:
+    """Whether the in-network model's summary is still on its way."""
+    written = summary.get("generated_at")
+    return bool(summary.get("pending")) and bool(written) and now - datetime.fromisoformat(written) < SUMMARY_PATIENCE
 
 
 def due(due_at: datetime, now: datetime, tz: ZoneInfo) -> dict[str, Any]:
@@ -451,7 +460,7 @@ class Presenter:
             "chart_summary": summary["text"],
             # How it was written: by the model inside the network, or from the record's facts.
             "chart_summary_by": {"route": summary.get("route"), "model": summary.get("model")},
-            "chart_summary_pending": bool(summary.get("pending")),  # the in-network model's is on its way
+            "chart_summary_pending": summary_coming(summary, now),  # the in-network model's is on its way
             "questions": [{"criterion_id": cid, "question": crit[cid].attestation_question or crit[cid].text,
                            "help": crit[cid].attestation_help,
                            "leads": [{k: lead[k] for k in ("title", "page", "text")} for lead in self.leads(case, cid)]}
