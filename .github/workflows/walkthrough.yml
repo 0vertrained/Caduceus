@@ -75,6 +75,7 @@ jobs:
         env:
           CADUCEUS_IN_VPC_URL: http://127.0.0.1:8081/v1
           CADUCEUS_IN_VPC_MODEL: qwen2.5-1.5b-instruct
+          CADUCEUS_IN_VPC_DRAFTS: "0"   # as the demo: the CPU model writes the summaries, never a draft
         run: |
           mkdir -p "$RUNNER_TEMP/walkthrough"
           SHOTS_DIR="$RUNNER_TEMP/walkthrough/screenshots" NODE_PATH="$(npm root --global)" \

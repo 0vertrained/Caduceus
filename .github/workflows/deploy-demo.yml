@@ -146,7 +146,7 @@ jobs:
           if gcloud run deploy "$SERVICE" "${common[@]}" ${others:+--remove-containers "$others"} \
               --execution-environment gen2 --no-cpu-throttling --cpu-boost \
               --container api --image "$IMAGE" --port 8000 --cpu 1 --memory 1Gi \
-                --set-env-vars "$env,CADUCEUS_IN_VPC_URL=http://127.0.0.1:8081/v1,CADUCEUS_IN_VPC_MODEL=qwen2.5-1.5b-instruct" \
+                --set-env-vars "$env,CADUCEUS_IN_VPC_URL=http://127.0.0.1:8081/v1,CADUCEUS_IN_VPC_MODEL=qwen2.5-1.5b-instruct,CADUCEUS_IN_VPC_DRAFTS=0" \
                 --set-secrets "$secrets" \
               --container model --image "$MODEL_IMAGE" --cpu 2 --memory 3Gi; then
             exit 0

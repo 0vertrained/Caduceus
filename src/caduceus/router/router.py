@@ -6,7 +6,9 @@ Two doors, enforced by types rather than by convention:
   the call fails. It never falls back to the external route.
 * ``complete_deid`` takes only ``StampedText`` from the de-identification service. Every part's stamp is verified
   and re-checked for known identifiers before the external provider sees a byte. Unstamped or tampered input is
-  refused. With no external provider configured, de-identified work runs in-VPC instead (always safe).
+  refused. With no external provider configured, or one switched off, de-identified work runs in-VPC instead (always
+  safe), unless the deployment keeps its in-VPC model for PHI work alone (``drafts_in_vpc=False``: a small model on a
+  CPU, where a draft on a request's path would take longer than the request may).
 
 System prompts are code constants passed by callers; they never carry patient data.
 
@@ -47,9 +49,10 @@ class RoutedCompletion:
 
 class Router:
     def __init__(self, in_vpc: Provider | None, external: Provider | None, deid: SafeHarborDeidentifier,
-                 capture_deid_content: bool | None = None):
+                 capture_deid_content: bool | None = None, drafts_in_vpc: bool = True):
         self._in_vpc = in_vpc
         self._external = external
+        self._drafts_in_vpc = drafts_in_vpc  # whether de-identified work may run in-VPC when nothing external does
         self._external_off = False  # an administrator's switch: nothing goes out until it is turned back on
         self._deid = deid
         self._capture = (os.environ.get("CADUCEUS_CAPTURE_DEID_CONTENT") == "1"
@@ -68,15 +71,21 @@ class Router:
         """Configured, and not switched off by an administrator."""
         return self._external is not None and not self._external_off
 
+    @property
+    def drafts_in_vpc(self) -> bool:
+        """Whether de-identified work runs on the in-VPC model when the external route is off or absent."""
+        return self._in_vpc is not None and self._drafts_in_vpc
+
     def switch_external(self, on: bool) -> None:
-        """Off: de-identified work runs on the in-VPC model when there is one, else falls back to the template."""
+        """Off: de-identified work runs on the in-VPC model when it may, else falls back to the template."""
         self._external_off = not on
 
     def describe(self) -> dict[str, Any]:
         """Which models each route would use, for the administrator: names only, never keys or addresses."""
         def about(p: Provider | None) -> dict[str, Any] | None:
             return None if p is None else {"name": p.name, "model": p.model}
-        return {"in_vpc": about(self._in_vpc), "external": about(self._external), "external_on": self.external_on}
+        return {"in_vpc": about(self._in_vpc), "external": about(self._external), "external_on": self.external_on,
+                "drafts_in_vpc": self.drafts_in_vpc}
 
     def complete_phi(self, task: str, system: str, user: str, case_id: str, max_tokens: int = 800) -> RoutedCompletion:
         if self._in_vpc is None:
@@ -118,10 +127,10 @@ class Router:
                 raise UnstampedPayload("a known identifier is present in stamped text; refusing")
         user = "\n\n".join(p.text for p in parts)
         external = None if self._external_off else self._external
-        provider = external or self._in_vpc
+        provider = external or (self._in_vpc if self._drafts_in_vpc else None)
         if provider is None:
-            raise InVpcUnavailable("no model is configured" if self._external is None
-                                   else "the external model is switched off and there is no in-VPC model")
+            raise InVpcUnavailable("no model is configured" if self._external is None and self._in_vpc is None
+                                   else "the external model is off, and drafts are not written in-VPC here")
         route = "external" if external is not None else "deid_in_vpc"
         with tracer.start_as_current_span(f"chat {provider.model}") as span:
             self._annotate(span, provider, route, task, case_id, user)
