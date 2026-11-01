@@ -843,6 +843,8 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
 
         @app.get("/{path:path}", include_in_schema=False)
         def spa(path: str):
+            if path == "api" or path.startswith("api/"):  # an address the API does not have is not a page either
+                raise HTTPException(404, "There is no such address in the API.")
             target = ui / path
             if path and target.is_file() and ui in target.resolve().parents:
                 return FileResponse(target)
