@@ -1,0 +1,984 @@
+{
+  "model": "qwen2.5-1.5b-instruct",
+  "sets": "dataset,dev",
+  "totals": {
+    "summaries": 32,
+    "sentences": 98,
+    "kept": 95,
+    "kept_share": 0.969,
+    "replaced": {
+      "term": 2,
+      "number": 1
+    },
+    "fallbacks": {
+      "unsupported": 1
+    },
+    "seconds_per_summary": 10.1
+  },
+  "summaries": [
+    {
+      "set": "dataset",
+      "case": "2026-1023",
+      "seconds": 4.4,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "adult",
+          "written": "The patient is an adult",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "The patient is an adult. The chart does not say whether this was done: in-person evaluation before the sleep test. The chart does not say whether this was done: a covered sleep test was done. The chart does not say whether this was done: sleep apnea severity qualifies."
+    },
+    {
+      "set": "dataset",
+      "case": "2026-1025",
+      "seconds": 12.3,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "lbp_duration",
+          "written": "The patient has had low back pain for at least six weeks, with symptoms ongoing since August 5, 2026.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "conservative_care",
+          "written": "The patient has tried conservative treatment, including physical therapy for 7 weeks, but there has been minimal improvement in pain or function.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "red_flags_excluded",
+          "written": "The patient's red-flag symptoms have been ruled out, with no saddle anesthesia, bowel or bladder change, fever, weight loss, or history of cancer.",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "The patient has had low back pain for at least six weeks, with symptoms ongoing since August 5, 2026. The patient has tried conservative treatment, including physical therapy for 7 weeks, but there has been minimal improvement in pain or function. The patient's red-flag symptoms have been ruled out, with no saddle anesthesia, bowel or bladder change, fever, weight loss, or history of cancer."
+    },
+    {
+      "set": "dataset",
+      "case": "2026-1027",
+      "seconds": 15.0,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "arthritis_of_this_knee",
+          "written": "The patient's chart documents that arthritis of the knee is being replaced.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "imaging_shows_arthritis",
+          "written": "The patient's chart documents that an X-ray or MRI shows advanced joint disease, specifically with medial joint-space narrowing and osteophytes.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "functional_disability",
+          "written": "The patient's chart documents that pain with functional disability is present.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "no_wound_at_site",
+          "written": "The patient's chart documents that there is no skin infection or open wound at the surgical site.",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "The patient's chart documents that arthritis of the knee is being replaced. The patient's chart documents that an X-ray or MRI shows advanced joint disease, specifically with medial joint-space narrowing and osteophytes. The patient's chart documents that pain with functional disability is present. The patient's chart documents that there is no skin infection or open wound at the surgical site. The chart does not say whether this was done: a reasonable attempt at conservative therapy."
+    },
+    {
+      "set": "dataset",
+      "case": "2026-1029",
+      "seconds": 9.8,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "recent_xray",
+          "written": "The patient's recent X-ray, performed within the last 90 days, shows degenerative disc disease at L4 to L5 with mild narrowing. No acute fracture or malalignment was noted.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "red_flags_excluded",
+          "written": "The patient's red-flag symptoms, including saddle anesthesia, bowel or bladder change, fever, weight loss, and history of cancer, were all ruled out by the clinician.",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "The patient's recent X-ray, performed within the last 90 days, shows degenerative disc disease at L4 to L5 with mild narrowing. No acute fracture or malalignment was noted. The patient's red-flag symptoms, including saddle anesthesia, bowel or bladder change, fever, weight loss, and history of cancer, were all ruled out by the clinician. The chart does not say whether this was done: conservative treatment tried first."
+    },
+    {
+      "set": "dataset",
+      "case": "2026-1031",
+      "seconds": 9.6,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "adult",
+          "written": "The patient is an adult",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "in_person_evaluation",
+          "written": "In-person evaluation before the sleep test",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "covered_sleep_test",
+          "written": "A covered sleep test was done",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "severity_qualifies",
+          "written": "Sleep apnea severity qualifies",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "The patient is an adult. In-person evaluation before the sleep test. A covered sleep test was done. Sleep apnea severity qualifies."
+    },
+    {
+      "set": "dataset",
+      "case": "2026-1033",
+      "seconds": 15.0,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "arthritis_of_this_knee",
+          "written": "The patient's chart documents that arthritis of the knee is being replaced.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "imaging_shows_arthritis",
+          "written": "The patient's chart documents that imaging shows advanced joint disease, with a narrowed knee joint space on radiograph.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "no_active_infection",
+          "written": "The patient's chart documents that there is no active infection of the joint or the bloodstream.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "no_wound_at_site",
+          "written": "The patient's chart documents that there is no skin infection or open wound at the surgical site.",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "The patient's chart documents that arthritis of the knee is being replaced. The patient's chart documents that imaging shows advanced joint disease, with a narrowed knee joint space on radiograph. The patient's chart documents that there is no active infection of the joint or the bloodstream. The patient's chart documents that there is no skin infection or open wound at the surgical site. The chart does not say whether this was done: a reasonable attempt at conservative therapy. The chart does not say whether this was done: pain with functional disability."
+    },
+    {
+      "set": "dataset",
+      "case": "2026-1035",
+      "seconds": 4.4,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "adult",
+          "written": "The patient is an adult",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "covered_sleep_test",
+          "written": "A covered sleep test was done",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "The patient is an adult. A covered sleep test was done. The chart does not say whether this was done: in-person evaluation before the sleep test. The chart does not say whether this was done: sleep apnea severity qualifies."
+    },
+    {
+      "set": "dataset",
+      "case": "2026-1036",
+      "seconds": 18.2,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "lbp_duration",
+          "written": "Tanna Skiles has had low back pain for at least six weeks, with a documented history of 12 years since February 4, 2014.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "conservative_care",
+          "written": "Tanna Skiles has tried conservative treatment, including physical therapy for 8 weeks, from June 20, 2026 to August 17, 2026.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "recent_xray",
+          "written": "Tanna Skiles has had a plain X-ray of the lumbar spine within the last 90 days, showing degenerative disc disease at L4 to L5 with mild narrowing, no acute fracture or malalignment.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "red_flags_excluded",
+          "written": "Tanna Skiles has had no red-flag symptoms, as evidenced by a negative red-flag symptom screen on October 20, 2026.",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "Tanna Skiles has had low back pain for at least six weeks, with a documented history of 12 years since February 4, 2014. Tanna Skiles has tried conservative treatment, including physical therapy for 8 weeks, from June 20, 2026 to August 17, 2026. Tanna Skiles has had a plain X-ray of the lumbar spine within the last 90 days, showing degenerative disc disease at L4 to L5 with mild narrowing, no acute fracture or malalignment. Tanna Skiles has had no red-flag symptoms, as evidenced by a negative red-flag symptom screen on October 20, 2026."
+    },
+    {
+      "set": "dataset",
+      "case": "2026-1038",
+      "seconds": 10.0,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "adult",
+          "written": "The patient is an adult",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "in_person_evaluation",
+          "written": "In-person evaluation before the sleep test",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "covered_sleep_test",
+          "written": "A covered sleep test was done",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "severity_qualifies",
+          "written": "Sleep apnea severity qualifies",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "The patient is an adult. In-person evaluation before the sleep test. A covered sleep test was done. Sleep apnea severity qualifies."
+    },
+    {
+      "set": "dataset",
+      "case": "2026-1041",
+      "seconds": 24.3,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "arthritis_of_this_knee",
+          "written": "The patient's chart documents that arthritis of the knee is being replaced.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "imaging_shows_arthritis",
+          "written": "The patient's chart documents that an X-ray or MRI shows advanced joint disease, specifically medial joint-space narrowing with osteophytes, consistent with moderate to severe osteoarthritis.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "conservative_therapy",
+          "written": "The patient's chart documents that a reasonable attempt at conservative therapy was made, with supervised physical therapy for 3 months, without lasting relief.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "functional_disability",
+          "written": "The patient's chart documents that pain with functional disability is present, as evidenced by a functional limitation assessment indicating the right knee pain limits walking to one block and making stairs difficult.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "no_active_infection",
+          "written": "The patient's chart documents that there is no active infection of the joint or the bloodstream.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "no_wound_at_site",
+          "written": "The patient's chart documents that there is no skin infection or open wound at the surgical site.",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "The patient's chart documents that arthritis of the knee is being replaced. The patient's chart documents that an X-ray or MRI shows advanced joint disease, specifically medial joint-space narrowing with osteophytes, consistent with moderate to severe osteoarthritis. The patient's chart documents that a reasonable attempt at conservative therapy was made, with supervised physical therapy for 3 months, without lasting relief. The patient's chart documents that pain with functional disability is present, as evidenced by a functional limitation assessment indicating the right knee pain limits walking to one block and making stairs difficult. The patient's chart documents that there is no active infection of the joint or the bloodstream. The patient's chart documents that there is no skin infection or open wound at the surgical site."
+    },
+    {
+      "set": "dataset",
+      "case": "2026-1043",
+      "seconds": 15.7,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "lbp_duration",
+          "written": "Kristina Mante has had low back pain for at least six weeks, with the pain continuing for 9 weeks since August 26, 2026.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "conservative_care",
+          "written": "Kristina Mante has tried conservative treatment, including physical therapy, which was administered from July 2, 2026 to August 15, 2026, but showed minimal improvement in pain or function.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "recent_xray",
+          "written": "Kristina Mante has had a plain X-ray of the lumbar spine performed on September 1, 2026, which showed degenerative disc disease at L4 to L5 with mild narrowing, and no acute fracture or malalignment.",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "Kristina Mante has had low back pain for at least six weeks, with the pain continuing for 9 weeks since August 26, 2026. Kristina Mante has tried conservative treatment, including physical therapy, which was administered from July 2, 2026 to August 15, 2026, but showed minimal improvement in pain or function. Kristina Mante has had a plain X-ray of the lumbar spine performed on September 1, 2026, which showed degenerative disc disease at L4 to L5 with mild narrowing, and no acute fracture or malalignment. The chart does not say whether this was done: red-flag symptoms ruled out by the clinician."
+    },
+    {
+      "set": "dataset",
+      "case": "2026-1051",
+      "seconds": 14.1,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "imaging_shows_arthritis",
+          "written": "The patient's X-ray or MRI shows advanced joint disease, with a narrowed joint space.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "conservative_therapy",
+          "written": "A reasonable attempt at conservative therapy was made, with supervised physical therapy for 3 months.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "functional_disability",
+          "written": "The patient experiences pain with functional disability.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "no_active_infection",
+          "written": "There is no active infection of the joint or the bloodstream.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "no_wound_at_site",
+          "written": "There is no skin infection or open wound at the surgical site.",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "The patient's X-ray or MRI shows advanced joint disease, with a narrowed joint space. A reasonable attempt at conservative therapy was made, with supervised physical therapy for 3 months. The patient experiences pain with functional disability. There is no active infection of the joint or the bloodstream. There is no skin infection or open wound at the surgical site."
+    },
+    {
+      "set": "dataset",
+      "case": "2026-1052",
+      "seconds": 12.2,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "lbp_duration",
+          "written": "The patient has had low back pain for at least six weeks, which has been documented for 5 months, since May 21, 2026.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "recent_xray",
+          "written": "The patient has had a plain X-ray of the lumbar spine within the last 90 days, with the most recent X-ray being on September 23, 2026, 5 weeks ago.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "red_flags_excluded",
+          "written": "The patient's red-flag symptoms have been ruled out by the clinician, as evidenced by the negative red-flag symptom screen on October 16, 2026.",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "The patient has had low back pain for at least six weeks, which has been documented for 5 months, since May 21, 2026. The patient has had a plain X-ray of the lumbar spine within the last 90 days, with the most recent X-ray being on September 23, 2026, 5 weeks ago. The patient's red-flag symptoms have been ruled out by the clinician, as evidenced by the negative red-flag symptom screen on October 16, 2026. The chart does not say whether this was done: conservative treatment tried first."
+    },
+    {
+      "set": "dataset",
+      "case": "2026-1053",
+      "seconds": 7.5,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "adult",
+          "written": "The patient is an adult",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "in_person_evaluation",
+          "written": "In-person evaluation before the sleep test",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "covered_sleep_test",
+          "written": "A covered sleep test was done",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "severity_qualifies",
+          "written": "Sleep apnea severity qualifies",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "The patient is an adult. In-person evaluation before the sleep test. A covered sleep test was done. Sleep apnea severity qualifies."
+    },
+    {
+      "set": "dev",
+      "case": "HD-001",
+      "seconds": 3.5,
+      "route": "template",
+      "fallback_reason": "unsupported",
+      "sentences": [
+        {
+          "criterion_id": "red_flags_excluded",
+          "written": "The patient's chart documents that the clinician ruled out any red flags that might indicate a higher risk of adverse events.",
+          "reason": "term",
+          "found": {
+            "term": [
+              "advers",
+              "event",
+              "higher",
+              "risk"
+            ]
+          }
+        }
+      ],
+      "reply": null,
+      "text": "Red-flag symptoms ruled out by the clinician: red-flag symptom screen: negative, recorded October 11, 2026. The chart does not say whether this was done: plain X-ray within the last 90 days."
+    },
+    {
+      "set": "dev",
+      "case": "HD-002",
+      "seconds": 8.9,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "oa_diagnosis",
+          "written": "Ines Gallegos, 70-year-old female, has been diagnosed with osteoarthritis of the knee.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "functional_limitation",
+          "written": "Ines Gallegos, 70-year-old female, reports pain limiting her daily activities.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "no_active_infection",
+          "written": "Ines Gallegos, 70-year-old female, has no active infection in the joint.",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "Ines Gallegos, 70-year-old female, has been diagnosed with osteoarthritis of the knee. Ines Gallegos, 70-year-old female, reports pain limiting her daily activities. Ines Gallegos, 70-year-old female, has no active infection in the joint. The chart does not say whether this was done: X-ray shows joint-space narrowing. The chart does not say whether this was done: twelve weeks of conservative treatment."
+    },
+    {
+      "set": "dev",
+      "case": "HD-003",
+      "seconds": 4.2,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "osa_diagnosis",
+          "written": "Obstructive sleep apnea is diagnosed",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "severity_qualifies",
+          "written": "Sleep apnea severity qualifies",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "Obstructive sleep apnea is diagnosed. Sleep apnea severity qualifies. The chart does not say whether this was done: sleep test within the last year. The chart does not say whether this was done: face-to-face sleep evaluation before the test."
+    },
+    {
+      "set": "dev",
+      "case": "HD-004",
+      "seconds": 4.0,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "recent_xray",
+          "written": "The patient's recent X-ray was a lumbar spine X-ray performed on August 22, 2026, 9 weeks ago.",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "The patient's recent X-ray was a lumbar spine X-ray performed on August 22, 2026, 9 weeks ago."
+    },
+    {
+      "set": "dev",
+      "case": "HD-005",
+      "seconds": 12.7,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "oa_diagnosis",
+          "written": "Gloria Chavez, 75-year-old male, has been diagnosed with osteoarthritis of the knee.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "imaging_narrowing",
+          "written": "Gloria Chavez, 75-year-old male, has an X-ray showing joint-space narrowing.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "conservative_12_weeks",
+          "written": "Gloria Chavez, 75-year-old male, has undergone twelve weeks of conservative treatment.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "no_active_infection",
+          "written": "Gloria Chavez, 75-year-old male, has no active infection in the joint.",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "Gloria Chavez, 75-year-old male, has been diagnosed with osteoarthritis of the knee. Gloria Chavez, 75-year-old male, has an X-ray showing joint-space narrowing. Gloria Chavez, 75-year-old male, has undergone twelve weeks of conservative treatment. Gloria Chavez, 75-year-old male, has no active infection in the joint. The chart does not say whether this was done: pain limits daily activities."
+    },
+    {
+      "set": "dev",
+      "case": "HD-006",
+      "seconds": 8.9,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "sleep_test",
+          "written": "Sleep test was conducted within the last year, with results from July 31, 2026, indicating an apnea-hypopnea index of 13, which qualifies for sleep apnea severity.",
+          "reason": "number",
+          "found": {
+            "number": [
+              "13"
+            ],
+            "term": [
+              "apnea",
+              "hypopnea",
+              "index",
+              "qualify",
+              "severity"
+            ]
+          }
+        },
+        {
+          "criterion_id": "severity_qualifies",
+          "written": "The patient's sleep apnea severity qualifies, as the apnea-hypopnea index was 13, requiring at least 5 and below 15, and the patient has essential hypertension.",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "Sleep test within the last year: sleep test on July 31, 2026, 12 weeks ago. The patient's sleep apnea severity qualifies, as the apnea-hypopnea index was 13, requiring at least 5 and below 15, and the patient has essential hypertension. The chart does not say whether this was done: obstructive sleep apnea is diagnosed. The chart does not say whether this was done: face-to-face sleep evaluation before the test."
+    },
+    {
+      "set": "dev",
+      "case": "HD-007",
+      "seconds": 15.6,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "lbp_duration",
+          "written": "The patient has had low back pain for at least six weeks, as documented in the chart on November 21, 2025.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "conservative_care",
+          "written": "The patient has tried conservative treatment, including physical therapy, which was initiated on June 3, 2026, and continued until July 30, 2026.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "recent_xray",
+          "written": "A plain X-ray of the lumbar spine was performed on August 17, 2026, which is within the last 90 days.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "red_flags_excluded",
+          "written": "The patient's red-flag symptoms were ruled out by the clinician, as evidenced by a negative red-flag symptom screen on September 28, 2026.",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "The patient has had low back pain for at least six weeks, as documented in the chart on November 21, 2025. The patient has tried conservative treatment, including physical therapy, which was initiated on June 3, 2026, and continued until July 30, 2026. A plain X-ray of the lumbar spine was performed on August 17, 2026, which is within the last 90 days. The patient's red-flag symptoms were ruled out by the clinician, as evidenced by a negative red-flag symptom screen on September 28, 2026."
+    },
+    {
+      "set": "dev",
+      "case": "HD-008",
+      "seconds": 9.8,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "oa_diagnosis",
+          "written": "Osteoarthritis of the knee is diagnosed",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "imaging_narrowing",
+          "written": "X-ray shows joint-space narrowing",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "conservative_12_weeks",
+          "written": "Twelve weeks of conservative treatment",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "no_active_infection",
+          "written": "No active infection in the joint",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "Osteoarthritis of the knee is diagnosed. X-ray shows joint-space narrowing. Twelve weeks of conservative treatment. No active infection in the joint. The chart does not say whether this was done: pain limits daily activities."
+    },
+    {
+      "set": "dev",
+      "case": "HD-009",
+      "seconds": 8.2,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "osa_diagnosis",
+          "written": "Ines Quintana, 86-year-old male, has been diagnosed with obstructive sleep apnea.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "sleep_test",
+          "written": "Ines Quintana, 86-year-old male, had a sleep test within the last year.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "severity_qualifies",
+          "written": "Ines Quintana, 86-year-old male, has a sleep apnea severity that qualifies.",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "Ines Quintana, 86-year-old male, has been diagnosed with obstructive sleep apnea. Ines Quintana, 86-year-old male, had a sleep test within the last year. Ines Quintana, 86-year-old male, has a sleep apnea severity that qualifies. The chart does not say whether this was done: face-to-face sleep evaluation before the test."
+    },
+    {
+      "set": "dev",
+      "case": "HD-010",
+      "seconds": 7.4,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "conservative_care",
+          "written": "Conservative treatment was attempted first, with physical therapy lasting from February 22, 2026 to May 3, 2026.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "red_flags_excluded",
+          "written": "No red-flag symptoms were identified, as the red-flag symptom screen was negative on August 27, 2026.",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "Conservative treatment was attempted first, with physical therapy lasting from February 22, 2026 to May 3, 2026. No red-flag symptoms were identified, as the red-flag symptom screen was negative on August 27, 2026."
+    },
+    {
+      "set": "dev",
+      "case": "HD-011",
+      "seconds": 12.6,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "oa_diagnosis",
+          "written": "Tomas Montoya has osteoarthritis of the knee.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "imaging_narrowing",
+          "written": "Tomas Montoya's knee X-ray shows joint-space narrowing.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "conservative_12_weeks",
+          "written": "Tomas Montoya has been on 12 weeks of conservative treatment.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "functional_limitation",
+          "written": "Tomas Montoya's pain limits his daily activities.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "no_active_infection",
+          "written": "Tomas Montoya has no active infection in the joint.",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "Tomas Montoya has osteoarthritis of the knee. Tomas Montoya's knee X-ray shows joint-space narrowing. Tomas Montoya has been on 12 weeks of conservative treatment. Tomas Montoya's pain limits his daily activities. Tomas Montoya has no active infection in the joint."
+    },
+    {
+      "set": "dev",
+      "case": "HD-012",
+      "seconds": 3.1,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "sleep_test",
+          "written": "Sleep test was conducted within the last year, on October 28, 2025.",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "Sleep test was conducted within the last year, on October 28, 2025. The chart does not say whether this was done: obstructive sleep apnea is diagnosed. The chart does not say whether this was done: face-to-face sleep evaluation before the test."
+    },
+    {
+      "set": "dev",
+      "case": "HD-013",
+      "seconds": 9.1,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "lbp_duration",
+          "written": "The patient has had low back pain for at least six weeks.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "conservative_care",
+          "written": "The patient has tried conservative treatment, including physical therapy, for 11 weeks.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "recent_xray",
+          "written": "The patient has had a plain X-ray of the lumbar spine within the last 90 days, dated October 19, 2026.",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "The patient has had low back pain for at least six weeks. The patient has tried conservative treatment, including physical therapy, for 11 weeks. The patient has had a plain X-ray of the lumbar spine within the last 90 days, dated October 19, 2026."
+    },
+    {
+      "set": "dev",
+      "case": "HD-014",
+      "seconds": 11.4,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "oa_diagnosis",
+          "written": "Carmen Quintana, 75-year-old male, has osteoarthritis of the knee diagnosed.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "imaging_narrowing",
+          "written": "Carmen Quintana, 75-year-old male, has bilateral primary osteoarthritis of the knee diagnosed, with joint-space narrowing on the X-ray on August 29, 2026.",
+          "reason": "term",
+          "found": {
+            "term": [
+              "bilateral",
+              "osteoarthriti",
+              "primary"
+            ]
+          }
+        },
+        {
+          "criterion_id": "no_active_infection",
+          "written": "Carmen Quintana, 75-year-old male, has no active infection in the joint.",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "Carmen Quintana, 75-year-old male, has osteoarthritis of the knee diagnosed. X-ray shows joint-space narrowing: knee X-ray on August 29, 2026, 8 weeks ago. Knee joint space on radiograph: narrowed, recorded August 29, 2026. Carmen Quintana, 75-year-old male, has no active infection in the joint. The chart does not say whether this was done: twelve weeks of conservative treatment. The chart does not say whether this was done: pain limits daily activities."
+    },
+    {
+      "set": "dev",
+      "case": "HD-015",
+      "seconds": 4.9,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "osa_diagnosis",
+          "written": "The patient's chart documents that obstructive sleep apnea is diagnosed.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "sleep_test",
+          "written": "The patient's chart documents that a sleep test was conducted within the last year.",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "The patient's chart documents that obstructive sleep apnea is diagnosed. The patient's chart documents that a sleep test was conducted within the last year. The chart does not say whether this was done: sleep apnea severity qualifies. The chart does not say whether this was done: face-to-face sleep evaluation before the test."
+    },
+    {
+      "set": "dev",
+      "case": "HD-016",
+      "seconds": 4.5,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "conservative_care",
+          "written": "The patient underwent conservative treatment, including physical therapy, for 10 weeks from August 15, 2026 to October 28, 2026.",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "The patient underwent conservative treatment, including physical therapy, for 10 weeks from August 15, 2026 to October 28, 2026. The chart does not say whether this was done: plain X-ray within the last 90 days. The chart does not say whether this was done: red-flag symptoms ruled out by the clinician."
+    },
+    {
+      "set": "dev",
+      "case": "HD-017",
+      "seconds": 11.3,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "oa_diagnosis",
+          "written": "Osteoarthritis of the knee is diagnosed",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "imaging_narrowing",
+          "written": "X-ray shows joint-space narrowing",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "conservative_12_weeks",
+          "written": "Twelve weeks of conservative treatment",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "functional_limitation",
+          "written": "Pain limits daily activities",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "no_active_infection",
+          "written": "No active infection in the joint",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "Osteoarthritis of the knee is diagnosed. X-ray shows joint-space narrowing. Twelve weeks of conservative treatment. Pain limits daily activities. No active infection in the joint."
+    },
+    {
+      "set": "dev",
+      "case": "HD-018",
+      "seconds": 10.3,
+      "route": "phi",
+      "fallback_reason": null,
+      "sentences": [
+        {
+          "criterion_id": "sleep_test",
+          "written": "Sleep test was conducted on June 15, 2026, 4 months ago.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "severity_qualifies",
+          "written": "Sleep apnea severity qualifies as the Apnea-hypopnea index was 6 on June 15, 2026, and it required at least 5 and below 15.",
+          "reason": null,
+          "found": {}
+        },
+        {
+          "criterion_id": "face_to_face",
+          "written": "Face-to-face sleep evaluation was conducted before the test on June 30, 2026.",
+          "reason": null,
+          "found": {}
+        }
+      ],
+      "reply": null,
+      "text": "Sleep test was conducted on June 15, 2026, 4 months ago. Sleep apnea severity qualifies as the Apnea-hypopnea index was 6 on June 15, 2026, and it required at least 5 and below 15. Face-to-face sleep evaluation was conducted before the test on June 30, 2026. The chart does not say whether this was done: obstructive sleep apnea is diagnosed."
+    }
+  ]
+}
