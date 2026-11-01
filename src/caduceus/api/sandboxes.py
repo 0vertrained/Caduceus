@@ -14,6 +14,7 @@ from caduceus.app_factory import Services
 from caduceus.presenter import Presenter
 from caduceus.seed import clone_demo_services
 
+SANDBOX_HEADER = "x-caduceus-sandbox"
 SANDBOX_ID = re.compile(r"[0-9a-f]{32}")
 MAX_SANDBOXES = 60           # each is a few hundred kilobytes; the least recently used goes first
 TEMPLATE_MAX_AGE = timedelta(hours=6)
@@ -71,6 +72,9 @@ class Live:
     @property
     def last_reset(self) -> datetime:
         return self.current.last_reset
+
+    def now(self) -> datetime:
+        return self.svc.workflow.now()
 
     def enter(self, sandbox_id: str | None, may_create: Callable[[], bool]) -> Token:
         sandbox = self._sandbox(sandbox_id, may_create) if self.demo and sandbox_id else self.shared

@@ -147,7 +147,7 @@ src/caduceus/
   tools.py      tool gateway: role and workflow-step checks (ADR 3)
   mcp_servers.py  the same tools as MCP servers
   workflow.py   case state machine, outbox and undo (ADR 4)
-  api.py        HTTP API for the UI; security headers; no-store on PHI
+  api/          HTTP API for the UI, a router for each area; security headers; no-store on PHI
   evals/        criteria, leakage and red-team suites with gates
 ui/             React review UI; e2e/ walks it in Chromium with axe-core
 data/           synthetic patients, case overlays, criteria sets
