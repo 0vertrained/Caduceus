@@ -779,7 +779,7 @@ def create_app(services: Services | None = None, dispatch_interval: float | None
     def ehr_record(key: str, who: Principal = Depends(role(Role.PA_SPECIALIST, Role.ADMIN, Role.AUDITOR))):
         data = load_record(key)
         live.svc.audit.append(who.id, who.role, "ehr.record_viewed", key)
-        cases = [c for c in live.svc.cases.all() if c.patient_id == key]
+        cases = live.svc.workflow.patient_cases(key)  # this patient's, from this read or an earlier one
         out = live.presenter.ehr_record(data, live.svc.workflow.ehr_preview(key), cases, now())
         return out | {"payers": sorted(live.svc.workflow.catalog["payers"]),
                       "read_only": who.role != Role.PA_SPECIALIST}

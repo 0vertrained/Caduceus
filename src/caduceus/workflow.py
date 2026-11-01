@@ -566,9 +566,10 @@ class Workflow:
 
     def file_ehr_record(self, who: Principal, read: Read, keep: int | None = None) -> str:
         """File the record a SMART launch read, for the person who launched it, and return its key. The same patient
-        from the same EHR replaces their earlier record. `keep` caps how many patients one copy holds (the demo's
-        copies), letting go first of the oldest that no case uses. The record must be one the engine, the drafter
-        and the screens can read, or nothing is filed."""
+        from the same EHR replaces their earlier record, unless a case was made from it: a case keeps the record it
+        was checked against, and the new read is filed under a new key. `keep` caps how many patients one copy holds
+        (the demo's copies), letting go first of the oldest that no case uses. The record must be one the engine,
+        the drafter and the screens can read, or nothing is filed."""
         self._require(who, Role.PA_SPECIALIST)
         if self.launched is None:
             raise ActionRefused("This system does not keep records from an EHR.")
@@ -580,11 +581,14 @@ class Workflow:
             patient_name(read.patient), age_on(read.patient, as_of), patient_context(read.patient)
         except (AttributeError, IndexError, KeyError, TypeError, ValueError) as e:
             raise LaunchRefused("bad_response", step="record", error=type(e).__name__) from e
+        used = {c.patient_id for c in self.cases.all()}
         key = self.launched.find(read.match)
+        if key is not None and key in used:
+            self.launched.retire(key)
+            key = None
         if key is None:
             kept = self.launched.keys()
             if keep is not None and len(kept) >= keep:
-                used = {c.patient_id for c in self.cases.all()}
                 spare = [k for k in kept if k not in used]
                 if not spare:
                     raise ActionRefused(f"This copy of the demo already holds {keep} patients opened from an EHR, "
@@ -592,7 +596,8 @@ class Workflow:
                 self.launched.delete(spare[0])
             key = new_ehr_key()
         self.launched.save(key, read.match, {
-            "key": key, "iss": read.iss, "read_at": self.now().isoformat(), "read_by": who.id, "as_of": read.as_of,
+            "key": key, "match": read.match, "iss": read.iss, "read_at": self.now().isoformat(), "read_by": who.id,
+            "as_of": read.as_of,
             "patient": read.patient, "resources": read.resources, "notes": read.notes, "counts": read.counts,
             "not_shared": read.not_shared, "windows": read.windows})
         self.audit.append(who.id, who.role, "ehr.record_read", key, read.audit)
@@ -613,6 +618,19 @@ class Workflow:
                         "side": SIDE_PART.get(code, "side") if service.get("needs_side") else None})
         return out
 
+    def patient_cases(self, key: str) -> list[Case]:
+        """The cases made from this record, or from an earlier read of the same patient from the same EHR, which a
+        case keeps (file_ehr_record)."""
+        match = ((self.launched.get(key) if self.launched else None) or {}).get("match")
+
+        def theirs(patient_id: str) -> bool:
+            if patient_id == key:
+                return True
+            earlier = self.launched.get(patient_id) if self.launched and match else None
+            return earlier is not None and earlier.get("match") == match
+
+        return [c for c in sorted(self.cases.all(), key=lambda c: c.id) if theirs(c.patient_id)]
+
     def open_from_ehr(self, who: Principal, key: str, service_code: str, side: str | None, payer: str) -> Case:
         """Start a request from a record an EHR shared. The person names the service, the knee for a knee
         replacement, and the health plan: the launch reads the clinical record, not the coverage. The ordering
@@ -632,8 +650,7 @@ class Workflow:
         if payer not in self.catalog["payers"]:
             raise ActionRefused("Choose the health plan.", field="payer")
         side = side if sided else None
-        same = next((c for c in sorted(self.cases.all(), key=lambda c: c.id) if c.patient_id == key
-                     and c.service["code"] == service_code and c.side == side
+        same = next((c for c in self.patient_cases(key) if c.service["code"] == service_code and c.side == side
                      and c.state != State.APPROVED), None)
         if same is not None:
             raise ActionRefused(f"Case {same.id} is already open for this patient and this service, so this would "

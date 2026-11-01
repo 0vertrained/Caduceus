@@ -223,7 +223,8 @@ class EhrRecordRepository:
     """Patients' records read from an EHR by a SMART launch (caduceus.smart), kept with the cases so a case can be
     prepared and read from them. In the public demo they live in the visitor's own copy and go when it starts over
     or expires. `match` is a hash of the EHR and its id for the patient, so opening the same patient again replaces
-    their record. Stored compressed: a record is a few hundred kilobytes of JSON."""
+    their record, unless a case was made from it: then that record stays as the case read it, and the new one gets a
+    key of its own. Stored compressed: a record is a few hundred kilobytes of JSON."""
 
     def __init__(self, conn: sqlite3.Connection):
         self._conn = conn
@@ -251,6 +252,13 @@ class EhrRecordRepository:
         with self._lock:
             row = self._conn.execute("SELECT key FROM ehr_records WHERE match = ?", (match,)).fetchone()
         return row[0] if row else None
+
+    def retire(self, key: str) -> None:
+        """Keep a record for the cases made from it, but no longer find it as this patient's record: opening the
+        patient again files a new one, so a case never reads a record that changed under it."""
+        with self._lock:
+            self._conn.execute("UPDATE ehr_records SET match = NULL WHERE key = ?", (key,))
+            self._conn.commit()
 
     def keys(self) -> list[str]:
         """Every record's key, the one saved longest ago first."""
