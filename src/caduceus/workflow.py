@@ -14,17 +14,19 @@ filed here, and the person who launched it names the service. From then on it is
 
 from __future__ import annotations
 
+import functools
 import re
 import threading
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from datetime import UTC, date, datetime, timedelta, tzinfo
 from pathlib import Path
 from typing import Any
 
 from caduceus.audit.log import sha256_of
 from caduceus.auth import AGENT, Principal, Role
-from caduceus.cases import Attestation, Case, EhrRecordRepository, Fax, LastAction, StaleCase, State, new_ehr_key
+from caduceus.cases import Attestation, Case, EhrRecordRepository, Fax, LastAction, State, new_ehr_key
 from caduceus.criteria.dsl import CriteriaSet
 from caduceus.criteria.engine import Engine
 from caduceus.drafting import Drafter, age_on, mid_sentence, patient_context, patient_name
@@ -59,6 +61,17 @@ class ActionRefused(Exception):
         self.detail = detail
 
 
+def holds_the_case(method: Callable[..., Case]) -> Callable[..., Case]:
+    """A person's action on a case holds it from its read to its save. The background summary saves the same case
+    while the clinician is asked, and a save between would refuse the person's own as someone else's change, after
+    the audit log had recorded what they did."""
+    @functools.wraps(method)
+    def held(self: Workflow, who: Principal, case_id: str, *args: Any, **kwargs: Any) -> Case:
+        with self._holding(case_id):
+            return method(self, who, case_id, *args, **kwargs)
+    return held
+
+
 class Workflow:
     def __init__(self, cases: CaseStore, audit: AuditStore, store: FhirStore, library: dict[str, CriteriaSet],
                  engine: Engine, drafter: Drafter, payer: MockPayer,
@@ -75,6 +88,8 @@ class Workflow:
         # What a referral may name: the services this team handles, the payers, the ordering clinicians on file.
         self.catalog = catalog or {"services": {}, "clinicians": {}, "clinics": {}, "payers": set()}
         self._dispatch_lock = threading.Lock()  # one dispatcher at a time: a request is never sent twice
+        self._held: dict[str, threading.RLock] = {}  # one lock per case, for a person's action or the summary's save
+        self._held_guard = threading.Lock()
         self.gateway: ToolGateway = build_gateway(audit, store, library, self._set_state, self._submit,
                                                   self._payer_status, self._respond, self._appeal,
                                                   self.payer.coverage_requirements, self._read_fax)
@@ -180,6 +195,7 @@ class Workflow:
             self._draft_appeal(case.id)
         return True
 
+    @holds_the_case
     def set_urgency(self, who: Principal, case_id: str, expedited: bool, reason: str = "") -> Case:
         """Ask the payer for an expedited decision, or go back to standard. Only before the request is approved, and
         an expedited request needs the clinical reason the standard timeframe would put the patient at risk."""
@@ -197,6 +213,7 @@ class Workflow:
 
     # People --------------------------------------------------------------------------------------------
 
+    @holds_the_case
     def request_attestation(self, who: Principal, case_id: str) -> Case:
         self._require(who, Role.PA_SPECIALIST)
         case = self._get(case_id)
@@ -211,50 +228,49 @@ class Workflow:
         case.attestation_requested_by = who.name
         # What the chart shows, for the clinician: from the record's facts at once, then by the model inside the
         # network in the background, when there is one. The clinician never waits for a model.
+        asked_at = case.attestation_requested_at.isoformat()
         case.chart_summary = self.drafter.template_summary(case, unknown) | {
-            "generated_at": self.now().isoformat(), "pending": self.drafter.phi_route}
+            "generated_at": self.now().isoformat(), "pending": self.drafter.phi_route, "asked_at": asked_at}
         self.audit.append(who.id, who.role, "attestation.requested", case_id,
                           {"criteria": unknown, "clinician": case.ordering_clinician["id"]})
         saved = self.cases.save(case)
         if self.drafter.phi_route:
-            self.later(self._write_summary, case_id, saved.attestation_requested_at)
+            self.later(self._write_summary, case_id, asked_at)
         return saved
 
-    def _write_summary(self, case_id: str, asked_at: datetime | None) -> None:
-        """The in-network model's summary, kept only if the case still waits on the same request. Runs in the
-        background: anything that goes wrong is audited, and the summary from the record's facts stays."""
+    def _write_summary(self, case_id: str, asked_at: str) -> None:
+        """The in-network model's summary, for the request made at `asked_at`. Runs in the background and never
+        holds the case while the model writes: it holds it only to save, as a person's action does, so neither
+        refuses the other's save. Kept only while the case still waits on that request; the audit log records a
+        summary only once it is saved. Whatever happens, the request's summary stops saying one is on its way."""
         def waiting(c: Case) -> bool:
-            return c.state == State.AWAITING_ATTESTATION and c.attestation_requested_at == asked_at
+            return c.state == State.AWAITING_ATTESTATION and (c.chart_summary or {}).get("asked_at") == asked_at
 
+        summary: dict[str, Any] | None = None
         try:
             case = self._get(case_id)
-            if not waiting(case):
-                return
-            summary = self.drafter.chart_summary(case, self.store.record(case.patient_id, case.id).patient,
-                                                 case.attestation_requested)
-            for _ in range(3):  # a person may save the case meanwhile; the summary goes on top of their change
-                case = self._get(case_id)
-                if not waiting(case):
-                    return
-                case.chart_summary = summary | {"generated_at": self.now().isoformat()}
-                try:
-                    self.cases.save(case)
-                    break
-                except StaleCase:
-                    continue
-            self.audit.append(AGENT.id, AGENT.role, "summary.written", case_id,
-                              {"route": summary["route"], "model": summary.get("model"),
-                               "text_sha256": sha256_of(summary["text"])})
+            if waiting(case):
+                summary = self.drafter.chart_summary(case, self.store.record(case.patient_id, case.id).patient,
+                                                     case.attestation_requested)
         except Exception as e:  # noqa: BLE001 - background work must not take the process down; it is audited
             self.audit.append(AGENT.id, AGENT.role, "summary.error", case_id, {"error": type(e).__name__})
-            try:  # the clinician's screen stops waiting for it
+        try:
+            with self._holding(case_id):
                 case = self._get(case_id)
-                if case.chart_summary and case.chart_summary.get("pending"):
+                mine = (case.chart_summary or {}).get("asked_at") == asked_at
+                if summary is not None and waiting(case):
+                    case.chart_summary = summary | {"generated_at": self.now().isoformat(), "asked_at": asked_at}
+                    self.cases.save(case)
+                    self.audit.append(AGENT.id, AGENT.role, "summary.written", case_id,
+                                      {"route": summary["route"], "model": summary.get("model"),
+                                       "text_sha256": sha256_of(summary["text"])})
+                elif mine and case.chart_summary.get("pending"):  # answered, undone or failed: nothing is coming
                     case.chart_summary = case.chart_summary | {"pending": False}
                     self.cases.save(case)
-            except Exception:  # noqa: BLE001, S110 - the case store itself failed; the summary from the facts stays
-                pass
+        except Exception as e:  # noqa: BLE001 - the case store failed; the summary from the facts stays
+            self.audit.append(AGENT.id, AGENT.role, "summary.error", case_id, {"error": type(e).__name__})
 
+    @holds_the_case
     def sign_attestation(self, who: Principal, case_id: str, answers: dict[str, str]) -> Case:
         self._require(who, Role.CLINICIAN)
         case = self._get(case_id)
@@ -273,6 +289,7 @@ class Workflow:
         self._refresh_draft_after_attestation(case)
         return self.cases.save(case)
 
+    @holds_the_case
     def approve(self, who: Principal, case_id: str) -> Case:
         self._require(who, Role.PA_SPECIALIST)
         case = self._get(case_id)
@@ -287,6 +304,7 @@ class Workflow:
                            "send_after": (self.now() + timedelta(seconds=UNDO_SECONDS)).isoformat()}
         return self.cases.save(case)
 
+    @holds_the_case
     def request_note(self, who: Principal, case_id: str) -> Case:
         """The payer pended the request and asked for documentation. Ask the ordering clinician to write it."""
         self._require(who, Role.PA_SPECIALIST)
@@ -303,6 +321,7 @@ class Workflow:
         self.audit.append(who.id, who.role, "note.requested", case_id, {"clinician": case.ordering_clinician["id"]})
         return self.cases.save(case)
 
+    @holds_the_case
     def sign_note(self, who: Principal, case_id: str, text: str) -> Case:
         """The clinician's own words, signed and dated now: an addendum to the chart, never backdated."""
         case = self._clinician_note_case(who, case_id)
@@ -318,6 +337,7 @@ class Workflow:
         self.audit.append(who.id, who.role, "note.signed", case_id, {"text_sha256": sha256_of(text)})
         return self.cases.save(case)
 
+    @holds_the_case
     def decline_note(self, who: Principal, case_id: str) -> Case:
         """The clinician cannot document what the payer asked for. Nothing is sent; the specialist decides next."""
         case = self._clinician_note_case(who, case_id)
@@ -327,6 +347,7 @@ class Workflow:
         self.audit.append(who.id, who.role, "note.declined", case_id)
         return self.cases.save(case)
 
+    @holds_the_case
     def approve_reply(self, who: Principal, case_id: str) -> Case:
         """Approve sending the signed note. Like a request, it waits in the outbox for the undo window."""
         self._require(who, Role.PA_SPECIALIST)
@@ -643,6 +664,7 @@ class Workflow:
                            "text_sha256": sha256_of(appeal["text"])})
         self.cases.save(case)
 
+    @holds_the_case
     def edit_appeal(self, who: Principal, case_id: str, text: str) -> Case:
         self._require(who, Role.PA_SPECIALIST)
         case = self._get(case_id)
@@ -654,6 +676,7 @@ class Workflow:
         self.audit.append(who.id, who.role, "appeal.edited", case_id, {"text_sha256": sha256_of(text.strip())})
         return self.cases.save(case)
 
+    @holds_the_case
     def approve_appeal(self, who: Principal, case_id: str) -> Case:
         """Approve sending the appeal. Like a request, it waits in the outbox for the undo window."""
         self._require(who, Role.PA_SPECIALIST)
@@ -669,6 +692,7 @@ class Workflow:
                            "send_after": (self.now() + timedelta(seconds=UNDO_SECONDS)).isoformat()}
         return self.cases.save(case)
 
+    @holds_the_case
     def edit_draft(self, who: Principal, case_id: str, text: str) -> Case:
         self._require(who, Role.PA_SPECIALIST)
         case = self._get(case_id)
@@ -681,6 +705,7 @@ class Workflow:
         self.audit.append(who.id, who.role, "draft.edited", case_id, {"text_sha256": sha256_of(text.strip())})
         return self.cases.save(case)
 
+    @holds_the_case
     def return_for_correction(self, who: Principal, case_id: str, reason: str) -> Case:
         self._require(who, Role.PA_SPECIALIST)
         case = self._get(case_id)
@@ -693,6 +718,7 @@ class Workflow:
         self.audit.append(who.id, who.role, "case.returned", case_id, {"reason_sha256": sha256_of(reason)})
         return self.cases.save(case)
 
+    @holds_the_case
     def remind(self, who: Principal, case_id: str) -> Case:
         """Nudge the ordering clinician about the signature or note the case waits on. At most once every 10 minutes
         per case, whoever sends it, so a clinician is reminded, not pestered. The reminder shows on their list of
@@ -714,6 +740,7 @@ class Workflow:
                            "kind": "note" if case.state == State.AWAITING_NOTE else "attestation"})
         return self.cases.save(case)
 
+    @holds_the_case
     def resubmit(self, who: Principal, case_id: str) -> Case:
         """The clinic sent the corrected referral back. Caduceus prepares it again from the start: the record and the
         policy are checked afresh and the draft rewritten, and anything the record still does not answer goes to the
@@ -733,6 +760,7 @@ class Workflow:
         self.cases.save(fresh)
         return self.prepare(case_id)
 
+    @holds_the_case
     def undo(self, who: Principal, case_id: str) -> Case:
         case = self._get(case_id)
         last = case.last_action
@@ -749,6 +777,7 @@ class Workflow:
         self.audit.append(who.id, who.role, "action.undone", case_id, {"undone": last.action})
         return self.cases.save(restored)
 
+    @holds_the_case
     def recall(self, who: Principal, case_id: str) -> Case:
         """Take back an approval that has not reached the payer: after the 30-second undo, until the outbox sends it.
         Any PA specialist can, not only the one who approved. The case goes back to where the approval found it: a
@@ -779,6 +808,13 @@ class Workflow:
         return f"{what} reached {case.payer['name']}{when}, so it cannot be undone or recalled."
 
     # Internals -----------------------------------------------------------------------------------------
+
+    @contextmanager
+    def _holding(self, case_id: str) -> Iterator[None]:
+        with self._held_guard:
+            lock = self._held.setdefault(case_id, threading.RLock())
+        with lock:
+            yield
 
     def _get(self, case_id: str) -> Case:
         case = self.cases.get(case_id)
