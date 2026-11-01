@@ -181,7 +181,8 @@ simulation. Synthea also runs with the network switched off (`scripts/offline.sh
   (ADR 6).
 - **Scale.** The outbox's send-once lock in the database, so API instances can share one
   ([docs/postgres.md](docs/postgres.md)), then Temporal (ADR 4).
-- **Sign-in.** OIDC sign-in in the UI: the API side is done and tested.
+- **Sign-in.** A first run of the compose Keycloak for OIDC sign-in, which is written and checked but has not been
+  started ([docs/sign-in.md](docs/sign-in.md)).
 - **Production.** An AWS apply; HAPI FHIR in compose; the full red-team corpus; the in-network model's summaries read
   against their facts, as the bake-off did for drafts.
 - **People.** The [usability study](docs/research/usability-test-kit.md), with real PA staff and clinicians.
