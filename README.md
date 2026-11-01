@@ -6,9 +6,10 @@ prior-authorization specialist with the evidence for every criterion. Anything t
 the ordering clinician to confirm from their phone. Nothing reaches the payer until a person approves; for 30
 seconds after that they can still undo, and until it is sent it can still be recalled.
 
-It is a portfolio project for forward-deployed engineering. Every patient is synthetic (Synthea), and the
-interesting parts are the ones a real deployment would be judged on: where PHI may go, how a decision can be
-audited, and whether the people who use it every day can.
+It is a portfolio project for forward-deployed engineering. Every patient is synthetic (Synthea), and the payers
+are simulated: Humana and UnitedHealthcare appear by name for realism, but every decision is the mock payer's, not
+theirs. The interesting parts are the ones a real deployment would be judged on: where PHI may go, how a decision
+can be audited, and whether the people who use it every day can.
 
 **[Try the live demo](https://caduceusdemo.netlify.app/)**. A guided tour follows one case from the referral to
 the payer's approval, through a clinician's attestation, the payer's question and the clinician's note, and says
