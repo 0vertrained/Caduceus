@@ -37,6 +37,7 @@ jobs:
       - name: Tesseract OCR, for fax intake
         run: sudo apt-get install -y --no-install-recommends tesseract-ocr
       - run: ruff check src tests scripts
+      - run: mypy src/caduceus
       - name: Unit and API tests (includes the rule that nothing outside the router talks to a model)
         run: pytest
       - name: Eval gate (criteria agreement, PHI leakage, red team)
@@ -85,6 +86,26 @@ jobs:
         run: |
           pytest -m postgres -rs --junitxml="$RUNNER_TEMP/postgres-tests.xml"
           grep -q 'skipped="0"' "$RUNNER_TEMP/postgres-tests.xml" || { echo "::error title=Postgres tests skipped::Every Postgres test must run in this job; see the skip reasons above."; exit 1; }
+
+  secrets:
+    name: No secrets in any commit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GITLEAKS_VERSION: "8.28.0"
+      GITLEAKS_SHA256: a65b5253807a68ac0cafa4414031fd740aeb55f54fb7e55f386acb52e6a840eb
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: gitleaks, checksum-verified, over the whole history
+        run: |
+          curl -fsSLo gitleaks.tgz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  gitleaks.tgz" | sha256sum -c -
+          tar -xzf gitleaks.tgz gitleaks
+          ./gitleaks git --redact --no-banner --log-opts="--all" .
 
   dependencies:
     name: Known vulnerabilities in Python and npm packages
