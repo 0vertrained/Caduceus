@@ -4,6 +4,7 @@ through httpx.MockTransport, so no test calls the real launcher."""
 
 from __future__ import annotations
 
+import base64
 import json
 from types import SimpleNamespace
 
@@ -215,11 +216,14 @@ def test_a_second_request_for_the_same_service_is_refused_even_after_opening_the
     assert new_case(ehr, key).status_code == 200
     again = new_case(ehr, key)
     assert again.status_code == 409 and again.json()["case_id"] == "EHR-0001"
-    assert opened(ehr) == key  # the same patient from the same EHR is the same record, read afresh
-    assert new_case(ehr, key).json()["case_id"] == "EHR-0001"
-    assert new_case(ehr, key, {"service": "E0601", "payer": "Medicare"}).json() == {"case_id": "EHR-0002"}
-    view = ehr.client.get(f"/api/smart/records/{key}", headers=DOLORES | A).json()
+    fresh = opened(ehr)  # read afresh under a key of its own: EHR-0001 keeps the record it was checked against
+    assert fresh != key and copy(ehr).workflow.launched.get(key) is not None
+    assert new_case(ehr, fresh).json()["case_id"] == "EHR-0001"  # still the same patient
+    assert new_case(ehr, fresh, {"service": "E0601", "payer": "Medicare"}).json() == {"case_id": "EHR-0002"}
+    view = ehr.client.get(f"/api/smart/records/{fresh}", headers=DOLORES | A).json()
     assert [c["id"] for c in view["cases"]] == ["EHR-0001", "EHR-0002"]
+    assert opened(ehr) != fresh  # a case uses this one too
+    key = fresh
     unknown = new_case(ehr, key, {"service": "99999", "payer": "Medicare"})
     assert unknown.status_code == 409 and unknown.json()["field"] == "service"
     assert new_case(ehr, key, {"service": "72148", "payer": "Aetna"}).json()["field"] == "payer"
@@ -349,6 +353,26 @@ def test_the_outcomes_count_records_read_from_an_ehr(ehr):
     sections = ehr.client.get("/api/outcomes", headers=DOLORES | A).json()["sections"]
     row = next(r for s in sections for r in s["rows"] if r["label"] == "Records read from an EHR")
     assert row["value"] == "1"
+
+
+
+def test_opening_the_patient_again_never_changes_the_record_a_case_was_made_from(ehr):
+    """The EHR gains a note, and the specialist opens the patient again. The case keeps the pages it was checked
+    against, and the new note is in the new read. A record no case uses is simply replaced."""
+    key = opened(ehr)
+    case = new_case(ehr, key).json()["case_id"]
+    page_one = ehr.client.get(f"/api/cases/{case}/pages/{key}-1", headers=DOLORES | A).json()["text"]
+    ehr.fake.resources.append({
+        "resourceType": "DocumentReference", "id": "doc-rash", "subject": {"reference": f"Patient/{PATIENT_ID}"},
+        "status": "current", "date": f"{T0.date().isoformat()}T09:00:00-06:00", "type": {"text": "Telephone note"},
+        "content": [{"attachment": {"contentType": "text/plain",
+                                    "data": base64.b64encode(b"Called about an unrelated rash.").decode()}}]})
+    fresh = opened(ehr)
+    assert fresh != key
+    assert ehr.client.get(f"/api/cases/{case}/pages/{key}-1", headers=DOLORES | A).json()["text"] == page_one
+    newest = copy(ehr).store.document(f"{fresh}-1")
+    assert "unrelated rash" in base64.b64decode(newest["content"][0]["attachment"]["data"]).decode()
+    assert opened(ehr) == opened(ehr)  # no case uses the newest read: it is replaced, under the same key
 
 
 def test_a_launch_is_refused_before_anything_is_fetched_where_no_record_can_be_kept(ehr):
