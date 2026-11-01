@@ -41,9 +41,9 @@ administration page. It was recorded with the in-network model running, as the d
 |---|---|
 | ![A criterion beside the visit note, with the supporting sentence highlighted](docs/screenshots/case-evidence.png) | ![What Kimi K2.6 was sent: identifiers taken out, the stamp verified, the text scanned again](docs/screenshots/sent-to-model.png) |
 
-| The chart summary a clinician reads, written inside the network | Criteria compiled from Medicare's own words |
+| The chart summary a clinician reads, written inside the network and checked | Criteria compiled from Medicare's own words |
 |---|---|
-| ![Dr. Reyes's request to attest: what her patient's chart documents, summarized by Qwen2.5-1.5B inside Mesa Verde's network, then what it does not say, from the record's facts](docs/screenshots/attest.png) | ![The CPAP policy's source, the reviewer who approved it, and the fingerprint that locks it](docs/screenshots/policies.png) |
+| ![Dr. Reyes's request to attest: what her patient's chart documents, summarized by Qwen2.5-1.5B inside Mesa Verde's network and checked against the record, then what it does not say, from the record's facts](docs/screenshots/attest.png) | ![The CPAP policy's source, the reviewer who approved it, and the fingerprint that locks it](docs/screenshots/policies.png) |
 
 | An expedited request | Where to look in a 9-page packet | The other knee |
 |---|---|---|
