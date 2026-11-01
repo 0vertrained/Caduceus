@@ -1,9 +1,9 @@
-// Sign-in through OpenID Connect, end to end, against the test identity provider (tests/mock_idp.py), with each page's
-// Content Security Policy enforced (no bypassCSP), so the walk also shows that the policy lets the page reach the
-// provider. axe-core checks the sign-in and callback screens, and the ones a person sees after them.
+// Sign-in through OpenID Connect, end to end, with each page's Content Security Policy enforced (no bypassCSP), so the
+// walk also shows that the policy lets the page reach the provider. axe-core checks Caduceus's own screens.
 //   node ui/e2e/oidc.mjs <app-origin> <issuer> <screenshot-dir>
-// Uses the Playwright library and Chromium installed on the machine, as run.mjs does. scripts/e2e-oidc.sh starts
-// the provider and the API, then runs this.
+// Against the test identity provider (tests/mock_idp.py, started by scripts/e2e-oidc.sh), or with E2E_IDP=keycloak
+// and E2E_IDP_PASSWORD, against Keycloak's own pages (scripts/e2e-keycloak.sh). Uses the Playwright library and
+// Chromium installed on the machine, as run.mjs does.
 import { readFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
@@ -16,6 +16,24 @@ const [base, issuer, out = "ui/test-results/oidc"] = process.argv.slice(2);
 mkdirSync(out, { recursive: true });
 const tokenEndpoint = `${issuer}/protocol/openid-connect/token`;
 const SIGN_IN = "Sign in with your Mesa Verde account";
+const KEYCLOAK = process.env.E2E_IDP === "keycloak";
+const USERNAMES = { "Dolores Montoya": "dolores", "Dr. Ana Reyes": "dr.reyes" };
+
+/** At the provider: choose the person (the test provider), or sign in as them with Keycloak's form. */
+async function signInAt(page, person) {
+  if (!KEYCLOAK) {
+    await page.getByRole("button", { name: new RegExp(`^${person}`) }).click();
+    return;
+  }
+  await page.locator("#username").fill(USERNAMES[person]);
+  await page.locator("#password").fill(process.env.E2E_IDP_PASSWORD ?? "");
+  await page.locator("#kc-login").click();
+}
+
+/** At the provider, confirm signing out, which it asks since it is sent no ID token. */
+async function confirmSignOutAt(page) {
+  await (KEYCLOAK ? page.locator("#kc-logout") : page.getByRole("button", { name: "Sign out" })).click();
+}
 
 const report = { screens: [], checks: [], failures: [] };
 const check = (ok, what) => {
@@ -27,7 +45,6 @@ const shot = (page, name) => page.screenshot({ path: path.join(out, `${name}.png
 async function axe(page, name) {
   await page.evaluate(axeSource);
   const result = await page.evaluate(async () =>
-    // eslint-disable-next-line no-undef
     await axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"] } }));
   const violations = result.violations.map((v) => ({ id: v.id, impact: v.impact, nodes: v.nodes.length,
     targets: v.nodes.slice(0, 3).map((n) => n.target.join(" ")) }));
@@ -82,7 +99,7 @@ try {
   let release;
   const held = new Promise((resolve) => { release = resolve; });
   await page.route(tokenEndpoint, async (route) => { await held; await route.continue(); });
-  await page.getByRole("button", { name: /^Dolores Montoya/ }).click();
+  await signInAt(page, "Dolores Montoya");
   await page.getByRole("heading", { name: "Signing you in…" }).waitFor();
   const callback = new URL(page.url());
   check(callback.pathname === "/auth/callback" && !callback.search && callback.hash.includes("code="),
@@ -157,7 +174,7 @@ try {
   check(!bye.has("id_token_hint") && ![...bye.values()].some((v) => v.startsWith("eyJ")), "no token in the sign-out address");
   check(bye.get("client_id") === "caduceus-ui" && bye.get("post_logout_redirect_uri") === `${base}/signed-out`,
     "the client and its registered return address");
-  await page.getByRole("button", { name: "Sign out" }).click();
+  await confirmSignOutAt(page);
   await page.waitForURL(`${base}/signed-out`);
   await page.getByText("You are signed out of Caduceus and of your Mesa Verde account.").waitFor();
   check((await sessionKeys(page)).length === 0, "nothing of the session is left in the tab");
@@ -166,7 +183,7 @@ try {
 
   // Signed out at the provider too: it asks who, again. A clinician this time, matched by the clinician_id claim.
   await page.getByRole("button", { name: SIGN_IN }).click();
-  await page.getByRole("button", { name: /^Dr\. Ana Reyes/ }).click();
+  await signInAt(page, "Dr. Ana Reyes");
   await page.waitForURL(`${base}/`);
   await page.getByRole("heading", { level: 1, name: /signature/ }).waitFor();
   check((await page.locator(".header__name").textContent()) === "Dr. Ana Reyes", "signed in as Dr. Ana Reyes");
