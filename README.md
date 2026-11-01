@@ -203,8 +203,11 @@ simulation. Synthea also runs with the network switched off (`scripts/offline.sh
   ([docs/postgres.md](docs/postgres.md)), then Temporal (ADR 4).
 - **Sign-in.** Names recorded with each event, so the case history names people from any identity provider, not
   only those whose `sub` is a roster id ([docs/sign-in.md](docs/sign-in.md)).
-- **Production.** An AWS apply; HAPI FHIR in compose; the full red-team corpus; the in-network model's summaries read
-  against their facts, as the bake-off did for drafts.
+- **The chart summary.** A second reader for what a word-level check cannot parse, such as a negation that turns on
+  sentence structure: an entailment model, or a larger in-network model ([docs/summaries.md](docs/summaries.md)).
+- **EHR launch.** Reading the chart for the one service the person chooses, not for every service, and a first
+  launch against the real SMART sandbox ([docs/smart-launch.md](docs/smart-launch.md)).
+- **Production.** An AWS apply; HAPI FHIR in compose; the full red-team corpus.
 - **People.** The [usability study](docs/research/usability-test-kit.md), with real PA staff and clinicians.
 
 ## Choosing the model
