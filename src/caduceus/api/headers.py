@@ -19,11 +19,9 @@ SECURITY_HEADERS = {
 
 
 def security_headers(settings: Settings) -> dict[str, str]:
-    """The headers every response carries. With OIDC sign-in the page also fetches the identity provider's discovery
-    document and calls its token endpoint, so connect-src adds the issuer and the addresses under it, and nothing else:
-    sign-in and sign-out themselves are navigations, which the policy does not govern. The development and demo
-    headers stay as they are, the same as netlify.toml's."""
     if settings.auth_mode != "oidc" or not settings.oidc_issuer:
         return SECURITY_HEADERS
+    # The page fetches the provider's discovery document and calls its token endpoint, so it may connect there and
+    # nowhere else; signing in and out are navigations, which CSP does not govern.
     policy = f"{SECURITY_HEADERS['Content-Security-Policy']}; connect-src 'self' {settings.oidc_issuer.rstrip('/')}/"
     return SECURITY_HEADERS | {"Content-Security-Policy": policy}

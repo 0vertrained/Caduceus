@@ -35,14 +35,14 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 class ProxySignatureMiddleware(BaseHTTPMiddleware):
-    """Behind Netlify, answer only what Netlify proxied: it signs each request with the shared key (HS256 JWS in
-    x-nf-sign)."""
+    """Behind Netlify, answers only what Netlify proxied and signed with the shared key (an HS256 JWS in x-nf-sign)."""
 
     def __init__(self, app: ASGIApp, signing_key: str | None):
         super().__init__(app)
         self.signing_key = signing_key
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        # Health checks reach the service directly, not through Netlify, and /api/health says nothing.
         if self.signing_key and request.url.path != "/api/health":
             try:
                 jwt.decode(request.headers.get("x-nf-sign", ""), self.signing_key, algorithms=["HS256"],
@@ -54,8 +54,7 @@ class ProxySignatureMiddleware(BaseHTTPMiddleware):
 
 
 class DemoLimitsMiddleware(BaseHTTPMiddleware):
-    """The demo's request limits, on the API's requests only: the demo's pages and their files are Netlify's to
-    serve, so here they come only from a walk on one machine."""
+    """The demo's request limits, on the API's requests: Netlify serves the demo's pages and their files."""
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         limits = request.app.state.demo_limits

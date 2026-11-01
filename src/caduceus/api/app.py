@@ -72,11 +72,12 @@ def run_demo_resets(live: Live, stop: threading.Event) -> None:
 
 
 def spa(path: str, request: Request) -> FileResponse:
+    """A file of the built UI, or its page for any other address, for the browser's router to show."""
     if path == "api" or path.startswith("api/"):  # an address the API does not have is not a page either
         raise HTTPException(404, "There is no such address in the API.")
     ui: Path = request.app.state.ui
     target = ui / path
-    if path and target.is_file() and ui in target.resolve().parents:
+    if path and target.is_file() and ui in target.resolve().parents:  # never a file outside the build
         return FileResponse(target)
     return FileResponse(ui / "index.html")
 
@@ -84,8 +85,7 @@ def spa(path: str, request: Request) -> FileResponse:
 def create_app(services: Services | None = None, dispatch_interval: float | None = 5.0,
                fresh_demo: Callable[[], Services] | None = None, ehr_transport: httpx.BaseTransport | None = None,
                ehr_limits: Limits | None = None) -> FastAPI:
-    """dispatch_interval=None (tests) starts no background threads: no outbox dispatcher, no demo resets.
-    ehr_transport stands in for the network to the EHR (tests pass httpx.MockTransport)."""
+    """dispatch_interval=None (tests) starts no background threads; ehr_transport stands in for the EHR's network."""
     built: Services | None = None  # what this app builds, it closes when it stops; services handed in stay open
     if services is None:
         settings = Settings()

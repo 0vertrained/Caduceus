@@ -39,8 +39,8 @@ class UrgencyBody(BaseModel):
 
 class ConfirmFaxBody(BaseModel):
     values: dict[str, Annotated[str, Field(max_length=300)]] = Field(max_length=20)
-    # The fields sent to a person that they ticked as matching the fax. The server refuses the case until each one
-    # is ticked or corrected.
+    # The fields sent to a person that they ticked as matching the fax: the case is refused until each is ticked or
+    # corrected.
     checked: list[Annotated[str, Field(max_length=40)]] = Field(default_factory=list, max_length=20)
 
 

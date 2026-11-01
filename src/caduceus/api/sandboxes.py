@@ -1,4 +1,5 @@
-"""The services a request reads: one set, or in the public demo each visitor's own copy of the seeded cases."""
+"""The services a request reads: one set, or in the public demo each visitor's own copy of the seeded cases, so one
+visitor's clicks never change what another sees."""
 
 from __future__ import annotations
 
@@ -16,7 +17,7 @@ from caduceus.seed import clone_demo_services
 
 SANDBOX_HEADER = "x-caduceus-sandbox"
 SANDBOX_ID = re.compile(r"[0-9a-f]{32}")
-MAX_SANDBOXES = 60           # each is a few hundred kilobytes; the least recently used goes first
+MAX_SANDBOXES = 60  # each is a few hundred kilobytes; the least recently used goes first
 TEMPLATE_MAX_AGE = timedelta(hours=6)
 
 
@@ -32,13 +33,7 @@ class Sandbox:
 
 
 class Live:
-    """The services the API is serving right now.
-
-    Outside the demo there is one set. In the public demo each visitor's browser sends a random sandbox id and gets
-    its own copy of the seeded cases, so one visitor's clicks never change what another sees. Copies are cloned in
-    milliseconds from a seeded template that is never served, are capped in number, and start over after the reset
-    period. Requests without a sandbox id share one set. A request's sandbox is chosen once, in middleware, and
-    handlers read through this holder."""
+    """The services the API is serving right now, as the request in hand sees them."""
 
     def __init__(self, svc: Services, fresh: Callable[[], Services] | None):
         self._lock, self._template_lock = threading.Lock(), threading.Lock()
@@ -51,6 +46,7 @@ class Live:
             now = svc.workflow.now()
             self._template = (clone_demo_services(svc, now, now), now)
         self._sandboxes: OrderedDict[str, Sandbox] = OrderedDict()
+        # The copy the sandbox middleware chose for this request; requests served at the same time each see their own.
         self._current: ContextVar[Sandbox | None] = ContextVar("sandbox", default=None)
 
     @staticmethod
