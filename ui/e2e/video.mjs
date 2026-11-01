@@ -51,8 +51,11 @@ async function say(page, text, ms = 3200) {
 async function as(page, label) {
   await page.goto(base + "/");
   const signOut = page.getByRole("button", { name: "Sign out" });
-  if (await signOut.isVisible().catch(() => false)) await signOut.click();
-  await page.getByRole("main").getByRole("button", { name: new RegExp(label) }).click();
+  const person = page.getByRole("main").getByRole("button", { name: new RegExp(label) });
+  // The page knows who is signed in only once the API has said so: wait for that before choosing to sign out.
+  await signOut.or(person).first().waitFor();
+  if (await signOut.isVisible()) await signOut.click();
+  await person.click();
   await page.waitForLoadState("networkidle");
 }
 const status = (page, text) => page.getByRole("status").filter({ hasText: text });
