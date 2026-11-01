@@ -87,13 +87,15 @@ class Router:
         return {"in_vpc": about(self._in_vpc), "external": about(self._external), "external_on": self.external_on,
                 "drafts_in_vpc": self.drafts_in_vpc}
 
-    def complete_phi(self, task: str, system: str, user: str, case_id: str, max_tokens: int = 800) -> RoutedCompletion:
+    def complete_phi(self, task: str, system: str, user: str, case_id: str, max_tokens: int = 800,
+                     schema: dict[str, Any] | None = None) -> RoutedCompletion:
+        """Work that needs the patient's details, on the in-VPC model only. `schema` constrains the reply's shape."""
         if self._in_vpc is None:
             raise InVpcUnavailable("no in-VPC model is configured; PHI work cannot run")
         with tracer.start_as_current_span(f"chat {self._in_vpc.model}") as span:
             self._annotate(span, self._in_vpc, "phi", task, case_id, user)
             try:
-                completion = self._in_vpc.complete(system, user, max_tokens)
+                completion = self._in_vpc.complete(system, user, max_tokens, schema)
             except ProviderUnavailable as e:
                 span.set_attribute("error.type", "in_vpc_unavailable")
                 raise InVpcUnavailable(str(e)) from e

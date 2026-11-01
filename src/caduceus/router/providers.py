@@ -13,6 +13,7 @@ from collections import OrderedDict
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
+from typing import Any
 
 import httpx
 
@@ -42,7 +43,9 @@ class Provider:
     name: str
     model: str
 
-    def complete(self, system: str, user: str, max_tokens: int = 800) -> Completion:  # pragma: no cover
+    def complete(self, system: str, user: str, max_tokens: int = 800,
+                 schema: dict[str, Any] | None = None) -> Completion:  # pragma: no cover
+        """The model's reply. With `schema`, the reply is a JSON document of that shape."""
         raise NotImplementedError
 
 
@@ -56,9 +59,14 @@ class OpenAICompatibleProvider(Provider):
         self._headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
         self._client = client or httpx.Client(timeout=timeout)  # a small model on a CPU takes tens of seconds
 
-    def complete(self, system: str, user: str, max_tokens: int = 800) -> Completion:
-        body = {"model": self.model, "max_tokens": max_tokens, "temperature": 0,
-                "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]}
+    def complete(self, system: str, user: str, max_tokens: int = 800,
+                 schema: dict[str, Any] | None = None) -> Completion:
+        body: dict[str, Any] = {
+            "model": self.model, "max_tokens": max_tokens, "temperature": 0,
+            "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]}
+        if schema is not None:
+            body["response_format"] = {"type": "json_schema",
+                                       "json_schema": {"name": "reply", "strict": True, "schema": schema}}
         try:
             r = self._client.post(self._url, json=body, headers=self._headers)
             r.raise_for_status()
@@ -80,7 +88,10 @@ class AnthropicMessagesProvider(Provider):
         self._headers = {"x-api-key": api_key, "anthropic-version": "2023-06-01"}
         self._client = client or httpx.Client(timeout=60)
 
-    def complete(self, system: str, user: str, max_tokens: int = 800) -> Completion:
+    def complete(self, system: str, user: str, max_tokens: int = 800,
+                 schema: dict[str, Any] | None = None) -> Completion:
+        if schema is not None:
+            raise ValueError("this provider does not constrain replies to a schema")
         body = {"model": self.model, "max_tokens": max_tokens, "system": system,
                 "messages": [{"role": "user", "content": user}]}
         try:
@@ -108,14 +119,16 @@ class OllamaChatProvider(Provider):
         self._headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
         self._client = client or httpx.Client(timeout=timeout)
 
-    def complete(self, system: str, user: str, max_tokens: int = 800) -> Completion:
-        # Reasoning models spend part of the token budget thinking before they answer, so allow room for both.
-        # A paragraph of plain prose needs no reasoning: thinking is turned off, which keeps a reasoning model fast
-        # and its token budget for the answer. A model that cannot turn it off refuses the option (400), and is
-        # asked again without it, with room to think first.
-        body = {"model": self.model, "stream": False, "think": False,
-                "options": {"temperature": 0, "num_predict": max_tokens + 7200},
-                "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]}
+    def complete(self, system: str, user: str, max_tokens: int = 800,
+                 schema: dict[str, Any] | None = None) -> Completion:
+        # Thinking is off for prose; a model that cannot turn it off refuses the option (400) and is asked again
+        # without it. The token budget leaves room for a reasoning model to think first.
+        body: dict[str, Any] = {
+            "model": self.model, "stream": False, "think": False,
+            "options": {"temperature": 0, "num_predict": max_tokens + 7200},
+            "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]}
+        if schema is not None:
+            body["format"] = schema
         try:
             r = self._client.post(self._url, json=body, headers=self._headers)
             if r.status_code == 400:
@@ -155,8 +168,9 @@ class CachingProvider(Provider):
         self.model = inner.model if inner else (model or max(set(models), key=models.count, default="recorded"))
 
     @staticmethod
-    def key(model: str, system: str, user: str, max_tokens: int) -> str:
-        return hashlib.sha256(json.dumps([model, system, user, max_tokens]).encode()).hexdigest()
+    def key(model: str, system: str, user: str, max_tokens: int, schema: dict[str, Any] | None = None) -> str:
+        request = [model, system, user, max_tokens] + ([schema] if schema is not None else [])
+        return hashlib.sha256(json.dumps(request, sort_keys=True).encode()).hexdigest()
 
     def _remember(self, key: str, completion: Completion) -> None:
         with self._lock:
@@ -165,15 +179,16 @@ class CachingProvider(Provider):
             while len(self._replies) > self.LIMIT:
                 self._replies.popitem(last=False)
 
-    def complete(self, system: str, user: str, max_tokens: int = 800) -> Completion:
-        key = self.key(self.model, system, user, max_tokens)
+    def complete(self, system: str, user: str, max_tokens: int = 800,
+                 schema: dict[str, Any] | None = None) -> Completion:
+        key = self.key(self.model, system, user, max_tokens, schema)
         with self._lock:
             hit = self._replies.get(key)
         if hit is not None:
             return replace(hit, cached=True)
         if self._inner is None or not self.live:
             raise ProviderUnavailable("no recorded reply for this request, and no live model")
-        completion = self._inner.complete(system, user, max_tokens)
+        completion = self._inner.complete(system, user, max_tokens, schema)
         self._remember(key, completion)
         return completion
 
@@ -191,7 +206,8 @@ class StubProvider(Provider):
         self._responder = responder
         self.calls: list[tuple[str, str]] = []
 
-    def complete(self, system: str, user: str, max_tokens: int = 800) -> Completion:
+    def complete(self, system: str, user: str, max_tokens: int = 800,
+                 schema: dict[str, Any] | None = None) -> Completion:
         self.calls.append((system, user))
         text = self._responder(system, user)
         return Completion(text, self.model, self.name, len(user.split()), len(text.split()), vendor=self.vendor)
