@@ -149,6 +149,9 @@ if (IN_VPC) {  // cut the half minute the model takes, as the outbox waits are c
 }
 await page.getByRole("region", { name: "Guided tour" }).getByRole("button", { name: /^Switch to Dr\. Ana Reyes/ }).click();
 await page.getByLabel("Yes, I confirm this").waitFor();
+// The summary and the line under it that says who wrote it, in view together.
+await page.getByRole("region", { name: "What the chart shows" }).evaluate((el) => el.scrollIntoView({ block: "center" }));
+await pause(300);
 await still(page, "attest");
 await say(page, "Dr. Reyes answers one question on one screen, usually from her phone, and signs with her own name.", 3800);
 if (await page.getByText(/^Summarized by .+, inside Mesa Verde’s network/).isVisible().catch(() => false)) {
