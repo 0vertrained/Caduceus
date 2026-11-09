@@ -193,11 +193,11 @@ class Workflow:
                                                approval_seq=sub["approval_seq"])
                     self._follow_up(case.id, result["id"])
                     moved.append(case.id)
+                # Asked once, when the payer said it would decide, so waiting adds nothing to the audit log.
                 elif sub.get("sent") and waiting.get("in_review") and \
-                        datetime.fromisoformat(waiting["expected_by"]) <= self.now():
-                    # Asked once, when the payer said it would decide, so waiting adds nothing to the audit log.
-                    if self._follow_up(case.id, waiting["id"]):
-                        moved.append(case.id)
+                        datetime.fromisoformat(waiting["expected_by"]) <= self.now() and \
+                        self._follow_up(case.id, waiting["id"]):
+                    moved.append(case.id)
         return moved
 
     def _follow_up(self, case_id: str, submission_id: str) -> bool:
