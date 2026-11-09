@@ -25,6 +25,7 @@ const launching = () => window.location.pathname.startsWith("/smart/");
 export function App() {
   const [config, setConfig] = useState<AuthConfig | null>(null);
   const [unreachable, setUnreachable] = useState(false);
+  const [starting, setStarting] = useState(false);  // the first answer is taking long enough to say why
   const [me, setMe] = useState<Me | null>(null);
   const [checked, setChecked] = useState(false);
   const [notice, setNotice] = useState<SignInNotice | null>(null);
@@ -33,13 +34,30 @@ export function App() {
   const location = useLocation();
   const oidc = config?.mode === "oidc";
 
-  // How this deployment signs people in, before anything else is asked of the API.
+  // How this deployment signs people in, before anything else is asked of the API. The public demo's API runs
+  // on a server that stops when nobody is using it, so the first visit in a while can take ten seconds or so
+  // while it starts, and a gateway in front of it may answer with an error before it is ready. For that long
+  // the page says what is happening and keeps asking; after it, the API is unreachable.
   const readConfig = async () => {
+    const begun = Date.now();
+    const slow = window.setTimeout(() => setStarting(true), 1200);
     try {
-      setConfig(await authConfig());
-      setUnreachable(false);
+      let attempt = 0;
+      for (;;) {
+        try {
+          setConfig(await authConfig());
+          setUnreachable(false);
+          return;
+        } catch (e) {
+          if (Date.now() - begun > STARTUP_PATIENCE_MS) throw e;
+          await pause(Math.min(1000 * ++attempt, 3000));
+        }
+      }
     } catch {
       setUnreachable(true);
+    } finally {
+      window.clearTimeout(slow);
+      setStarting(false);
     }
   };
   useEffect(() => { void readConfig(); }, []);
@@ -154,6 +172,8 @@ export function App() {
       <main id="main" className="app__main" tabIndex={-1}>
         {unreachable ? (
           <Unreachable onRetry={readConfig} />
+        ) : starting && !config ? (
+          <Starting />
         ) : !checked ? null : !me && oidc ? (
           <Routes>
             <Route path="/help" element={<HelpPage />} />
@@ -184,6 +204,22 @@ export function App() {
           </Routes>
         )}
       </main>
+    </div>
+  );
+}
+
+/** How long the page keeps asking a silent API before it calls it unreachable. */
+const STARTUP_PATIENCE_MS = 75_000;
+const pause = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+
+/** The API is taking a while to answer its first request: most likely starting up, so say so and wait with it. */
+function Starting() {
+  return (
+    <div className="signin starting" role="status" aria-live="polite">
+      <h1 className="page-title">Starting Caduceus</h1>
+      <p className="lead">The server behind this demo stops when nobody is using it and starts again on the first
+        visit, which takes ten seconds or so. The page will carry on by itself.</p>
+      <div className="starting__bar" aria-hidden="true"><span /></div>
     </div>
   );
 }

@@ -636,6 +636,12 @@ mark { background: var(--mark); color: var(--ink); padding: 0.05em 0.15em; margi
 .signin__user { justify-content: space-between; width: 100%; }
 .signin__role { font-weight: 400; }
 .signin__go { align-self: flex-start; }
+/* The API's first answer is slow (the demo's server starting): a line of explanation and a bar that moves */
+.starting__bar { position: relative; height: 4px; width: min(100%, 320px); overflow: hidden; border-radius: 2px; background: var(--rule); }
+.starting__bar span { position: absolute; inset: 0 auto 0 0; width: 35%; border-radius: 2px; background: var(--seal);
+  animation: starting-sweep 1.6s ease-in-out infinite; }
+@keyframes starting-sweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+@media (prefers-reduced-motion: reduce) { .starting__bar span { animation: none; width: 100%; opacity: 0.5; } }
 /* Why the sign-in page is showing: a problem and what to do (caution), news (seal), or a wait */
 .signin__notice { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-control); background: var(--caution-tint); color: var(--ink); }

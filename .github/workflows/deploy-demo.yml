@@ -118,8 +118,9 @@ jobs:
             echo "::notice title=In-network model::No model image is published yet (model-image.yml); the API runs alone."
           fi
       - name: Deploy
-        # One instance at most, since the demo keeps its cases in memory, and none when idle. The payer takes 30
-        # seconds so a visitor sees a request under review. With the model, two containers share the instance: only
+        # One instance at most, since the demo keeps its cases in memory, and none when idle: the first visit in a
+        # while starts it, which the page explains while it waits, and extra CPU at startup keeps that short. The
+        # payer takes 30 seconds so a visitor sees a request under review. With the model, two containers share the instance: only
         # the API's takes traffic, the model listens on 127.0.0.1, and CPU stays on so a summary can finish after its
         # request returns. That revision is written out whole, because gcloud's per-container flags would merge with
         # the containers already there.
@@ -137,7 +138,7 @@ jobs:
           # revision's model container is removed explicitly.
           alone() {
             model="$(containers | grep -x model || true)"
-            gcloud run deploy "$SERVICE" "${common[@]}" ${model:+--remove-containers model} --cpu-throttling \
+            gcloud run deploy "$SERVICE" "${common[@]}" ${model:+--remove-containers model} --cpu-throttling --cpu-boost \
               --image "$IMAGE" --port 8000 --cpu 1 --memory 1Gi --set-env-vars "$env" --set-secrets "$secrets"
           }
           if [ -z "${MODEL_IMAGE:-}" ]; then alone; exit 0; fi
