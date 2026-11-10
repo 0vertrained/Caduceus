@@ -118,7 +118,9 @@ image, `scripts/demo_video.sh` records the same walk on any machine, with the su
   address, where the API answers the health check and refuses the rest.
 - Netlify limits one address to 300 API requests a minute before it proxies them ([netlify.toml](../netlify.toml)).
   That is five times the pace of the API's own limit, so a visitor who overdoes it hears from the API, and only a
-  flood meets Netlify's 429, which can take up to ten seconds to begin.
+  flood meets Netlify's 429, which can take up to ten seconds to begin. Tried on a deploy preview in November 2026,
+  at about ten requests a second from one address: 323 were answered, then came the 429, and when the requests kept
+  coming Netlify's own protection met them with its challenge page.
 - [robots.txt](../ui/public/robots.txt) asks crawlers to stay out of `/api/`. The pages stay open to them, so a
   shared link still gets its preview.
 - The demo refuses to start with a metered model API key (one billed per token, such as Anthropic's), so a public
