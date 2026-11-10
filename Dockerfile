@@ -10,7 +10,7 @@ RUN npm ci --no-audit --no-fund
 COPY ui/ ./
 RUN npm run build
 
-FROM cgr.dev/chainguard/wolfi-base:latest@sha256:88a20e2d017bd20cdc0cb3910de603e7bea9512a6c351a8dd3c9df212ab03d73 AS python
+FROM cgr.dev/chainguard/wolfi-base:latest@sha256:8509ee4351a2e501b7f98201f2e2642396e82020c61a589cacdcfe74b9de46c1 AS python
 RUN apk add --no-cache python-3.13 py3.13-pip
 WORKDIR /src
 COPY pyproject.toml ./
@@ -19,7 +19,7 @@ COPY src ./src
 RUN python3.13 -m venv --without-pip /opt/venv \
  && python3.13 -m pip --python /opt/venv/bin/python install --no-cache-dir .
 
-FROM cgr.dev/chainguard/wolfi-base:latest@sha256:88a20e2d017bd20cdc0cb3910de603e7bea9512a6c351a8dd3c9df212ab03d73
+FROM cgr.dev/chainguard/wolfi-base:latest@sha256:8509ee4351a2e501b7f98201f2e2642396e82020c61a589cacdcfe74b9de46c1
 # Tesseract reads faxed referrals inside the container: identifiable pages never go to an outside service.
 RUN apk add --no-cache python-3.13 tesseract tesseract-eng \
  && adduser -D -H -h /app -u 10001 caduceus \
