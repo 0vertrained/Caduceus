@@ -1,0 +1,3 @@
+# The pages are here to be read. The API behind them answers only the pages.
+User-agent: *
+Disallow: /api/
