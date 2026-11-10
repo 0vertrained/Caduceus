@@ -110,8 +110,9 @@ image, `scripts/demo_video.sh` records the same walk on any machine, with the su
   The in-network model's summary never runs on a request: it is written in the background.
 - The first request after idle waits for an instance to start, and that is the one request that can outlast the
   gateway. Measured from outside in November 2026: 7.7 seconds after eighteen idle minutes, and more than 26 after
-  most of a day, when Netlify answered 504 once and the next request succeeded. The API's own start is under two
-  seconds of that; the rest is the instance, which carries the model's container too. The page says so while it
+  most of a day, when Netlify answered 504 once and the next request succeeded. The API's own work at
+  start, importing and seeding from recorded replies, takes about three seconds on a development machine; the rest
+  is the instance, which carries the model's container too. The page says so while it
   waits, offers the roster so the wait is spent choosing who to be, and keeps asking for 75 seconds
   ([App.tsx](../ui/src/App.tsx)). A warm instance would end the wait, at this instance's full price for every hour
   it stays up, since CPU stays on beside the model.
