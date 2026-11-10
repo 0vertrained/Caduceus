@@ -102,6 +102,8 @@ Google Cloud Run, in a demo mode built for being public:
 - each visitor gets their own copy of the cases, starting over after 6 hours
 - per-visitor rate limits
 - an API that answers only requests Netlify has signed
+- API requests that did not come from the demo's pages answered by Netlify, so a scanner's guesses do not start the
+  server
 - a model key only from a fixed-quota provider, never a metered one
 - the in-network model in the API's own instance, reachable only on 127.0.0.1, built without an HTTPS client and run
   with downloads refused

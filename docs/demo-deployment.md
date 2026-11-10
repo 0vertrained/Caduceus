@@ -2,7 +2,8 @@
 
 The demo runs as two pieces. Netlify serves the review UI and proxies `/api/*` to the API on Google Cloud Run.
 Netlify signs every proxied request, and the API answers nothing else, so the Cloud Run address cannot be used to
-get around the site.
+get around the site. Netlify also answers API requests that did not come from the demo's pages itself, and limits
+what one address can send ([Cost and limits](#cost-and-limits)).
 
 ```
 visitor --> Netlify (UI, security headers) --signed /api/*--> Cloud Run (API, demo mode, 1 instance)
@@ -82,6 +83,8 @@ with the list of offered models if none matches. Run the deploy-demo workflow af
 - The site shows the demo banner, and signing in as Dolores Montoya shows the queue.
 - The Cloud Run address on its own answers `/api/health` and refuses everything else with a 403. The deploy
   workflow checks this after every deploy.
+- `curl -i https://caduceusdemo.netlify.app/api/health` gets a 404 from Netlify, saying the API answers only the
+  demo's own pages, and does not start the server. `/api/auth-config` gets `{"mode":"demo"}` from the API.
 - On a phone, sign in as Dr. Ana Reyes while the case waits for her signature.
 - Help, then *Open the SMART launcher*: choose a patient and *Launch*, and Caduceus opens on that patient's record.
 
@@ -103,6 +106,21 @@ image, `scripts/demo_video.sh` records the same walk on any machine, with the su
 - Each visitor gets 300 requests and 60 changes per five minutes, and all visitors together get 5,000 requests per
   five minutes. Steps of an EHR launch, which make requests to the SMART sandbox, are capped apart: 10 per visitor
   and 200 for everyone per five minutes. One copy holds at most 3 patients from an EHR.
+- Netlify answers an API request that did not come from one of the demo's pages itself, with a 404, so the
+  request never starts the server. Every request a page makes carries the visitor's sandbox id, apart from the
+  first, which asks how to sign in, and an edge function
+  ([pages-only.js](../ui/netlify/edge-functions/pages-only.js)) runs on `/api` requests without one. It was added
+  after 10 November 2026, when a scanner asked for 22 addresses it had read out of the pages' script, placeholders
+  unfilled, in 18 seconds, and the first started the server. The end-to-end walk puts the same function in front of
+  the API, so a page request it would not send on fails CI. It is a filter, not a lock: the header's name is in the
+  script for anyone to read, and what a request may do is decided by the API as before. Two things still start the
+  server without the id: `/api/auth-config`, the page's first request, and anything sent straight to the Cloud Run
+  address, where the API answers the health check and refuses the rest.
+- Netlify limits one address to 300 API requests a minute before it proxies them ([netlify.toml](../netlify.toml)).
+  That is five times the pace of the API's own limit, so a visitor who overdoes it hears from the API, and only a
+  flood meets Netlify's 429, which can take up to ten seconds to begin.
+- [robots.txt](../ui/public/robots.txt) asks crawlers to stay out of `/api/`. The pages stay open to them, so a
+  shared link still gets its preview.
 - The demo refuses to start with a metered model API key (one billed per token, such as Anthropic's), so a public
   page can never run up a bill. It may hold a fixed-quota key, such as Ollama Cloud's.
 - Netlify gives proxied requests 26 seconds; the API answers in well under one. The two slow exceptions stay inside

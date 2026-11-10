@@ -9,7 +9,9 @@ the [admin guide](admin-guide.md#settings).
 
 | Check | How | Healthy |
 |---|---|---|
-| The API answers | `curl -fsS https://<host>/api/health` | `{"ok": true}` |
+| The API answers | `curl -fsS https://<host>/api/health` (for the demo, the Cloud Run address) | `{"ok": true}` |
+| The demo's API answers through its site | `curl -fsS https://caduceusdemo.netlify.app/api/auth-config` | `{"mode":"demo"}` |
+| The demo's site answers stray API requests itself | `curl -s -o /dev/null -w '%{http_code}' https://caduceusdemo.netlify.app/api/health` | `404` from Netlify, and the server is not started |
 | The demo's API refuses anyone but Netlify | `curl -s -o /dev/null -w '%{http_code}' <cloud-run-url>/api/demo` | `403` (the deploy checks this every time) |
 | The audit log is intact | Administration page, "The audit log"; or as an auditor, Case history, "Check that nothing was changed" | "Intact", with the event count |
 | Every policy version runs | Administration page, "Coverage policies" | Each "unchanged since it was approved" |
