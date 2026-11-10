@@ -24,6 +24,12 @@
   status = 200
   force = true
   signed = "CADUCEUS_PROXY_SIGNING_KEY"
+  # Netlify's own limit for one address, five times the pace of the API's 300 requests in five minutes: a visitor
+  # who overdoes it hears from the API, in its words, and a flood gets Netlify's 429 without reaching the API.
+  [redirects.rate_limit]
+    window_limit = 300
+    window_size = 60
+    aggregate_by = ["ip", "domain"]
 
 # Everything else is the single-page app.
 [[redirects]]
