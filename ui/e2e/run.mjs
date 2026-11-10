@@ -5,6 +5,8 @@ import { readFileSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 
+import pagesOnly from "../netlify/edge-functions/pages-only.js";
+
 const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
 const axeSource = readFileSync(new URL("../node_modules/axe-core/axe.min.js", import.meta.url), "utf8");
@@ -47,7 +49,26 @@ const share = (context) => context.addInitScript((id) => localStorage.setItem("c
 const tour = (page) => page.getByRole("region", { name: "Guided tour" });
 
 const browser = await chromium.launch();
-const desk = await browser.newContext({ viewport: { width: 1280, height: 900 }, bypassCSP: true });
+// As deployed, Netlify answers an API request that carries no sandbox id itself, and the API never hears of it
+// (netlify/edge-functions/pages-only.js). The same function stands in front of the API here, so a request from a
+// page that Netlify would not send on fails the walk.
+const toTheApi = (url) => url.origin === new URL(base).origin && /^\/api(\/|$)/.test(url.pathname);
+async function visitor(options) {
+  const context = await browser.newContext(options);
+  await context.route(toTheApi, async (route) => {
+    const request = route.request();
+    const headers = Object.entries(await request.allHeaders()).filter(([name]) => !name.startsWith(":"));
+    const answer = pagesOnly(new Request(request.url(), { method: request.method(), headers }));
+    if (!answer) return route.fallback();
+    // Said at once as well: the page that was refused its data usually stops the walk before the report is written.
+    const refused = `edge: Netlify would not send on ${request.method()} ${new URL(request.url()).pathname}`;
+    console.error(refused);
+    report.failures.push(refused);
+    return route.fulfill({ status: answer.status, headers: Object.fromEntries(answer.headers), body: await answer.text() });
+  });
+  return context;
+}
+const desk = await visitor({ viewport: { width: 1280, height: 900 }, bypassCSP: true });
 await share(desk);
 const page = await desk.newPage();
 
@@ -236,7 +257,7 @@ const caseUrl = page.url();
 
 // The clinician, on a phone: another device, at an address of its own, so its requests count toward the demo's
 // limits apart from the desk's, as they would.
-const phone = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true,
+const phone = await visitor({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true,
   bypassCSP: true, extraHTTPHeaders: { "x-nf-client-connection-ip": "198.51.100.23" } });
 await share(phone);
 const doc = await phone.newPage();
@@ -288,7 +309,7 @@ await page.goto(base + "/");
 await page.getByRole("button", { name: "Larger" }).click();
 await shot(page, "10-queue-larger-text");
 await axe(page, "10-queue-larger-text");
-const narrow = await browser.newContext({ viewport: { width: 320, height: 800 }, bypassCSP: true });
+const narrow = await visitor({ viewport: { width: 320, height: 800 }, bypassCSP: true });
 const small = await narrow.newPage();
 await signIn(small, "Dolores Montoya");
 await small.getByRole("link", { name: /^Open case for/ }).first().click();
@@ -393,7 +414,7 @@ const ehrIss = process.env.E2E_SMART_ISS;
 if (!ehrIss) report.failures.push("ehr: E2E_SMART_ISS is not set; run the walk through scripts/e2e.sh");
 // It comes as a visitor of its own, at the address Netlify would report, in the same copy: the walk as one visitor
 // would come close to the demo's 300 API requests per visitor in five minutes, and the last pages would be refused.
-const strict = await browser.newContext({ viewport: { width: 1280, height: 900 },
+const strict = await visitor({ viewport: { width: 1280, height: 900 },
   extraHTTPHeaders: { "x-nf-client-connection-ip": "203.0.113.7" } });
 await share(strict);
 await strict.addInitScript(() => document.addEventListener("securitypolicyviolation",
