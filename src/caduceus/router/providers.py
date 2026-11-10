@@ -50,7 +50,7 @@ class Provider:
 
 
 class OpenAICompatibleProvider(Provider):
-    """vLLM, Ollama and the AI Workload and Release Platform all expose this API inside the VPC."""
+    """vLLM, Ollama and llama.cpp's server all expose this API inside the VPC."""
 
     def __init__(self, base_url: str, model: str, api_key: str | None = None, client: httpx.Client | None = None,
                  name: str = "in_vpc", vendor: str = "Mesa Verde's own server", timeout: float = 120):
