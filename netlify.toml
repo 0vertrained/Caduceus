@@ -16,7 +16,8 @@
   VITE_ROSTER_SIGN_IN = "1"
 
 # The API. The placeholder host is on the reserved .invalid domain, so if the build ever failed to replace it,
-# requests would fail rather than go anywhere unexpected.
+# requests would fail rather than go anywhere unexpected. A request that did not come from one of the demo's pages
+# never gets this far: ui/netlify/edge-functions/pages-only.js answers it first.
 [[redirects]]
   from = "/api/*"
   to = "https://CADUCEUS-API-ORIGIN.invalid/api/:splat"
