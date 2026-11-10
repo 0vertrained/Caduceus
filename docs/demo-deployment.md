@@ -108,6 +108,13 @@ image, `scripts/demo_video.sh` records the same walk on any machine, with the su
 - Netlify gives proxied requests 26 seconds; the API answers in well under one. The two slow exceptions stay inside
   it: reading a record from the EHR is cut off at 20 seconds, and a live draft falls back to the template after 20.
   The in-network model's summary never runs on a request: it is written in the background.
+- The first request after idle waits for an instance to start, and that is the one request that can outlast the
+  gateway. Measured from outside in November 2026: 7.7 seconds after eighteen idle minutes, and more than 26 after
+  most of a day, when Netlify answered 504 once and the next request succeeded. The API's own start is under two
+  seconds of that; the rest is the instance, which carries the model's container too. The page says so while it
+  waits, offers the roster so the wait is spent choosing who to be, and keeps asking for 75 seconds
+  ([App.tsx](../ui/src/App.tsx)). A warm instance would end the wait, at this instance's full price for every hour
+  it stays up, since CPU stays on beside the model.
 
 ## Taking it down
 
