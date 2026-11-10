@@ -11,7 +11,10 @@ import { AttestListPage, AttestPage } from "./pages/Attest";
 import { CaseReviewPage } from "./pages/CaseReview";
 import { HelpPage } from "./pages/Help";
 import { QueuePage } from "./pages/Queue";
-import { OidcSignInPage, SignInCallbackPage, SignInPage, type SignInOutcome } from "./pages/SignIn";
+import {
+  OidcSignInPage, Roster, ROSTER_NOTE, rosterName, SignInCallbackPage, SignInPage, type SignInOutcome,
+} from "./pages/SignIn";
+import { useTitle } from "./hooks";
 import { IntakePage } from "./pages/Intake";
 import { OutcomesPage } from "./pages/Outcomes";
 import { AdminPage } from "./pages/Admin";
@@ -21,11 +24,15 @@ import { EhrRecordPage, SmartCallbackPage, SmartLaunchPage } from "./pages/Smart
 /** In the public demo, whoever opens Caduceus from the EHR acts as its prior-authorization specialist. */
 const DEMO_SPECIALIST = "dolores";
 const launching = () => window.location.pathname.startsWith("/smart/");
+/** Set by the build of a site that signs people in from the roster (the public demo), so the page can offer the
+ *  roster while the API is still starting. The API's own answer decides once it comes. */
+const ROSTER_SIGN_IN = import.meta.env.VITE_ROSTER_SIGN_IN === "1";
 
 export function App() {
   const [config, setConfig] = useState<AuthConfig | null>(null);
   const [unreachable, setUnreachable] = useState(false);
   const [starting, setStarting] = useState(false);  // the first answer is taking long enough to say why
+  const [waitingAs, setWaitingAs] = useState<string | null>(null);  // who was chosen while the API was starting
   const [me, setMe] = useState<Me | null>(null);
   const [checked, setChecked] = useState(false);
   const [notice, setNotice] = useState<SignInNotice | null>(null);
@@ -35,9 +42,10 @@ export function App() {
   const oidc = config?.mode === "oidc";
 
   // How this deployment signs people in, before anything else is asked of the API. The public demo's API runs
-  // on a server that stops when nobody is using it, so the first visit in a while can take ten seconds or so
-  // while it starts, and a gateway in front of it may answer with an error before it is ready. For that long
-  // the page says what is happening and keeps asking; after it, the API is unreachable.
+  // on a server that stops when nobody is using it, so the first visit in a while takes about ten seconds while
+  // it starts, and up to half a minute after a long quiet spell; a gateway in front of it may answer with an
+  // error before it is ready. For that long the page says what is happening, offers the roster where the build
+  // says that is the sign-in, and keeps asking; after it, the API is unreachable.
   const readConfig = async () => {
     const begun = Date.now();
     const slow = window.setTimeout(() => setStarting(true), 1200);
@@ -99,7 +107,14 @@ export function App() {
     setChecked(true);
   };
 
-  const loadSignedIn = useEffectEvent((c: AuthConfig) => void (c.mode === "oidc" ? loadSession() : load()));
+  const loadSignedIn = useEffectEvent((c: AuthConfig) => {
+    if (c.mode === "oidc") {
+      if (waitingAs) setCurrentUser(null);  // a roster choice means nothing where the provider signs people in
+      void loadSession();
+    } else {
+      void load();  // signs in whoever was chosen while the API was starting
+    }
+  });
   useEffect(() => {
     if (config) loadSignedIn(config);
   }, [config]);
@@ -173,7 +188,8 @@ export function App() {
         {unreachable ? (
           <Unreachable onRetry={readConfig} />
         ) : starting && !config ? (
-          <Starting />
+          <Starting roster={ROSTER_SIGN_IN} chosen={waitingAs}
+                    onChoose={(user) => { setCurrentUser(user); setWaitingAs(user); }} />
         ) : !checked ? null : !me && oidc ? (
           <Routes>
             <Route path="/help" element={<HelpPage />} />
@@ -212,14 +228,33 @@ export function App() {
 const STARTUP_PATIENCE_MS = 75_000;
 const pause = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
 
-/** The API is taking a while to answer its first request: most likely starting up, so say so and wait with it. */
-function Starting() {
+/** The API is taking a while to answer its first request: most likely starting up, so say so and wait with it.
+ *  Where the roster is the sign-in, the wait is also the time to choose who to be: the choice is kept, and the
+ *  page signs that person in when the API answers. */
+function Starting({ roster, chosen, onChoose }: {
+  roster: boolean; chosen: string | null; onChoose: (user: string) => void;
+}) {
+  useTitle("Starting");
+  // The title goes back to the plain one when the wait ends, until the next page gives its own.
+  useEffect(() => () => { document.title = "Caduceus"; }, []);
+  const name = chosen ? rosterName(chosen) : null;
   return (
-    <div className="signin starting" role="status" aria-live="polite">
+    <div className="signin starting">
       <h1 className="page-title">Starting Caduceus</h1>
-      <p className="lead">The server behind this demo stops when nobody is using it and starts again on the first
-        visit, which takes ten seconds or so. The page will carry on by itself.</p>
+      <p className="lead" role="status">The server behind this demo stops when nobody is using it and starts again
+        on the first visit. That usually takes about ten seconds, and up to half a minute after a quiet day. The
+        page will carry on by itself.</p>
       <div className="starting__bar" aria-hidden="true"><span /></div>
+      {roster && (
+        <section className="starting__roster" aria-labelledby="starting-roster">
+          <h2 className="section-title" id="starting-roster">While it starts, choose who to sign in as</h2>
+          <p className="support">{ROSTER_NOTE}</p>
+          <Roster chosen={chosen} onChoose={onChoose} />
+          <p className="starting__chosen" role="status">
+            {name && `You will be signed in as ${name} as soon as the server is up.`}
+          </p>
+        </section>
+      )}
     </div>
   );
 }

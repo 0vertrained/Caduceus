@@ -642,6 +642,10 @@ mark { background: var(--mark); color: var(--ink); padding: 0.05em 0.15em; margi
   animation: starting-sweep 1.6s ease-in-out infinite; }
 @keyframes starting-sweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
 @media (prefers-reduced-motion: reduce) { .starting__bar span { animation: none; width: 100%; opacity: 0.5; } }
+/* The roster offered during the wait: the choice is marked, and a line says what will happen with it */
+.starting__roster { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-3); }
+.signin__user[aria-pressed="true"] { background: var(--seal-tint); border-color: var(--seal); box-shadow: inset 0 0 0 1px var(--seal); }
+.starting__chosen { min-height: 1.5em; font-weight: 600; }
 /* Why the sign-in page is showing: a problem and what to do (caution), news (seal), or a wait */
 .signin__notice { display: flex; gap: var(--space-3); align-items: flex-start; padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-control); background: var(--caution-tint); color: var(--ink); }

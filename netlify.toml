@@ -12,6 +12,8 @@
 
 [build.environment]
   NODE_VERSION = "22"
+  # This site is the demo, whose sign-in is the roster: the page can offer it while the API is still starting.
+  VITE_ROSTER_SIGN_IN = "1"
 
 # The API. The placeholder host is on the reserved .invalid domain, so if the build ever failed to replace it,
 # requests would fail rather than go anywhere unexpected.

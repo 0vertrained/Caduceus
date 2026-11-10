@@ -12,24 +12,36 @@ const ROSTER = [
   { id: "avery", name: "Avery Chen", role: "Administrator" },
 ];
 
+/** What the roster's sign-in is, wherever it is offered. */
+export const ROSTER_NOTE = "This is the development sign-in. In the deployed system you sign in with your Mesa " +
+  "Verde account, and your role comes from it.";
+
+export const rosterName = (id: string) => ROSTER.find((u) => u.id === id)?.name ?? null;
+
+/** The people of the roster. Where a choice only takes effect later (the server is still starting), `chosen`
+ *  says which one is picked, and the buttons report it as pressed. */
+export function Roster({ onChoose, chosen }: { onChoose: (user: string) => void; chosen?: string | null }) {
+  return (
+    <ul className="signin__list">
+      {ROSTER.map((u) => (
+        <li key={u.id}>
+          <button type="button" className="btn btn--secondary btn--large signin__user"
+                  aria-pressed={chosen === undefined ? undefined : chosen === u.id} onClick={() => onChoose(u.id)}>
+            <span>{u.name}</span><span className="muted signin__role">{u.role}</span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function SignInPage({ onSignIn }: { onSignIn: (user: string) => void }) {
   useTitle("Sign in");
   return (
     <div className="signin">
       <h1 className="page-title">Sign in</h1>
-      <p className="lead">
-        This is the development sign-in. In the deployed system you sign in with your Mesa Verde account, and your
-        role comes from it.
-      </p>
-      <ul className="signin__list">
-        {ROSTER.map((u) => (
-          <li key={u.id}>
-            <button type="button" className="btn btn--secondary btn--large signin__user" onClick={() => onSignIn(u.id)}>
-              <span>{u.name}</span><span className="muted signin__role">{u.role}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
+      <p className="lead">{ROSTER_NOTE}</p>
+      <Roster onChoose={onSignIn} />
     </div>
   );
 }
