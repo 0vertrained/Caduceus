@@ -8,7 +8,7 @@ license = { text = "MIT" }
 dependencies = [
   "fastapi>=0.162,<1",
   "uvicorn[standard]>=0.54",
-  "pydantic>=2.14.2,<3",
+  "pydantic>=2.14.3,<3",
   "pyyaml>=6.0.3",
   "httpx>=0.28.1",
   "opentelemetry-api>=1.45.2",
@@ -18,12 +18,12 @@ dependencies = [
   "tzdata>=2026.6",  # the IANA zone database, so clinic time works on minimal images that ship none
   # Postgres, for a deployment (CADUCEUS_DATABASE_URL). The binary build brings its own libpq, so the Wolfi image
   # needs no system package; Dependabot proposes its releases with the rest.
-  "psycopg[binary]>=3.3.6,<4",
+  "psycopg[binary]>=3.3.8,<4",
   "psycopg-pool>=3.3.3,<4",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=9.2", "ruff>=0.17.3", "mypy==2.4.1", "types-PyYAML==6.0.12.20261030"]
+dev = ["pytest>=9.2", "ruff>=0.17.4", "mypy==2.4.1", "types-PyYAML==6.0.12.20261103"]
 
 [project.scripts]
 caduceus-seed = "caduceus.seed:main"
