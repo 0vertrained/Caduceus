@@ -1,0 +1,209 @@
+{
+ "judge": null,
+ "rows": [
+  {
+   "model": "kimi-k2.6",
+   "request": "r01",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r02",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r03",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r04",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r05",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r06",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r07",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r08",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r09",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r10",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r11",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r12",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r13",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r14",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r15",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r16",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "kimi-k2.6",
+   "request": "r17",
+   "task": "draft_appeal",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r01",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r02",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r03",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r04",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r05",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r06",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r07",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r08",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r09",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r10",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r11",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r12",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r13",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r14",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r15",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r16",
+   "task": "draft_request",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  },
+  {
+   "model": "gpt-oss:120b",
+   "request": "r17",
+   "task": "draft_appeal",
+   "error": "external provider unavailable: HTTPStatusError 429"
+  }
+ ]
+}
