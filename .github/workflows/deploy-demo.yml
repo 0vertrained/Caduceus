@@ -59,6 +59,11 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.13"
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        # No cache in a job that holds deploy rights: every package is downloaded and checked against uv.lock.
+        with:
+          version: "0.13.6"
+          enable-cache: false
       - name: Record the draft model's replies into the image
         id: record
         # Without a key the demo still runs: drafts come from the template, and the case page says so.
@@ -82,7 +87,7 @@ jobs:
           fi
           echo "EXTERNAL_MODEL=$EXTERNAL_MODEL" >> "$GITHUB_ENV"
           echo "::notice title=Draft model::Using $EXTERNAL_MODEL"
-          python -m venv /tmp/rec && /tmp/rec/bin/pip install -q .
+          UV_PROJECT_ENVIRONMENT=/tmp/rec uv sync --locked --no-editable -q
           if CADUCEUS_EXTERNAL_PROVIDER=ollama CADUCEUS_EXTERNAL_MODEL="$EXTERNAL_MODEL" CADUCEUS_EXTERNAL_API_KEY="$key" \
               CADUCEUS_EXTERNAL_TIMEOUT=300 /tmp/rec/bin/python scripts/record_completions.py \
               data/recorded/completions.json 2> /tmp/record.err; then

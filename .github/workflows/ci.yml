@@ -15,6 +15,7 @@ concurrency:
 env:
   PYTHON_VERSION: "3.13"
   NODE_VERSION: "22"
+  UV_VERSION: "0.13.6"
   PLAYWRIGHT_VERSION: "1.63.0"
   PIP_AUDIT_VERSION: "2.10.1"
   GRYPE_VERSION: "0.120.1"
@@ -32,8 +33,11 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
-      - run: pip install -e '.[dev]'
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+          activate-environment: true
+      - run: uv sync --locked --extra dev
       - name: Tesseract OCR, for fax intake
         run: sudo apt-get install -y --no-install-recommends tesseract-ocr
       - run: ruff check src tests scripts
@@ -77,8 +81,11 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
-      - run: pip install -e '.[dev]'
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+          activate-environment: true
+      - run: uv sync --locked --extra dev
       - name: Tesseract OCR, for fax intake
         run: sudo apt-get install -y --no-install-recommends tesseract-ocr
       - name: Repository, audit and workflow tests on Postgres, and what only Postgres guarantees
@@ -116,16 +123,19 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: false   # this job only reads uv.lock, so there is nothing to cache
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - name: Python packages, as CI resolves them today (the auditor lives in its own environment)
+      - name: Python packages, as uv.lock pins them (the auditor lives in its own environment)
         run: |
-          pip install -e '.[dev]'
-          pip freeze --exclude-editable > "$RUNNER_TEMP/requirements.txt"
+          uv export --locked --all-extras --all-groups --no-emit-project -o "$RUNNER_TEMP/requirements.txt"
           python -m venv "$RUNNER_TEMP/audit"
           "$RUNNER_TEMP/audit/bin/pip" install "pip-audit==${PIP_AUDIT_VERSION}"
-          "$RUNNER_TEMP/audit/bin/pip-audit" -r "$RUNNER_TEMP/requirements.txt" --no-deps --disable-pip --progress-spinner off
+          "$RUNNER_TEMP/audit/bin/pip-audit" -r "$RUNNER_TEMP/requirements.txt" --require-hashes --disable-pip --progress-spinner off
       - name: UI packages, including build and test tools
         working-directory: ui
         run: |
@@ -173,13 +183,16 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+          activate-environment: true
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: ui/package-lock.json
-      - run: pip install -e .
+      - run: uv sync --locked
       - name: Tesseract OCR, for fax intake
         run: sudo apt-get install -y --no-install-recommends tesseract-ocr
       - run: npm ci --no-audit --no-fund
@@ -294,7 +307,11 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      - run: pip install -e .
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: ${{ env.UV_VERSION }}
+          activate-environment: true
+      - run: uv sync --locked
       - name: Build Synthea from source with its libraries upgraded
         run: |
           make synthea

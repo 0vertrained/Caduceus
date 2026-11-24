@@ -39,11 +39,16 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.13"
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        # No cache in a job that holds deploy rights: every package is downloaded and checked against uv.lock.
+        with:
+          version: "0.13.6"
+          enable-cache: false
       - name: Run every model on the same requests
         run: |
           key="$(gcloud secrets versions access latest --secret caduceus-model-api-key --project "$PROJECT")"
           echo "::add-mask::$key"
-          python -m venv /tmp/b && /tmp/b/bin/pip install -q .
+          UV_PROJECT_ENVIRONMENT=/tmp/b uv sync --locked --no-editable -q
           OLLAMA_API_KEY="$key" PYTHONPATH=. /tmp/b/bin/python scripts/bakeoff.py run evals/bakeoff/requests.json bakeoff
           echo "::notice title=Bake-off::$(head -1 bakeoff/summary.md)"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
