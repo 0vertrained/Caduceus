@@ -25,6 +25,10 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=9.2", "ruff>=0.17.3", "mypy==2.4.1", "types-PyYAML==6.0.12.20261030"]
 
+# The build backend, locked with hashes like everything else, so uv builds Caduceus with this copy (see [tool.uv]).
+[dependency-groups]
+build = ["setuptools>=84.2.1"]
+
 [project.scripts]
 caduceus-seed = "caduceus.seed:main"
 caduceus-evals = "caduceus.evals.run:main"
@@ -38,6 +42,14 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "caduceus.migrations" = ["*.sql"]  # applied at startup, so they ship with the package
+
+# uv.lock pins every package, setuptools included, to exact files and hashes, and `uv sync --locked` installs only
+# those. Locking takes only releases at least 7 days old, the wait Dependabot keeps, so a hijacked release is usually
+# pulled before it can land. A security fix can skip the wait: add exclude-newer-package = { <package> = false }.
+[tool.uv]
+exclude-newer = "7 days"
+default-groups = ["build"]
+no-build-isolation-package = ["caduceus"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -1,8 +1,9 @@
 # Weekly update proposals for every dependency the project pins. Each waits 7 days after a release before it is
-# proposed, so a hijacked release has time to be caught first. Security updates are not delayed by this.
+# proposed, so a hijacked release has time to be caught first. Security updates are not delayed by this, except in
+# uv.lock, which takes only releases at least 7 days old ([tool.uv] in pyproject.toml says how to take a fix sooner).
 version: 2
 updates:
-  - package-ecosystem: pip
+  - package-ecosystem: uv
     directory: "/"
     schedule:
       interval: weekly
