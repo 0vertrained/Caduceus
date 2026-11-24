@@ -112,7 +112,7 @@ See [docs/demo-deployment.md](docs/demo-deployment.md).
 
 ## Run it
 
-Needs Python 3.12+ and Node 22.
+Needs Python 3.12+, Node 22 and [uv](https://docs.astral.sh/uv/).
 
 ```
 make setup
@@ -166,9 +166,11 @@ docs/           ADRs, data handling, incidents, the model bake-off, the hard set
 
 Secure by default (OIDC unless development sign-in is asked for by name). PHI stays on the in-VPC route, and that
 is enforced in types and tests. Responses that can carry PHI are `no-store`, with a strict Content Security
-Policy. Patient names never enter URLs. The container runs as a non-root user on a read-only filesystem. The
-audit log is append-only at the database level and archived under S3 Object Lock in the target deployment. See
-[docs/data-handling.md](docs/data-handling.md) for what is PHI, where it flows, and the residual risk.
+Policy. Patient names never enter URLs. The container runs as a non-root user on a read-only filesystem. Python
+packages install only from `uv.lock`, every file checked against its hash, and a new release waits 7 days before
+the lock or Dependabot takes it. The audit log is append-only at the database level and archived under S3 Object
+Lock in the target deployment. See [docs/data-handling.md](docs/data-handling.md) for what is PHI, where it flows,
+and the residual risk.
 
 ### Known vulnerabilities in dependencies
 

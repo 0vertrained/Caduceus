@@ -24,7 +24,7 @@ help: ## List the commands
 	@grep -hE '^[a-z0-9-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  make %-15s %s\n", $$1, $$2}'
 
 setup: ## Create the virtualenv and install the API and UI dependencies
-	python3 -m venv .venv && $(PY) -m pip install -q -e '.[dev]'
+	uv sync --locked --extra dev
 	cd ui && npm ci --no-audit --no-fund
 
 data: $(SYN_JAR) ## Regenerate the synthetic dataset from Synthea (needs Java 17+); output is deterministic
