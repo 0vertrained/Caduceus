@@ -10,14 +10,23 @@ RUN npm ci --no-audit --no-fund
 COPY ui/ ./
 RUN npm run build
 
+# Build only: uv, from its publisher's image.
+FROM ghcr.io/astral-sh/uv:0.13.6@sha256:af22a52f5eafef3d78e551599d405c02df61919d18028f0cea8eda93bc9986d0 AS uv
+
 FROM cgr.dev/chainguard/wolfi-base:latest@sha256:d13acb327aa77acf2752acea8c08456511a5b8142455cc2fe0f966b960bf64c6 AS python
-RUN apk add --no-cache python-3.13 py3.13-pip
+RUN apk add --no-cache python-3.13
+COPY --from=uv /uv /usr/local/bin/uv
+# Only the files uv.lock lists, each checked against its hash; a lock that no longer matches pyproject.toml stops the
+# build. The venv keeps no installer: no pip, and setuptools goes once it has built Caduceus. Bytecode is compiled
+# here because the runtime image is read-only.
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv UV_PYTHON=/usr/bin/python3.13 UV_PYTHON_DOWNLOADS=never UV_NO_CACHE=1 \
+    UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 WORKDIR /src
-COPY pyproject.toml ./
+COPY pyproject.toml uv.lock ./
+RUN uv sync --locked --no-editable --no-install-project
 COPY src ./src
-# A venv without pip: the runtime image needs the packages, not the installer.
-RUN python3.13 -m venv --without-pip /opt/venv \
- && python3.13 -m pip --python /opt/venv/bin/python install --no-cache-dir .
+RUN uv sync --locked --no-editable \
+ && uv pip uninstall --python /opt/venv/bin/python setuptools
 
 FROM cgr.dev/chainguard/wolfi-base:latest@sha256:d13acb327aa77acf2752acea8c08456511a5b8142455cc2fe0f966b960bf64c6
 # Tesseract reads faxed referrals inside the container: identifiable pages never go to an outside service.
