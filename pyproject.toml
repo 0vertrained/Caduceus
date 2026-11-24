@@ -18,7 +18,7 @@ dependencies = [
   "tzdata>=2026.6",  # the IANA zone database, so clinic time works on minimal images that ship none
   # Postgres, for a deployment (CADUCEUS_DATABASE_URL). The binary build brings its own libpq, so the Wolfi image
   # needs no system package; Dependabot proposes its releases with the rest.
-  "psycopg[binary]>=3.3.6,<4",
+  "psycopg[binary]>=3.3.9,<4",
   "psycopg-pool>=3.3.3,<4",
 ]
 
